@@ -200,11 +200,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // ===== Níveis (10) =====
 
-  // =====================================================
-  // ===== MAPA DA AVENTURA — Fase 1 =====
-  // Agrupa os 20 níveis existentes em 7 regiões temáticas.
-  // NÃO altera LEVELS nem a ordem de jogo — é apenas uma "vista"
-  // de progresso construída por cima dos dados já existentes.
+  // ===== MAPA DA AVENTURA — Fase 1 (agora com 4 mundos, cada um com o seu boss) =====
+  // Agrupa os 20 níveis existentes em 4 mundos temáticos, em blocos contíguos.
+  // Cada mundo só desbloqueia depois do anterior estar 100% concluído — ver
+  // regionStatus()/isLastLevelOfRegion() mais abaixo.
   // =====================================================
 
   let mapProgress = { highestLevelReached: 0, levelsCompleted: [] };
