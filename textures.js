@@ -519,26 +519,33 @@ function makeBossTextures(scene){
     const tex=scene.textures.createCanvas("boss_virus_gigante",S,S), ctx=tex.getContext();
     bossShadow(ctx);
     const bodyR=28;
+    // brilho exterior dourado — o nível dele é todo em tons de verde-água,
+    // por isso o corpo passou de verde para magenta/rosa (ver abaixo), e este
+    // anel garante que se destaca também de qualquer outro fundo escuro.
+    ctx.shadowColor="rgba(255,224,140,0.55)"; ctx.shadowBlur=14;
+    ctx.strokeStyle="rgba(255,232,160,0.65)"; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(C,C,bodyR+15,0,Math.PI*2); ctx.stroke();
+    ctx.shadowBlur=0;
     // espigões
-    ctx.strokeStyle="#0f8060"; ctx.lineWidth=3.5; ctx.lineCap="round";
+    ctx.strokeStyle="#7a1450"; ctx.lineWidth=3.5; ctx.lineCap="round";
     const spikes=12;
     for(let i=0;i<spikes;i++){
       const a=(Math.PI*2*i)/spikes;
       const x1=C+Math.cos(a)*bodyR, y1=C+Math.sin(a)*bodyR;
       const x2=C+Math.cos(a)*(bodyR+13), y2=C+Math.sin(a)*(bodyR+13);
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-      ctx.fillStyle= i%2===0 ? "#ff6b5c" : "#ffcf5c";
+      ctx.fillStyle= i%2===0 ? "#ffe85c" : "#ff6b5c";
       ctx.beginPath(); ctx.arc(x2,y2,4.2,0,Math.PI*2); ctx.fill();
     }
-    // corpo
+    // corpo — magenta/rosa vivo (contraste com o fundo verde-água do nível)
     const gr=ctx.createRadialGradient(C-8,C-8,3,C,C,bodyR);
-    gr.addColorStop(0,"#b8ffe8"); gr.addColorStop(0.45,"#4dd2a0"); gr.addColorStop(1,"#0f6a4e");
+    gr.addColorStop(0,"#ffd6f0"); gr.addColorStop(0.45,"#e0409a"); gr.addColorStop(1,"#5c1050");
     ctx.fillStyle=gr;
     ctx.beginPath(); ctx.arc(C,C,bodyR,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle="#0a4a36"; ctx.lineWidth=2;
+    ctx.strokeStyle="#3a0a30"; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(C,C,bodyR,0,Math.PI*2); ctx.stroke();
     // padrão interior (manchas)
-    ctx.fillStyle="rgba(10,90,70,0.35)";
+    ctx.fillStyle="rgba(90,10,60,0.35)";
     [[-10,-6,6],[9,-11,4],[6,9,5],[-8,10,4]].forEach(([dx,dy,r])=>{
       ctx.beginPath(); ctx.arc(C+dx,C+dy,r,0,Math.PI*2); ctx.fill();
     });
@@ -546,10 +553,10 @@ function makeBossTextures(scene){
     ctx.fillStyle="#fff";
     ctx.beginPath(); ctx.ellipse(C-8,C-2,5,6,0,0,Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(C+8,C-2,5,6,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle="#0a2a1a";
+    ctx.fillStyle="#2a0a1a";
     ctx.beginPath(); ctx.arc(C-8,C,2.4,0,Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(C+8,C,2.4,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle="#0a2a1a"; ctx.lineWidth=2;
+    ctx.strokeStyle="#2a0a1a"; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(C,C+11,7,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
     tex.refresh();
   }

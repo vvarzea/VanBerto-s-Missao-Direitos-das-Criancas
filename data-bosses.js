@@ -28,7 +28,7 @@ export const BOSSES = [
     afterLevel: 9,            // aparece no fim do Mundo 2 — Vale da Saúde (níveis 5-9)
     name: "Vírus Gigante",
     emoji: "🦠",
-    color: 0x4dd2a0,
+    color: 0xe0409a,
     movementType: "wave",    // flutua em onda, pulsa de tamanho
     intro: "Vou espalhar-me por todo o lado!",
     defeatLine: "Argh! Vacinado... derrotado! 💉",
