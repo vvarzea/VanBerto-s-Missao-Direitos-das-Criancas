@@ -231,6 +231,24 @@ window.addEventListener("DOMContentLoaded", () => {
     return MAP_REGIONS.find(r => r.levels.includes(idx)) || null;
   }
 
+  // O jogo só avança automaticamente DENTRO do mesmo mundo. Ao terminar o
+  // último nível de um mundo (com ou sem boss), o jogador volta sempre ao
+  // mapa — só entra no mundo seguinte por escolha própria.
+  function isLastLevelOfRegion(idx) {
+    const r = regionForLevel(idx);
+    return !!(r && r.levels.length && r.levels[r.levels.length - 1] === idx);
+  }
+  function celebrateWorldComplete(region, onDone) {
+    if (!region) { onDone?.(); return; }
+    ensureAudio(); SFX.win();
+    playTitleCard({
+      icon: region.icon,
+      name: `${region.name} — Completo! 🎉`,
+      sub: region.sub,
+      lines: ["Mais um mundo protegido! Escolhe no mapa para onde vamos a seguir."]
+    }, onDone);
+  }
+
   function regionStatus(region) {
     if (region.levels.length === 0) return "done"; // Base — sempre acessível/concluída visualmente
     const allDone = region.levels.every(i => mapProgress.levelsCompleted.includes(i));
@@ -2103,9 +2121,20 @@ window.addEventListener("DOMContentLoaded", () => {
   function updateSigns() {
     if (!currentSign || currentSign.triggered || !player) return;
     const dx = Math.abs(player.x - currentSign.x), dy = Math.abs(player.y - currentSign.y);
-    if (dx > 70 || dy > 90) return;
+    if (dx > 130 || dy > 170) return;
     currentSign.triggered = true;
-    vbSay(currentSign.text, "npc", 4200);
+    vbSay(currentSign.text, "npc", 4800);
+    // Reforço visual — texto flutuante por cima do letreiro, no próprio mundo do
+    // jogo, para ser impossível não notar (o balão do VanBerto's é discreto).
+    const lbl = sceneRef.add.text(currentSign.x, currentSign.y-56, currentSign.text, {
+      fontSize:"13px", fontStyle:"800", color:"#baffef", stroke:"#062a28", strokeThickness:4,
+      align:"center", wordWrap:{width:220}
+    }).setOrigin(0.5).setDepth(200).setAlpha(0).setScale(0.7);
+    sceneRef.tweens.add({ targets:lbl, alpha:1, scaleX:1, scaleY:1, y:currentSign.y-70, duration:260, ease:"Back.easeOut" });
+    sceneRef.time.delayedCall(4200, () => {
+      if (!lbl.active) return;
+      sceneRef.tweens.add({ targets:lbl, alpha:0, duration:300, onComplete:()=>{ try{lbl.destroy();}catch{} } });
+    });
     if (currentSign.badge && currentSign.badge.active) {
       sceneRef.tweens.add({ targets:currentSign.badge, alpha:0, y:currentSign.badge.y-16, duration:300, onComplete:()=>{ try{currentSign.badge.destroy();}catch{} } });
     }
@@ -3120,6 +3149,11 @@ window.addEventListener("DOMContentLoaded", () => {
       player.setAlpha(1);
       if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
       inBossFight = false; bossState = null;
+      // Limpar o HUD do combate ANTES da cinemática — sem isto ficavam valores
+      // congelados (ex.: "Itens: 5/5", a dica do quiz) visíveis por trás do diálogo.
+      hudText.setText("🏆 Vitória!");
+      itemCountText.setText("");
+      tipText.setText("");
       // awaitingQuiz continua true durante a cinemática de vitória — só liberta
       // o jogador quando o portal for criado, a seguir ao diálogo.
       playCinematic([
@@ -3207,6 +3241,14 @@ window.addEventListener("DOMContentLoaded", () => {
       score+=100; scoreText.setText(`🌟 Pontos: ${score}`); _hudDirty=true;
 
       const goToNextLevel = () => {
+        const justFinished = currentLevel; // ainda não foi atualizado por loadLevel
+        if (isLastLevelOfRegion(justFinished)) {
+          awaitingQuiz = false; awaitingStory = false;
+          celebrateWorldComplete(regionForLevel(justFinished), () => {
+            openOverlay("mapOverlay", renderMap);
+          });
+          return;
+        }
         enterLevelWithStory(scene,next,
           ()=>{ loadLevel(scene,next); },
           ()=>{ showHistory(next,()=>{

@@ -12,25 +12,17 @@ export const REGION_INTRO = {
     vanberto: "Sinto os livros a chamar por nós... o conhecimento perdeu-se algures aqui!",
     arrival: "Bem-vindo ao Reino da Educação — aqui nasceu o Dia da Criança! 📚"
   },
-  protecao: {
-    vanberto: "Esta fortaleza esconde algo sombrio... vamos ter cuidado, mas com coragem!",
-    arrival: "A Fortaleza da Proteção guarda o direito de brincar em segurança. 🛡️"
-  },
   saude: {
     vanberto: "Cheira a remédio no ar... alguém aqui precisa muito da nossa ajuda!",
-    arrival: "Bem-vindo ao Vale da Saúde — todos merecem crescer fortes e saudáveis. 🏥"
+    arrival: "Bem-vindo ao Vale da Saúde — bem-estar, futuro e identidade esperam por ti. 🏥"
   },
-  sustent: {
-    vanberto: "Olha para esta floresta... o planeta também tem direitos, sabias?",
-    arrival: "A Floresta da Sustentabilidade cuida da Terra para todas as crianças. 🌍"
+  protecao: {
+    vanberto: "Esta fortaleza esconde algo sombrio... vamos ter cuidado, mas com coragem!",
+    arrival: "A Fortaleza da Proteção guarda a família, o refúgio e a liberdade de todos. 🛡️"
   },
-  inclusao: {
-    vanberto: "Tanta gente diferente, tantas histórias diferentes... todas importam!",
-    arrival: "Bem-vindo à Cidade da Inclusão — aqui ninguém fica de fora. 🤝"
-  },
-  direitos: {
-    vanberto: "Estamos quase lá! Sinto que os últimos direitos estão bem perto...",
-    arrival: "A Cidade dos Direitos guarda os segredos da família e do mundo digital. ⭐"
+  moderno: {
+    vanberto: "Estamos quase lá! Sinto que o último grande desafio está bem perto...",
+    arrival: "A Cidade do Mundo Moderno guarda os segredos da privacidade e do futuro digital. 🌐"
   }
 };
 

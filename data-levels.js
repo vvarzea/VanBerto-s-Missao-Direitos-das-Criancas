@@ -136,28 +136,7 @@ export const LEVELS = [
     secrets:[{x:2160,y:355,kind:"estrela",points:20}]
   },
   {
-    name: "Nível 7 — O Direito à Proteção",
-    artIdx:6, theme:6, quizTheme:"protecao", worldW:3200,
-    spawn:{x:480,y:460}, doorX:2850,
-    // Layout: pirâmide central alta + plataformas laterais baixas
-    platforms:[
-      {x:520,y:520,w:960,h:28},
-      {x:820,y:450,w:180,h:22},
-      {x:1060,y:390,w:180,h:22},
-      {x:1300,y:330,w:180,h:22},
-      {x:1540,y:260,w:200,h:22},   // topo da pirâmide
-      {x:1780,y:330,w:180,h:22},
-      {x:2020,y:390,w:180,h:22},
-      {x:2260,y:450,w:180,h:22},
-      {x:2500,y:380,w:160,h:22},
-      {x:2870,y:520,w:960,h:28}
-    ],
-    items:[{x:820,y:220,kind:"estrela"},{x:1300,y:280,kind:"balao"},{x:1540,y:210,kind:"medalha"},{x:2020,y:340,kind:"brinquedo"},{x:2500,y:330,kind:"duplosalto"}],
-    malwares:[{x:970,y:480,vx:175,pattern:"patrol"},{x:1450,y:480,vx:-178,pattern:"patrol"},{x:1920,y:480,vx:177,pattern:"jumper"},{x:2360,y:480,vx:-175,pattern:"jumper"},{x:2720,y:480,vx:172}],
-    secrets:[{x:680,y:462,kind:"heart"}]
-  },
-  {
-    name: "Nível 8 — O Direito à Participação",
+    name: "Nível 7 — O Direito à Participação",
     artIdx:7, theme:7, quizTheme:"participacao", worldW:3300,
     spawn:{x:480,y:460}, doorX:2950,
     // Layout: "trampolim central obrigatório" — vão largo a meio onde o trampolim é o único caminho
@@ -179,7 +158,7 @@ export const LEVELS = [
     secrets:[{x:1190,y:355,kind:"estrela",points:25}]
   },
   {
-    name: "Nível 9 — O Futuro Sustentável",
+    name: "Nível 8 — O Futuro Sustentável",
     artIdx:8, theme:8, quizTheme:"futuro", worldW:3400,
     spawn:{x:480,y:460}, doorX:3050,
     // Layout: "cascata de terraços" — desce e sobe de forma orgânica, com plataformas a alturas muito variadas
@@ -203,7 +182,7 @@ export const LEVELS = [
     secrets:[{x:660,y:462,kind:"heart"}]
   },
   {
-    name: "Nível 10 — A UNICEF e os Direitos",
+    name: "Nível 9 — A UNICEF e os Direitos",
     artIdx:9, theme:9, quizTheme:"unicef", worldW:3500,
     spawn:{x:480,y:460}, doorX:3100,
     platforms:[
@@ -222,7 +201,7 @@ export const LEVELS = [
     secrets:[{x:1150,y:430,kind:"heart"}]
   },
   {
-    name: "Nível 11 — O Direito à Identidade",
+    name: "Nível 10 — O Direito à Identidade",
     artIdx:10, theme:10, quizTheme:"identidade", worldW:3600,
     spawn:{x:480,y:460}, doorX:3200,
     // Layout: "escadinhas duplas" — dois picos com vale ao meio
@@ -243,6 +222,27 @@ export const LEVELS = [
     items:[{x:820,y:360,kind:"estrela"},{x:1260,y:230,kind:"duplosalto"},{x:1700,y:410,kind:"balao"},{x:2160,y:230,kind:"medalha"},{x:2640,y:390,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
     malwares:[{x:940,y:480,vx:192,pattern:"patrol"},{x:1420,y:480,vx:-196,pattern:"jumper"},{x:1830,y:480,vx:194,pattern:"jumper"},{x:2300,y:480,vx:-192,pattern:"patrol"},{x:2760,y:480,vx:190,pattern:"jumper"}],
     secrets:[{x:1600,y:370,kind:"estrela",points:25}]
+  },
+  {
+    name: "Nível 11 — O Direito à Proteção",
+    artIdx:6, theme:6, quizTheme:"protecao", worldW:3200,
+    spawn:{x:480,y:460}, doorX:2850,
+    // Layout: pirâmide central alta + plataformas laterais baixas
+    platforms:[
+      {x:520,y:520,w:960,h:28},
+      {x:820,y:450,w:180,h:22},
+      {x:1060,y:390,w:180,h:22},
+      {x:1300,y:330,w:180,h:22},
+      {x:1540,y:260,w:200,h:22},   // topo da pirâmide
+      {x:1780,y:330,w:180,h:22},
+      {x:2020,y:390,w:180,h:22},
+      {x:2260,y:450,w:180,h:22},
+      {x:2500,y:380,w:160,h:22},
+      {x:2870,y:520,w:960,h:28}
+    ],
+    items:[{x:820,y:220,kind:"estrela"},{x:1300,y:280,kind:"balao"},{x:1540,y:210,kind:"medalha"},{x:2020,y:340,kind:"brinquedo"},{x:2500,y:330,kind:"duplosalto"}],
+    malwares:[{x:970,y:480,vx:175,pattern:"patrol"},{x:1450,y:480,vx:-178,pattern:"patrol"},{x:1920,y:480,vx:177,pattern:"jumper"},{x:2360,y:480,vx:-175,pattern:"jumper"},{x:2720,y:480,vx:172}],
+    secrets:[{x:680,y:462,kind:"heart"}]
   },
   {
     name: "Nível 12 — O Direito à Família",

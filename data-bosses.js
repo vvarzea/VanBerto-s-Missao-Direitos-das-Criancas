@@ -9,7 +9,7 @@
 export const BOSSES = [
   {
     id: "monstro_ignorancia",
-    afterLevel: 2,           // aparece depois de terminar o nível 3 (índice 2)
+    afterLevel: 4,           // aparece no fim do Mundo 1 — Reino da Educação (níveis 0-4)
     name: "Monstro da Ignorância",
     emoji: "👾",
     color: 0x8a5cff,
@@ -25,7 +25,7 @@ export const BOSSES = [
   },
   {
     id: "virus_gigante",
-    afterLevel: 5,
+    afterLevel: 9,            // aparece no fim do Mundo 2 — Vale da Saúde (níveis 5-9)
     name: "Vírus Gigante",
     emoji: "🦠",
     color: 0x4dd2a0,
@@ -40,7 +40,7 @@ export const BOSSES = [
   },
   {
     id: "guardiao_sombras",
-    afterLevel: 12,
+    afterLevel: 14,          // aparece no fim do Mundo 3 — Fortaleza da Proteção (níveis 10-14)
     name: "Guardião das Sombras",
     emoji: "🌑",
     color: 0x3a3a5c,
@@ -55,7 +55,8 @@ export const BOSSES = [
   },
   {
     id: "poluidor_mecanico",
-    afterLevel: 18,
+    afterLevel: 18,          // Mundo 4 — Cidade do Mundo Moderno (níveis 15-19); fica 1 nível
+                             // epílogo (Direitos Digitais) depois deste boss, como já era antes.
     name: "Poluidor Mecânico",
     emoji: "🏭",
     color: 0x7a8a5c,

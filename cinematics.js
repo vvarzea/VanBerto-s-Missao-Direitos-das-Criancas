@@ -45,8 +45,12 @@ export function playCinematic(slides, onComplete) {
   if (!slides || !slides.length) { onComplete?.(); return; }
   ensureDialogDOM();
   let i = 0;
+  let finished = false;
+  // 1) barras entram primeiro, a estabelecer o "modo cinema"...
   document.body.classList.add("cine-active");
-  dialogEl.classList.add("cine-show");
+  // 2) ...só depois a caixa de diálogo desliza para cima — sem isto tudo
+  //    aparecia de golpe, o que dava a sensação de corte/salto brusco.
+  const showTimer = setTimeout(() => { dialogEl.classList.add("cine-show"); render(); }, 220);
 
   function render() {
     const s = slides[i];
@@ -59,17 +63,24 @@ export function playCinematic(slides, onComplete) {
   }
 
   function advance() {
+    if (!dialogEl.classList.contains("cine-show")) return; // ainda a entrar — ignora toques prematuros
     i++;
     if (i >= slides.length) { finish(); return; }
     render();
   }
 
   function finish() {
+    if (finished) return;
+    finished = true;
+    clearTimeout(showTimer);
     dialogEl.removeEventListener("click", advance);
     document.getElementById("cineSkip").removeEventListener("click", finish);
+    // Sair na ordem inversa: diálogo desce primeiro, barras fecham a seguir.
     dialogEl.classList.remove("cine-show");
-    document.body.classList.remove("cine-active");
-    setTimeout(() => onComplete?.(), 260);
+    setTimeout(() => {
+      document.body.classList.remove("cine-active");
+      setTimeout(() => onComplete?.(), 340);
+    }, 260);
   }
 
   render();

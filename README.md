@@ -128,6 +128,70 @@
 
 # 
 
+# \## 4 Mundos a sério (nova)
+
+# 
+
+# O mapa passou de 6 regiões (com níveis misturados entre si) para \*\*4 mundos\*\*,
+
+# cada um com exactamente 5 níveis seguidos e o seu próprio boss no fim:
+
+# 
+
+# \- \*\*Reino da Educação\*\* — níveis 1-5 → boss Monstro da Ignorância
+
+# \- \*\*Vale da Saúde\*\* — níveis 6-10 → boss Vírus Gigante
+
+# \- \*\*Fortaleza da Proteção\*\* — níveis 11-15 → boss Guardião das Sombras
+
+# \- \*\*Cidade do Mundo Moderno\*\* — níveis 16-20 → boss Poluidor Mecânico
+
+# &#x20; (este último aparece depois do nível 19 — fica ainda o nível 20,
+
+# &#x20; "Direitos Digitais", como epílogo antes do ecrã de vitória final, tal
+
+# &#x20; como já acontecia antes desta reorganização.)
+
+# 
+
+# Os 20 níveis em `data-levels.js` foram reordenados fisicamente para ficarem
+
+# em blocos contíguos por mundo (só 5 objetos mudaram de posição — o resto
+
+# manteve-se igual). `artIdx` (ligação a `HISTORY`/`ARTEFACTS`/`NPC\_SIGNS`) não
+
+# muda com a posição, por isso nenhum conteúdo textual ficou desalinhado —
+
+# confirmado pelos testes automáticos (`node tests/run-tests.mjs`, 24/24 OK).
+
+# 
+
+# \*\*Bloqueio entre mundos\*\*: ao terminar o último nível de um mundo (com ou
+
+# sem boss), o jogo já não avança sozinho — mostra uma pequena celebração
+
+# ("Mundo Completo! 🎉") e volta sempre ao mapa. O mundo seguinte só aparece
+
+# desbloqueado no mapa depois de o anterior estar 100% concluído (a lógica de
+
+# bloqueio do mapa já existia — `regionStatus()` — só precisava de blocos
+
+# contíguos para funcionar como esperado).
+
+# 
+
+# \*\*Nota sobre progresso guardado\*\*: como 5 níveis mudaram de posição (do
+
+# antigo "Vale da Saúde/Fortaleza" espalhados), progresso já guardado no
+
+# browser antes desta atualização pode ficar ligeiramente desalinhado nesses
+
+# níveis específicos. Vale a pena recomeçar o progresso (ou aceitar pequenas
+
+# inconsistências pontuais) depois de atualizares os ficheiros.
+
+# 
+
 # \## Fase "Mundo Vivo" — cinemáticas, portais e NPCs (nova)
 
 # 

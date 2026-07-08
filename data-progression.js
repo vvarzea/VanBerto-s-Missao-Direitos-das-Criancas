@@ -2,13 +2,11 @@
 // MAP_REGIONS, ARTEFACTS, ARTEFACT_SETS, SET_REACTIONS, ACHIEVEMENTS_DEFS
 
 export const MAP_REGIONS = [
-  { id:"educacao",   icon:"📚", name:"Reino da Educação",          sub:"As origens do Dia da Criança", levels:[0,1,2] },
-  { id:"protecao",   icon:"🛡️", name:"Fortaleza da Proteção",      sub:"Brincar, proteger, acolher",   levels:[3,6,12] },
-  { id:"saude",      icon:"🏥", name:"Vale da Saúde",               sub:"Educação, saúde, dignidade",   levels:[4,5,13] },
-  { id:"sustent",    icon:"🌍", name:"Floresta da Sustentabilidade",sub:"Participar e cuidar do planeta",levels:[7,8,18] },
-  { id:"inclusao",   icon:"🤝", name:"Cidade da Inclusão",          sub:"Identidade, UNICEF, inclusão", levels:[9,10,17] },
-  { id:"direitos",   icon:"⭐", name:"Cidade dos Direitos",         sub:"Família, cultura, mundo digital",levels:[11,14,15,16,19] },
-  { id:"base",       icon:"🏠", name:"Base do VanBerto's",          sub:"O teu ponto de partida",       levels:[] },
+  { id:"educacao",   icon:"📚", name:"Reino da Educação",       sub:"As origens do Dia da Criança",         levels:[0,1,2,3,4] },
+  { id:"saude",      icon:"🏥", name:"Vale da Saúde",            sub:"Bem-estar, futuro e identidade",       levels:[5,6,7,8,9] },
+  { id:"protecao",   icon:"🛡️", name:"Fortaleza da Proteção",   sub:"Família, refúgio e liberdade",         levels:[10,11,12,13,14] },
+  { id:"moderno",    icon:"🌐", name:"Cidade do Mundo Moderno", sub:"Privacidade, cultura e sustentabilidade", levels:[15,16,17,18,19] },
+  { id:"base",       icon:"🏠", name:"Base do VanBerto's",       sub:"O teu ponto de partida",                levels:[] },
 ];
 
 export const ARTEFACTS = [
