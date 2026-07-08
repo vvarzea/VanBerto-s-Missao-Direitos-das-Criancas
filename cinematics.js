@@ -1,0 +1,119 @@
+// ===== Cinemáticas — Fase "Mundo Vivo" =====
+// Sistema autónomo: cria e gere o seu próprio DOM (tal como hitFlash/bonusStars
+// já fazem em dia-crianca.js), sem depender de markup extra no index.html.
+// Duas funções principais:
+//   playCinematic(slides, onComplete)   → diálogo com barras de cinema (bosses)
+//   playTitleCard(data, onComplete)     → cartão de título (entrada de região)
+//
+// Ambas pausam a física do lado de fora (quem chama é responsável por isso,
+// tal como já acontece com showHistory/showQuiz) — este módulo só trata do ecrã.
+
+let dialogEl = null, barTop = null, barBottom = null, dlgAvatar = null, dlgName = null, dlgText = null, dlgHint = null;
+let titleEl = null;
+
+function ensureDialogDOM() {
+  if (dialogEl) return;
+  barTop = document.createElement("div"); barTop.id = "cineBarTop"; barTop.className = "cine-bar cine-bar-top";
+  barBottom = document.createElement("div"); barBottom.id = "cineBarBottom"; barBottom.className = "cine-bar cine-bar-bottom";
+  document.body.appendChild(barTop); document.body.appendChild(barBottom);
+
+  dialogEl = document.createElement("div");
+  dialogEl.id = "cineDialog";
+  dialogEl.innerHTML = `
+    <div id="cineAvatar"></div>
+    <div id="cineBody">
+      <p id="cineName"></p>
+      <p id="cineText"></p>
+      <p id="cineHint">Toca para continuar ▶</p>
+    </div>
+    <button id="cineSkip" type="button" aria-label="Saltar">⏭ Saltar</button>
+  `;
+  document.body.appendChild(dialogEl);
+  dlgAvatar = document.getElementById("cineAvatar");
+  dlgName   = document.getElementById("cineName");
+  dlgText   = document.getElementById("cineText");
+  dlgHint   = document.getElementById("cineHint");
+}
+
+const SPEAKER_STYLE = {
+  vb:   { name: "VanBerto's", emoji: "🤖", cls: "cine-vb" },
+  boss: { name: "???",        emoji: "👾", cls: "cine-boss" },
+  npc:  { name: "",           emoji: "🪧", cls: "cine-npc" }
+};
+
+export function playCinematic(slides, onComplete) {
+  if (!slides || !slides.length) { onComplete?.(); return; }
+  ensureDialogDOM();
+  let i = 0;
+  document.body.classList.add("cine-active");
+  dialogEl.classList.add("cine-show");
+
+  function render() {
+    const s = slides[i];
+    const style = SPEAKER_STYLE[s.speaker] || SPEAKER_STYLE.vb;
+    dialogEl.className = "cine-show " + style.cls;
+    dlgAvatar.textContent = s.emoji || style.emoji;
+    dlgName.textContent = s.name || style.name;
+    dlgText.textContent = s.text || "";
+    dlgHint.textContent = (i === slides.length - 1) ? "Toca para continuar ▶" : "Toca para avançar ▶";
+  }
+
+  function advance() {
+    i++;
+    if (i >= slides.length) { finish(); return; }
+    render();
+  }
+
+  function finish() {
+    dialogEl.removeEventListener("click", advance);
+    document.getElementById("cineSkip").removeEventListener("click", finish);
+    dialogEl.classList.remove("cine-show");
+    document.body.classList.remove("cine-active");
+    setTimeout(() => onComplete?.(), 260);
+  }
+
+  render();
+  dialogEl.addEventListener("click", advance);
+  document.getElementById("cineSkip").addEventListener("click", finish);
+}
+
+function ensureTitleDOM() {
+  if (titleEl) return;
+  titleEl = document.createElement("div");
+  titleEl.id = "cineTitleCard";
+  titleEl.innerHTML = `
+    <div id="ctcIcon"></div>
+    <p id="ctcName"></p>
+    <p id="ctcSub"></p>
+    <p id="ctcLine"></p>
+  `;
+  document.body.appendChild(titleEl);
+}
+
+// data: { icon, name, sub, lines: [string, string] }
+export function playTitleCard(data, onComplete) {
+  ensureTitleDOM();
+  document.getElementById("ctcIcon").textContent = data.icon || "🌍";
+  document.getElementById("ctcName").textContent = data.name || "";
+  document.getElementById("ctcSub").textContent = data.sub || "";
+  const lineEl = document.getElementById("ctcLine");
+  const lines = data.lines && data.lines.length ? data.lines : [""];
+  let i = 0;
+  lineEl.textContent = lines[0];
+  titleEl.classList.add("show");
+
+  function advance() {
+    i++;
+    if (i >= lines.length) { finish(); return; }
+    lineEl.textContent = lines[i];
+  }
+  function finish() {
+    titleEl.removeEventListener("click", advance);
+    titleEl.classList.remove("show");
+    setTimeout(() => onComplete?.(), 320);
+  }
+  titleEl.addEventListener("click", advance);
+  // avança sozinho ao fim de um tempo generoso, caso ninguém toque
+  clearTimeout(titleEl._autoTimer);
+  titleEl._autoTimer = setTimeout(() => { if (titleEl.classList.contains("show")) finish(); }, 2600 * lines.length);
+}
