@@ -22,7 +22,7 @@ import { unlockedAchievements, checkAchievements, onSecretFoundForAchievements,
          resetAchievements } from "./achievements.js";
 import { BOSS_BY_LEVEL } from "./data-bosses.js";
 import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS } from "./data-story.js";
-import { playCinematic, playTitleCard } from "./cinematics.js";
+import { playTitleCard } from "./cinematics.js";
 import { loadNamespace, saveNamespace } from "./storage.js";
 import { makeTextures, makePlatformTextureThemed } from "./textures.js";
 import { initBackground, applyBackground, drawSun, drawStars, drawCloud,
@@ -71,6 +71,28 @@ window.addEventListener("DOMContentLoaded", () => {
     _vbTimer=setTimeout(()=>{el.classList.remove("vb-show");_vbTimer=null;},duration);
   }
   function vbSayRandom(arr,type,duration){vbSay(arr[Math.floor(Math.random()*arr.length)],type,duration);}
+
+  // Diálogo de boss (entrada/derrota) — antes usava playCinematic() com barras
+  // pretas a cobrir o ecrã; agora reaproveita o mesmo balão informativo do
+  // VanBerto's (vbSay) que já é usado nos letreiros dos níveis normais, para
+  // não tapar o jogo. Falas do boss ficam com a cor "vb-boss" e o nome do boss
+  // à frente do texto; falas do VanBerto's mantêm o estilo normal.
+  function playBossDialogue(slides, onComplete) {
+    if (!slides || !slides.length) { onComplete?.(); return; }
+    let i = 0;
+    let timer = null;
+    function step() {
+      if (i >= slides.length) { onComplete?.(); return; }
+      const s = slides[i];
+      const isBoss = s.speaker === "boss";
+      const text = isBoss ? `${s.name}: ${s.text}` : s.text;
+      const dur = isBoss ? 3800 : 3400;
+      vbSay(text, isBoss ? "boss" : "intro", dur);
+      i++;
+      timer = setTimeout(step, dur + 200);
+    }
+    step();
+  }
 
   // ===== Guardar =====
   // "settings" guarda apenas preferências (som, alto contraste) — nunca
@@ -2961,7 +2983,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // Mantém awaitingQuiz=true (já estava) durante a cinemática — assim update()
     // não avança o boss/timers/vilões enquanto o diálogo decorre.
     const objective = BOSS_OBJECTIVE[def.id] || "Foge dele até apanhares uma estrela ⭐ para o atingires!";
-    playCinematic([
+    playBossDialogue([
       { speaker:"vb",   text: BOSS_INTRO_VB[Math.floor(Math.random()*BOSS_INTRO_VB.length)] },
       { speaker:"boss", name: `${def.name} ${def.emoji}`, text: def.intro },
       { speaker:"vb",   text: objective }
@@ -3180,7 +3202,7 @@ window.addEventListener("DOMContentLoaded", () => {
       tipText.setText("");
       // awaitingQuiz continua true durante a cinemática de vitória — só liberta
       // o jogador quando o portal for criado, a seguir ao diálogo.
-      playCinematic([
+      playBossDialogue([
         { speaker:"boss", name:`${def.name} ${def.emoji}`, text: def.defeatLine },
         { speaker:"vb", text: BOSS_VICTORY_VB[Math.floor(Math.random()*BOSS_VICTORY_VB.length)] }
       ], () => {
