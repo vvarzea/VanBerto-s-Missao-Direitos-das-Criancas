@@ -339,6 +339,11 @@ window.addEventListener("DOMContentLoaded", () => {
   function startLevelFromMap(idx) {
     document.getElementById("mapOverlay")?.classList.add("hidden");
     startOverlay.classList.add("hidden");
+    // Sem isto, _overlayPaused ficava preso a "true" (só closeOverlay() o repõe),
+    // e o update() do jogo trava a velocidade do robot a 0 para sempre a partir
+    // daqui — era por isso que o robot deixava de se mexer ao entrar num nível
+    // escolhido no mapa (ex.: nível 6, logo a seguir a completar o Mundo 1).
+    _overlayPaused = false;
     document.body.classList.add("game-started");
     const begin = () => {
       currentLevel = idx;
