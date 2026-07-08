@@ -53,6 +53,11 @@ export const LEVELS = [
     name: "Nível 3 — A Convenção de 1989",
     artIdx:2, theme:2, quizTheme:"convencao", worldW:2900,
     spawn:{x:480,y:460}, doorX:2500,
+    // signX: por defeito o letreiro/informação ficaria em spawn.x+240 (=720), que
+    // cai mesmo debaixo da plataforma elevada {x:840,y:460,w:240} (720-960).
+    // Movido para a esquerda, para zona livre entre o coração (x:560) e essa
+    // plataforma — confirmado sem sobreposição com nenhuma plataforma/item.
+    signX: 630,
     platforms:[
       {x:520,y:520,w:1040,h:28},{x:840,y:460,w:240,h:22},{x:1180,y:390,w:240,h:22},
       {x:1520,y:320,w:240,h:22},{x:1860,y:390,w:240,h:22},{x:2200,y:460,w:240,h:22},

@@ -2121,7 +2121,11 @@ window.addEventListener("DOMContentLoaded", () => {
     clearSign();
     const entry = NPC_SIGNS[L.artIdx != null ? L.artIdx : idx];
     if (!entry) return;
-    const x = L.spawn.x + 240, y = 486;
+    // L.signX/L.signY permitem afinar a posição do letreiro num nível específico
+    // (por defeito fica a spawn.x+240, mas nalguns níveis isso cai debaixo de
+    // uma plataforma elevada — ver Nível 3 em data-levels.js).
+    const x = (typeof L.signX === "number") ? L.signX : L.spawn.x + 240;
+    const y = (typeof L.signY === "number") ? L.signY : 486;
     const obj = scene.add.text(x, y, entry.emoji, { fontSize:"30px" }).setOrigin(0.5).setDepth(2);
     scene.tweens.add({ targets:obj, y:y-8, duration:1100, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     const badge = scene.add.text(x+16, y-22, "!", {
