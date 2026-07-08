@@ -154,6 +154,11 @@ window.addEventListener("DOMContentLoaded", () => {
 
   let pausedByTeacher = false;
   let _overlayPaused  = false; // true quando um overlay de consulta (mapa, conquistas, etc.) está aberto
+  // true enquanto o Mapa/Conquistas está aberto por cima do ecrã de vitória (winOverlay
+  // fica escondido nesse intervalo — ver botões "🗺️ Mapa"/"🏆 Conquistas" do winOverlay
+  // e closeOverlay()). Sem isto, o overlay novo abria por trás do ecrã de vitória (mesmo
+  // z-index, mas o winOverlay vem depois no HTML) e ficava invisível/impossível de usar.
+  let _winOverlaySubOpen = false;
 
   function showHistory(levelIndex, onDone) {
     // HISTORY[] está alinhado com os 20 níveis "de direitos" (0-19), não com a
@@ -1410,9 +1415,12 @@ window.addEventListener("DOMContentLoaded", () => {
           saveGame();
           // Respawnar lá em baixo após 4-7 segundos
           const worldW=LEVELS[currentLevel]?.worldW||2600;
-          const _balloonLevel=currentLevel;
+          // _critterSession (não currentLevel!) — currentLevel não muda ao entrar
+          // num boss, por isso comparar só com currentLevel deixava passar respawns
+          // "fantasma" de balões apanhados mesmo antes do boss começar.
+          const _balloonSession=_critterSession;
           sceneRef.time.delayedCall(4000+Math.random()*3000,()=>{
-            if(_balloonLevel!==currentLevel) return; // nível mudou — ignorar
+            if(_balloonSession!==_critterSession) return; // nível/boss mudou — ignorar
             if(!b.collected) return;
             b.collected=false;
             b.x=80+Math.random()*(worldW-160); b.y=560;
@@ -2875,6 +2883,14 @@ window.addEventListener("DOMContentLoaded", () => {
     clearTrampolines(); // sem isto, um trampolim do nível anterior ficava "pendurado" na arena do boss
     // Decorações do nível anterior (balões, borboletas/abelhas, flores nas plataformas) —
     // sem isto ficavam por destruir e continuavam visíveis/a voar durante o boss.
+    // _critterSession++ ANTES de limpar os arrays: sem isto, um balão/abelha/borboleta
+    // apanhado pouco antes do boss começar reaparecia sozinho (o seu delayedCall de
+    // respawn ainda estava pendente) já sem estar no array ativo — ficava então uma
+    // imagem "fantasma" para sempre parada e impossível de apanhar, porque updateCritters()
+    // e o loop dos balões só percorrem o array atual, e o próprio loadLevel seguinte também
+    // só destrói o que está nesse array atual. Era esta a causa de abelhas/borboletas/balões
+    // "parados" que apareciam ocasionalmente depois de um combate de boss.
+    _critterSession++;
     balloons.forEach(b=>{ if(b.sprite) b.sprite.destroy(); if(b.gfx) b.gfx.destroy(); }); balloons=[];
     critters.forEach(c=>{ if(c.sprite&&c.sprite.active) c.sprite.destroy(); }); critters=[];
     clearPlatformDecor();
@@ -3435,8 +3451,8 @@ window.addEventListener("DOMContentLoaded", () => {
         };
       });
       // ── Botões extra: Mapa e Conquistas (aditivo, reaproveita ecrãs já existentes) ──
-      // Não escondem o winOverlay — os overlays secundários abrem por cima; ao fechá-los
-      // o ecrã de vitória fica visível outra vez automaticamente.
+      // Escondem o winOverlay ao abrir (ver _winOverlaySubOpen); closeOverlay() volta a
+      // mostrá-lo automaticamente assim que o Mapa/Conquistas é fechado.
       if(typeof btnWinRestart !== "undefined" && btnWinRestart && !document.getElementById("btnWinMap")){
         const extraWrap=document.createElement("div");
         extraWrap.style.cssText="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;";
@@ -3446,8 +3462,19 @@ window.addEventListener("DOMContentLoaded", () => {
           b.onclick=fn;
           return b;
         };
-        extraWrap.appendChild(mk("btnWinMap","🗺️ Mapa",()=>openOverlay("mapOverlay",renderMap)));
-        extraWrap.appendChild(mk("btnWinAchievements","🏆 Conquistas",openAchievementsScreen));
+        extraWrap.appendChild(mk("btnWinMap","🗺️ Mapa",()=>{
+          // Esconder o winOverlay antes de abrir o mapa — caso contrário o mapa abre
+          // por trás dele (mesmo z-index, mas o winOverlay vem depois no HTML) e fica
+          // invisível. closeOverlay("mapOverlay") repõe o winOverlay automaticamente.
+          document.getElementById("winOverlay")?.classList.add("hidden");
+          _winOverlaySubOpen = true;
+          openOverlay("mapOverlay",renderMap);
+        }));
+        extraWrap.appendChild(mk("btnWinAchievements","🏆 Conquistas",()=>{
+          document.getElementById("winOverlay")?.classList.add("hidden");
+          _winOverlaySubOpen = true;
+          openAchievementsScreen();
+        }));
         btnWinRestart.parentElement.appendChild(extraWrap);
       }
       document.getElementById("winOverlay").classList.remove("hidden");
@@ -4213,6 +4240,13 @@ window.addEventListener("DOMContentLoaded", () => {
   function closeOverlay(id) {
     document.getElementById(id)?.classList.add("hidden");
     resumeAfterOverlay();
+    // Se este overlay foi aberto a partir do ecrã de vitória (botões "Mapa"/"Conquistas"
+    // do fim de jogo), o winOverlay tinha sido escondido para o novo overlay ficar visível
+    // por cima — ver _winOverlaySubOpen mais abaixo. Repõe-lo agora que o utilizador fechou.
+    if (_winOverlaySubOpen) {
+      _winOverlaySubOpen = false;
+      document.getElementById("winOverlay")?.classList.remove("hidden");
+    }
   }
 
   function pauseForOverlay() {
