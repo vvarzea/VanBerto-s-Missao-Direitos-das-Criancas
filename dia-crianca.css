@@ -1365,11 +1365,6 @@ body.hc-mode .rr-title, body.hc-mode .rr-name { color: #ffff00 !important; }
   line-height: 1;
   transition: transform 0.2s;
 }
-.achv-card--unlocked .achv-card-icon { animation: achvIconBob 2s ease-in-out infinite alternate; }
-@keyframes achvIconBob {
-  from { transform: translateY(0) scale(1); }
-  to   { transform: translateY(-4px) scale(1.06); }
-}
 .achv-card-name {
   font-family: 'Baloo 2', sans-serif;
   font-size: 13px; font-weight: 800;
