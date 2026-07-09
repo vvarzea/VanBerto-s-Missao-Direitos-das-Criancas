@@ -2140,6 +2140,17 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     currentSign = null;
   }
+  // Cria o letreiro (emoji + badge "!") numa posição dada — partilhado entre
+  // os letreiros normais dos níveis (NPC_SIGNS) e o letreiro do objetivo do boss.
+  function _createSignAt(scene, x, y, emoji, text) {
+    const obj = scene.add.text(x, y, emoji, { fontSize:"30px" }).setOrigin(0.5).setDepth(2);
+    scene.tweens.add({ targets:obj, y:y-8, duration:1100, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+    const badge = scene.add.text(x+16, y-22, "!", {
+      fontSize:"15px", fontStyle:"900", color:"#ffe060", stroke:"#200040", strokeThickness:4
+    }).setOrigin(0.5).setDepth(3);
+    scene.tweens.add({ targets:badge, scaleX:{from:0.8,to:1.15}, scaleY:{from:0.8,to:1.15}, duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+    return { x, y, obj, badge, triggered:false, text };
+  }
   function spawnLevelSign(scene, L, idx) {
     clearSign();
     const entry = NPC_SIGNS[L.artIdx != null ? L.artIdx : idx];
@@ -2149,13 +2160,13 @@ window.addEventListener("DOMContentLoaded", () => {
     // uma plataforma elevada — ver Nível 3 em data-levels.js).
     const x = (typeof L.signX === "number") ? L.signX : L.spawn.x + 240;
     const y = (typeof L.signY === "number") ? L.signY : 486;
-    const obj = scene.add.text(x, y, entry.emoji, { fontSize:"30px" }).setOrigin(0.5).setDepth(2);
-    scene.tweens.add({ targets:obj, y:y-8, duration:1100, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-    const badge = scene.add.text(x+16, y-22, "!", {
-      fontSize:"15px", fontStyle:"900", color:"#ffe060", stroke:"#200040", strokeThickness:4
-    }).setOrigin(0.5).setDepth(3);
-    scene.tweens.add({ targets:badge, scaleX:{from:0.8,to:1.15}, scaleY:{from:0.8,to:1.15}, duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-    currentSign = { x, y, obj, badge, triggered:false, text: entry.text };
+    currentSign = _createSignAt(scene, x, y, entry.emoji, entry.text);
+  }
+  // Letreiro do objetivo do boss — mesma UX dos letreiros normais (aproxima-te
+  // para "ler"), em vez de depender só do diálogo inicial, que passa depressa.
+  function spawnBossSign(scene, x, y, emoji, text) {
+    clearSign();
+    currentSign = _createSignAt(scene, x, y, emoji, text);
   }
   function updateSigns() {
     if (!currentSign || currentSign.triggered || !player) return;
@@ -2987,16 +2998,21 @@ window.addEventListener("DOMContentLoaded", () => {
     // Mantém awaitingQuiz=true (já estava) durante a cinemática — assim update()
     // não avança o boss/timers/vilões enquanto o diálogo decorre.
     const objective = BOSS_OBJECTIVE[def.id] || "Foge dele até apanhares uma estrela ⭐ para o atingires!";
+    // A explicação do objetivo já não vai no diálogo (passava depressa demais) —
+    // passa a ser um letreiro, tal como nos níveis normais: o jogador aproxima-se
+    // e "lê-o" ao seu ritmo. Só a apresentação dramática (VanBerto's + boss) fica no diálogo.
     playBossDialogue([
       { speaker:"vb",   text: BOSS_INTRO_VB[Math.floor(Math.random()*BOSS_INTRO_VB.length)] },
-      { speaker:"boss", name: `${def.name} ${def.emoji}`, text: def.intro },
-      { speaker:"vb",   text: objective }
+      { speaker:"boss", name: `${def.name} ${def.emoji}`, text: def.intro }
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
       tipText.setText("⭐ " + objective);
       awaitingQuiz = false; awaitingStory = false;
       scene.physics.resume();
+      // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
+      // para ser o primeiro coisa que encontra ao começar a andar.
+      spawnBossSign(scene, 280, 486, "⭐", objective);
       // Lembrete visual permanente por cima do boss — 🔒 enquanto não podes
       // tocar-lhe, ⭐ assim que apanhas o poder da estrela. Substitui/completa
       // o texto do objetivo, que passa depressa e nem todos leem a tempo.
