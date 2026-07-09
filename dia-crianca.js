@@ -1456,6 +1456,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // Animar borboletas e abelhas apanháveis
     malwareGroup.getChildren().forEach(m=>{
       if (!m.active || !m.body) return;
+      const isBoss = !!m.getData("isBoss"); // bosses não devem girar como os vilões pequenos
       const pat = m.getData("pattern") || "patrol";
       const spd = m.getData("speed") || 120;
       const dir = m.getData("dir") || 1;  // direcao guardada
@@ -1466,7 +1467,7 @@ window.addEventListener("DOMContentLoaded", () => {
         if (m.x <= minL || m.body.blocked.left)  { m.setVelocityX(spd);  m.setData("dir", 1); }
         if (m.x >= minR || m.body.blocked.right) { m.setVelocityX(-spd); m.setData("dir", -1); }
         if (Math.abs(m.body.velocity.x) < 8) { m.setVelocityX(spd * dir); }
-        m.rotation += 0.012;
+        if (!isBoss) m.rotation += 0.012;
       } else {
         if (m.body.blocked.left)  { m.setVelocityX(spd);  m.setData("dir", 1); }
         if (m.body.blocked.right) { m.setVelocityX(-spd); m.setData("dir", -1); }
@@ -1495,7 +1496,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }
         // Watchdog robusto: se parou, usar direção guardada
         if (Math.abs(m.body.velocity.x) < 8) { m.setVelocityX(spd * (m.getData("dir") || 1)); }
-        m.rotation += pat === "jumper" ? 0.038 : 0.022;
+        if (!isBoss) m.rotation += pat === "jumper" ? 0.038 : 0.022;
       }
       if (m.body.velocity.x < -2) m.setFlipX(true);
       else if (m.body.velocity.x > 2) m.setFlipX(false);
@@ -4621,10 +4622,22 @@ window.addEventListener("DOMContentLoaded", () => {
   const btnRetry=document.getElementById("btnRetry"), btnExit=document.getElementById("btnExit");
   if(btnRetry) btnRetry.onclick=()=>{
     gameOverOverlay.classList.add("hidden");
-    lives=3;score=0;resetQuizStats();livesLostThisLevel=0;
+    lives=3; livesLostThisLevel=0; updateHearts();
+    // Perder durante um combate de boss só reinicia a arena do boss (com a
+    // pontuação já ganha até ali preservada), em vez do nível inteiro — não
+    // faz sentido obrigar a repetir toda a plataforma só para tentar de novo
+    // um combate que acontece no fim.
+    if (inBossFight && bossState && bossState.def) {
+      const bossOnComplete = bossState.onComplete;
+      const levelForBoss = currentLevel;
+      startBossFight(sceneRef, levelForBoss, bossOnComplete);
+      saveGame();
+      return;
+    }
+    score=0;resetQuizStats();
     Object.keys(usedQuizByLevel).forEach(k=>usedQuizByLevel[k].clear());
     Object.keys(usedQuizByTheme).forEach(k=>usedQuizByTheme[k].clear());
-    scoreText.setText(`🌟 Pontos: ${score}`);updateHearts();
+    scoreText.setText(`🌟 Pontos: ${score}`);
     const retryLevel = currentLevel ?? 0;
     loadLevel(sceneRef, retryLevel);
     showHistory(retryLevel, () => { awaitingQuiz=false; if(!pausedByTeacher) sceneRef.physics.resume(); });
