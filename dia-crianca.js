@@ -3309,9 +3309,10 @@ window.addEventListener("DOMContentLoaded", () => {
       hudText.setText("🏆 Vitória!");
       itemCountText.setText("");
       tipText.setText("");
-      // Momento de celebração — flash dourado + confetti no ecrã, antes do diálogo
-      // de derrota. Sem isto a vitória do boss não tinha nenhum "clímax" visual,
-      // ao contrário do ecrã de vitória final do jogo (que já tem confetti).
+      // Momento de celebração — flash dourado + confetti no ecrã, logo após o
+      // boss ser derrotado e antes do diálogo de despedida. Sem isto, vencer um
+      // boss não tinha nenhum "clímax" visual, ao contrário do ecrã de vitória
+      // final do jogo (que já tem confetti).
       sceneRef.cameras.main.flash(280, 255, 215, 60);
       const bossConfetti = sceneRef.add.particles(0, 0, "spark_item", {
         x: player.x, y: player.y - 40,
@@ -3338,7 +3339,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // Portal que aparece na arena depois de um boss derrotado — o jogador tem de
   // caminhar até ele para avançar, em vez de seguir automaticamente para o
   // próximo nível. Reaproveita a mesma coreografia em fases da porta normal
-  // (startDoorAnimation): aviso a pulsar → giro/crescimento com anticipation →
+  // (startDoorAnimation): aviso a pulsar → giro/crescimento com antecipação →
   // burst de partículas → jogador é puxado e desaparece no vórtice.
   // "color" vem de BOSSES[].color em data-bosses.js — cada boss/mundo tem o
   // seu próprio portal em vez do roxo fixo de antes.
@@ -3388,7 +3389,7 @@ window.addEventListener("DOMContentLoaded", () => {
           });
           scene.time.delayedCall(420, () => { try{burst.destroy();}catch{} });
 
-          // FASE 2 — o portal gira e cresce (anticipation), só depois é que "suga"
+          // FASE 2 — o portal gira e cresce (efeito de antecipação), só depois é que "suga"
           scene.tweens.add({
             targets: portal,
             angle: { from: 0, to: 360 },
