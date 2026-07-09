@@ -2940,6 +2940,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
     inBossFight = true;
     controlsInvertedUntil = 0;
+    // Se houver uma barra de vida de uma tentativa anterior (ex.: repetir o
+    // combate depois de perder todas as vidas), destruir ANTES de substituir
+    // bossState — senão a referência perde-se e a barra antiga fica órfã no ecrã.
+    destroyBossHpBar();
     // Começa em "intro": todos os timers/movimentos do boss (que verificam
     // phase!=="platform") ficam inertes enquanto decorre a cinemática de entrada.
     bossState = { def, hp: def.hp, phase: "intro", collected: 0, onComplete, hitCooldownUntil: 0 };
@@ -2991,6 +2995,7 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.cameras.main.startFollow(player,true,0.08,0.08);
 
     spawnBossSprite(scene, def, worldW-200);
+    createBossHpBar(scene, def);
     spawnBossStarItem(scene);
     const starTimer = scene.time.addEvent({ delay: 1000, loop: true, callback: () => spawnBossStarItem(scene) });
     bossTimers.push(starTimer);
@@ -3075,6 +3080,41 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Barra de vida do boss — flutua por cima do sprite, cor muda conforme a vida
+  // restante (verde → dourado → vermelho), para dar feedback visual claro do
+  // progresso do combate sem o jogador ter de contar hits.
+  function createBossHpBar(scene, def) {
+    if (!bossState) return;
+    bossState.hpBarW = 100; bossState.hpBarH = 12;
+    if (bossState.hpBarBg) { try{bossState.hpBarBg.destroy();}catch{} }
+    if (bossState.hpBarFill) { try{bossState.hpBarFill.destroy();}catch{} }
+    bossState.hpBarBg = scene.add.graphics().setDepth(6);
+    bossState.hpBarFill = scene.add.graphics().setDepth(7);
+    drawBossHpBar();
+  }
+  function drawBossHpBar() {
+    if (!bossState || !bossState.hpBarBg || !bossState.hpBarFill || !bossState.sprite || !bossState.sprite.active) return;
+    const b = bossState.sprite;
+    const w = bossState.hpBarW, h = bossState.hpBarH;
+    const x = b.x - w/2;
+    const y = b.y - (b.displayHeight/2 || 40) - 42;
+    bossState.hpBarBg.clear();
+    bossState.hpBarBg.fillStyle(0x1a1a2e, 0.85);
+    bossState.hpBarBg.fillRoundedRect(x, y, w, h, 5);
+    bossState.hpBarBg.lineStyle(2, 0xffffff, 0.9);
+    bossState.hpBarBg.strokeRoundedRect(x, y, w, h, 5);
+    bossState.hpBarFill.clear();
+    const pct = Math.max(0, bossState.hp / bossState.def.hp);
+    const fillColor = pct > 0.5 ? 0x60e060 : (pct > 0.25 ? 0xffd700 : 0xff5050);
+    bossState.hpBarFill.fillStyle(fillColor, 1);
+    bossState.hpBarFill.fillRoundedRect(x+2, y+2, Math.max(0,(w-4)*pct), h-4, 3);
+  }
+  function destroyBossHpBar() {
+    if (!bossState) return;
+    if (bossState.hpBarBg)   { try{bossState.hpBarBg.destroy();}catch{}   bossState.hpBarBg = null; }
+    if (bossState.hpBarFill) { try{bossState.hpBarFill.destroy();}catch{} bossState.hpBarFill = null; }
+  }
+
   // Mantém sempre uma estrela ⭐ disponível na arena enquanto o boss não foi enfraquecido —
   // usa o fluxo normal de onCollectItem (kind:"estrela", SEM bossCollect) para que o
   // giveStarPower() já existente dispare tal como em qualquer nível normal.
@@ -3155,6 +3195,8 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     // "blink" e "teleport" são geridos pelos timers próprios (doBossBlink/doBossTeleport)
 
+    drawBossHpBar();
+
     // Ícone 🔒/⭐ acompanha o boss e reflete se já podes tocar-lhe ou não
     if (bossLockIcon && bossLockIcon.active) {
       bossLockIcon.setPosition(b.x, b.y - (b.displayHeight/2 || 40) - 18);
@@ -3198,6 +3240,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const b = bossState.sprite;
     b.setVelocity(0,0); b.body.setEnable(false); b.setAlpha(0.35);
     if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} bossLockIcon=null; } // boss já não é tocável — ícone deixa de fazer sentido
+    destroyBossHpBar(); // vida chegou a 0 — a barra já não tem função a partir daqui
     itemsGroup.getChildren().slice().forEach(o => { if(o.getData("kind")==="estrela" && !o.getData("bossCollect")) o.destroy(); });
     const keyMap = { estrela:"item_estrela", heart:"item_heart", medalha:"item_medalha",
                      brinquedo:"item_brinquedo", balao:"item_chupachupa" };
@@ -3259,12 +3302,25 @@ window.addEventListener("DOMContentLoaded", () => {
       player.setAlpha(1);
       if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
       if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
+      destroyBossHpBar();
       inBossFight = false; bossState = null;
       // Limpar o HUD do combate ANTES da cinemática — sem isto ficavam valores
       // congelados (ex.: "Itens: 5/5", a dica do quiz) visíveis por trás do diálogo.
       hudText.setText("🏆 Vitória!");
       itemCountText.setText("");
       tipText.setText("");
+      // Momento de celebração — flash dourado + confetti no ecrã, antes do diálogo
+      // de derrota. Sem isto a vitória do boss não tinha nenhum "clímax" visual,
+      // ao contrário do ecrã de vitória final do jogo (que já tem confetti).
+      sceneRef.cameras.main.flash(280, 255, 215, 60);
+      const bossConfetti = sceneRef.add.particles(0, 0, "spark_item", {
+        x: player.x, y: player.y - 40,
+        speed: { min: 90, max: 260 }, lifespan: 900, quantity: 30,
+        scale: { start: 1.1, end: 0 }, gravityY: 160,
+        angle: { min: 0, max: 360 },
+        tint: [0xffd700, 0xff6b35, 0x80d0ff, 0xffffff, 0x60ff80]
+      });
+      sceneRef.time.delayedCall(750, () => { try{bossConfetti.destroy();}catch{} });
       // awaitingQuiz continua true durante a cinemática de vitória — só liberta
       // o jogador quando o portal for criado, a seguir ao diálogo.
       playBossDialogue([
@@ -3274,24 +3330,27 @@ window.addEventListener("DOMContentLoaded", () => {
         awaitingQuiz = false;
         scene_resumeAfterBoss();
         tipText.setText("🌀 Caminha até ao portal para continuares a aventura!");
-        spawnBossPortal(sceneRef, finished);
+        spawnBossPortal(sceneRef, finished, def.color);
       });
     });
   }
 
   // Portal que aparece na arena depois de um boss derrotado — o jogador tem de
   // caminhar até ele para avançar, em vez de seguir automaticamente para o
-  // próximo nível. Reaproveita a mesma sensação de "sugar o jogador" já usada
-  // na porta normal (startDoorAnimation), só que mais curta.
-  function spawnBossPortal(scene, onEnter) {
+  // próximo nível. Reaproveita a mesma coreografia em fases da porta normal
+  // (startDoorAnimation): aviso a pulsar → giro/crescimento com anticipation →
+  // burst de partículas → jogador é puxado e desaparece no vórtice.
+  // "color" vem de BOSSES[].color em data-bosses.js — cada boss/mundo tem o
+  // seu próprio portal em vez do roxo fixo de antes.
+  function spawnBossPortal(scene, onEnter, color = 0x9060ff) {
     const px = 1400, py = 380;
     const portal = scene.physics.add.staticSprite(px, py, "door_party").setDisplaySize(92,112);
-    portal.setTint(0x9060ff);
+    portal.setTint(color);
     portal.refreshBody();
     scene.tweens.add({ targets:portal, scaleX:{from:1,to:1.1}, scaleY:{from:1,to:1.1}, duration:700, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     const ring = scene.add.particles(0,0,"spark_item",{
       x:px, y:py, speed:{min:20,max:60}, lifespan:900, quantity:1, frequency:120,
-      scale:{start:0.7,end:0}, tint:[0x9060ff,0xffd700,0xffffff]
+      scale:{start:0.7,end:0}, tint:[color,0xffd700,0xffffff]
     });
     const lbl = scene.add.text(px, py-88, "🌀 Portal!", { fontSize:"16px", fontStyle:"900", color:"#e0c8ff", stroke:"#200040", strokeThickness:5 }).setOrigin(0.5).setDepth(20);
     scene.tweens.add({ targets:lbl, y:py-98, duration:900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
@@ -3302,17 +3361,57 @@ window.addEventListener("DOMContentLoaded", () => {
       if (triggered) return;
       triggered = true;
       try{ scene.physics.world.removeCollider(ov); }catch{}
-      ring.destroy(); lbl.destroy();
+      try{ ring.stop(); }catch{}
+      scene.tweens.killTweensOf(lbl);
+      scene.tweens.add({ targets:lbl, alpha:0, duration:200, onComplete:()=>lbl.destroy() });
       ensureAudio(); SFX.doorOpen();
       scene.physics.pause();
+
+      // FASE 1 — aviso: o portal pulsa depressa antes de "acordar"
+      scene.tweens.killTweensOf(portal);
       scene.tweens.add({
-        targets: player, x: portal.x, y: portal.y-10, scaleX:0.05, scaleY:0.05, angle:720, alpha:0,
-        duration:480, ease:"Sine.easeIn",
+        targets: portal,
+        scaleX: { from: portal.scaleX, to: portal.scaleX * 1.18 },
+        scaleY: { from: portal.scaleY, to: portal.scaleY * 1.18 },
+        duration: 110, yoyo: true, repeat: 2,
+        ease: "Sine.easeInOut",
         onComplete: () => {
-          if (scene && scene.tweens) scene.tweens.killTweensOf(player);
-          player.setAlpha(0); player.setAngle(0); player.setScale(1);
-          try{ portal.destroy(); }catch{}
-          onEnter();
+          portal.setScale(1);
+
+          // Burst de partículas na ativação (mesma sensação da porta normal)
+          const burst = scene.add.particles(0, 0, "spark_item", {
+            x: px, y: py - 10,
+            speed: { min: 60, max: 200 }, lifespan: 500, quantity: 22,
+            scale: { start: 1.1, end: 0 }, gravityY: 60,
+            angle: { min: 0, max: 360 },
+            tint: [color, 0xffd700, 0xffffff, 0x80d0ff]
+          });
+          scene.time.delayedCall(420, () => { try{burst.destroy();}catch{} });
+
+          // FASE 2 — o portal gira e cresce (anticipation), só depois é que "suga"
+          scene.tweens.add({
+            targets: portal,
+            angle: { from: 0, to: 360 },
+            scaleX: { from: 1, to: 1.3 },
+            scaleY: { from: 1, to: 1.3 },
+            duration: 380, ease: "Back.easeIn",
+            onComplete: () => {
+
+              // FASE 3 — jogador é puxado para o centro do portal e desaparece no vórtice
+              scene.tweens.add({
+                targets: player, x: portal.x, y: portal.y - 10,
+                scaleX: 0.05, scaleY: 0.05, angle: 720, alpha: 0,
+                duration: 380, ease: "Sine.easeIn",
+                onComplete: () => {
+                  if (scene && scene.tweens) scene.tweens.killTweensOf(player);
+                  player.setAlpha(0); player.setAngle(0); player.setScale(1);
+                  try{ ring.destroy(); }catch{}
+                  try{ portal.destroy(); }catch{}
+                  onEnter();
+                }
+              });
+            }
+          });
         }
       });
     }, null, scene);
