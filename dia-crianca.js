@@ -630,10 +630,11 @@ window.addEventListener("DOMContentLoaded", () => {
     ARTEFACTS.forEach((art,i)=>{
       const got=!!collectedArtefacts[i],orb=document.createElement("div");orb.title=art.name;
       if(got){
-        const themeIdx=LEVELS[i]?.theme??0,theme=THEMES[themeIdx]??THEMES[0];
-        const skyCol="#"+theme.skyBot.toString(16).padStart(6,"0");
-        const grassCol="#"+theme.grassTop.toString(16).padStart(6,"0");
-        orb.style.cssText="width:18px;height:18px;border-radius:50%;background:"+skyCol+";box-shadow:0 0 5px "+grassCol+"99,0 0 2px rgba(255,255,255,0.5) inset;border:1.5px solid "+grassCol+";display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;";
+        // Usar a cor própria do artefacto (art.color/art.glow), tal como a galeria final
+        // já fazia — antes usava LEVELS[i].theme, mas "i" aqui é o artIdx (0-19) e não a
+        // posição no array LEVELS (que ficou embaralhada depois da reorganização em 4
+        // mundos), por isso 5 dos 20 orbes mostravam sempre a cor errada/pouco visível.
+        orb.style.cssText="width:18px;height:18px;border-radius:50%;background:"+art.color+";box-shadow:0 0 5px "+art.glow+",0 0 2px rgba(255,255,255,0.5) inset;border:1.5px solid "+art.color+";display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;";
         orb.textContent=art.emoji;
       }else{
         orb.style.cssText="width:18px;height:18px;border-radius:50%;background:rgba(30,30,60,0.55);border:1px solid rgba(100,100,140,0.35);display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;color:rgba(120,120,160,0.5);";
@@ -3298,8 +3299,13 @@ window.addEventListener("DOMContentLoaded", () => {
     // Cancelar timers da porta antes da transição — evita watchdog disparar no nível seguinte
     if(_doorWatchdogTimer){ try{_doorWatchdogTimer.remove(false);}catch{} _doorWatchdogTimer=null; }
     if(_landingCheckTimer){ try{_landingCheckTimer.remove(false);}catch{} _landingCheckTimer=null; }
-    document.getElementById("artefactRevealOverlay")?.classList.remove("show");
-    document.getElementById("setBonusOverlay")?.classList.remove("show");
+    // NOTA: já não fechamos aqui o artefactRevealOverlay/setBonusOverlay à força.
+    // showRightRecovered() é chamado mesmo antes de nextLevel() (ver showQuiz done(true)),
+    // por isso esta limpeza estava a apagar o popup "Direito Recuperado" no MESMO instante
+    // em que ele abria — o jogador nunca chegava a vê-lo, e o popup de conjunto (que só
+    // dispara a partir do fecho correto do popup, via _closeReveal → checkSetBonus) também
+    // nunca corria. O popup fecha-se sozinho (botão ou 7s) sem bloquear o nível seguinte,
+    // já que a física e o input continuam suspensos durante toda a transição.
     // Garantir robot invisível ANTES de fechar o quiz overlay
     scene.tweens.killTweensOf(player);
     player.setAlpha(0);
