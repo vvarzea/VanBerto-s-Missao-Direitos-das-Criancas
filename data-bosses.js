@@ -34,7 +34,7 @@ export const BOSSES = [
     defeatLine: "Argh! Vacinado... derrotado! 💉",
     collectKind: "heart",
     collectCount: 5,
-    quizTheme: "saude",
+    quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
     hp: 3,
     themeIdx: 13              // teal escuro noturno — combina com o verde-água do boss
   },
@@ -49,7 +49,7 @@ export const BOSSES = [
     defeatLine: "A luz da proteção venceu! 🛡️✨",
     collectKind: "medalha",
     collectCount: 5,
-    quizTheme: "protecao",
+    quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
     hp: 3,
     themeIdx: 11              // azul oceano noturno — fortaleza escura, sem exagerar no preto
   },
