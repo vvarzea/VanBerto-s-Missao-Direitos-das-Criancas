@@ -764,6 +764,7 @@ window.addEventListener("DOMContentLoaded", () => {
   let score=0, lives=3, livesLostThisLevel=0;
   const MAX_LIVES=5;
   let itemsCollected=0, itemsTotal=0;
+  let extraShieldCounted=false; // garante que o escudo extra (spawnShields) só entra no total UMA vez por nível
   let collectedItemIndices=new Set(); // índices dos itens já apanhados neste nível
   let _hudDirty=true; // flag: só redesenha HUD quando algo mudou
   let touch={left:false,right:false,jump:false};
@@ -1665,6 +1666,14 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.tweens.add({ targets: obj, y: sy - 8, duration: 940, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     obj.setData("kind", "medalha");
     obj.setData("itemIdx", -1); // -1 = escudo extra, não entra no collectedItemIndices
+    // Este escudo não está em L.items, por isso não entrava na contagem de
+    // "⭐ Itens: X/Y" — o HUD dizia p.ex. "4" quando na verdade havia 5 para
+    // apanhar. Ao criá-lo aqui, o total é corrigido (uma única vez por nível).
+    if (!extraShieldCounted) {
+      extraShieldCounted = true;
+      itemsTotal += 1;
+      if (itemCountText) itemCountText.setText(`⭐ Itens: ${itemsCollected}/${itemsTotal}`);
+    }
   }
   // ===== PLATAFORMAS MÓVEIS =====
   function spawnMovingPlatforms(scene, L) {
@@ -2094,6 +2103,15 @@ window.addEventListener("DOMContentLoaded", () => {
       it.setData("itemIdx", -99);
       it.setData("secretPoints", s.points);
       s.item = it;
+      // Este item bónus (recompensa por encontrar um segredo) não está em
+      // L.items, por isso não entrava na contagem "⭐ Itens: X/Y" — mas ao
+      // ser apanhado incrementa itemsCollected na mesma (ver onCollectItem),
+      // fazendo o total mostrado ficar errado. Corrigido aqui, com a mesma
+      // regra do apanhar (heart não conta).
+      if (s.kind !== "heart") {
+        itemsTotal += 1;
+        if (itemCountText) itemCountText.setText(`⭐ Itens: ${itemsCollected}/${itemsTotal}`);
+      }
       // Item aparece com pop de escala
       it.setScale(0.1);
       scene.tweens.add({ targets:it, scaleX:1, scaleY:1, duration:300, ease:"Back.easeOut" });
@@ -2239,7 +2257,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // Garantir que halo e sombra estão visíveis no início do nível
     if(powerHaloGfx) powerHaloGfx.setVisible(true);
     if(shadowGfx)    shadowGfx.setVisible(true);
-    itemsCollected=0; itemsTotal=L.items.filter(it=>it.kind!=="heart").length;
+    itemsCollected=0; itemsTotal=L.items.filter(it=>it.kind!=="heart").length; extraShieldCounted=false;
     collectedItemIndices=new Set();
     _hudDirty=true; updateHUD(L); applyBackground(scene,L.theme%THEMES.length,L.worldW,L.hazards||[]);
 
