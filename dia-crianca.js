@@ -2890,6 +2890,8 @@ window.addEventListener("DOMContentLoaded", () => {
   let inBossFight = false;
   let bossState = null; // { def, sprite, hp, phase, collected, onComplete, hitCooldownUntil }
   let bossOverlay = null; // rectangle usado pelo Guardião das Sombras
+  let bossLockIcon = null; // 🔒/⭐ flutuante por cima do boss — lembrete visual permanente,
+                           // sem depender de o jogador ler o texto do objetivo
   let controlsInvertedUntil = 0; // usado pelo "livro mau" do Monstro da Ignorância
 
   function startBossFight(scene, levelJustCompleted, onComplete) {
@@ -2923,6 +2925,7 @@ window.addEventListener("DOMContentLoaded", () => {
     clearPlatformDecor();
     clearSign();
     if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
+    if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
     if(door){ door.destroy(); door=null; }
 
     const worldW = 1600;
@@ -2994,6 +2997,13 @@ window.addEventListener("DOMContentLoaded", () => {
       tipText.setText("⭐ " + objective);
       awaitingQuiz = false; awaitingStory = false;
       scene.physics.resume();
+      // Lembrete visual permanente por cima do boss — 🔒 enquanto não podes
+      // tocar-lhe, ⭐ assim que apanhas o poder da estrela. Substitui/completa
+      // o texto do objetivo, que passa depressa e nem todos leem a tempo.
+      if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} }
+      bossLockIcon = scene.add.text(0, 0, "🔒", { fontSize:"24px" }).setOrigin(0.5).setDepth(6);
+      scene.tweens.add({ targets:bossLockIcon, scaleX:{from:0.85,to:1.15}, scaleY:{from:0.85,to:1.15},
+        duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     });
   }
 
@@ -3099,6 +3109,13 @@ window.addEventListener("DOMContentLoaded", () => {
       if (b.x > 1600-250) b.setVelocityX(-speed);
     }
     // "blink" e "teleport" são geridos pelos timers próprios (doBossBlink/doBossTeleport)
+
+    // Ícone 🔒/⭐ acompanha o boss e reflete se já podes tocar-lhe ou não
+    if (bossLockIcon && bossLockIcon.active) {
+      bossLockIcon.setPosition(b.x, b.y - (b.displayHeight/2 || 40) - 18);
+      const wantIcon = starPower ? "⭐" : "🔒";
+      if (bossLockIcon.text !== wantIcon) bossLockIcon.setText(wantIcon);
+    }
   }
 
   // Chamado a partir do TOPO de onHitMalware — intercepta QUALQUER colisão com o boss
@@ -3135,6 +3152,7 @@ window.addEventListener("DOMContentLoaded", () => {
     bossState.phase = "collect";
     const b = bossState.sprite;
     b.setVelocity(0,0); b.body.setEnable(false); b.setAlpha(0.35);
+    if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} bossLockIcon=null; } // boss já não é tocável — ícone deixa de fazer sentido
     itemsGroup.getChildren().slice().forEach(o => { if(o.getData("kind")==="estrela" && !o.getData("bossCollect")) o.destroy(); });
     const keyMap = { estrela:"item_estrela", heart:"item_heart", medalha:"item_medalha",
                      brinquedo:"item_brinquedo", balao:"item_chupachupa" };
@@ -3195,6 +3213,7 @@ window.addEventListener("DOMContentLoaded", () => {
       ensureAudio(); SFX.win();
       player.setAlpha(1);
       if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
+      if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
       inBossFight = false; bossState = null;
       // Limpar o HUD do combate ANTES da cinemática — sem isto ficavam valores
       // congelados (ex.: "Itens: 5/5", a dica do quiz) visíveis por trás do diálogo.
