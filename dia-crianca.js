@@ -2371,11 +2371,19 @@ window.addEventListener("DOMContentLoaded", () => {
     clearHazards();         spawnHazards(scene,L);
 
     player.setAlpha(0); player.setAngle(0); player.setFlipX(false); player.setOrigin(0.5,0.5); player.setDepth(3);
-    // PNG mode: preservar displaySize; Canvas mode: usar setScale
+    // Importante: manter o tamanho NORMAL aqui (não o "achatado" do pop de
+    // entrada) — snapPlayerToGround() corre 80ms depois e precisa de medir o
+    // corpo físico ao tamanho real. Se o sprite já estivesse encolhido/esticado
+    // nesse momento, o alinhamento ao chão saía errado e o VanBerto's ficava
+    // a aparecer enterrado no chão ao início do nível (só se corrigia depois,
+    // quando a animação terminava — daí "ainda ficar mais para baixo"). O
+    // efeito de "pop" continua a acontecer na mesma, só que agora é aplicado
+    // pela própria tween (via "from") DEPOIS de o alinhamento ao chão já
+    // estar calculado com o tamanho correto.
     if(player.getData("usingPng")){
-      player.setDisplaySize(72 * 0.6, 72 * 1.3); // começa pequeno e achatado (pop de entrada)
+      player.setDisplaySize(72, 72);
     } else {
-      player.setScale(0.6);
+      player.setScale(1);
     }
     player.setPosition(L.spawn.x, L.spawn.y); player.setVelocity(0, 0);
     if (player.body) player.body.reset(L.spawn.x, L.spawn.y); // forçar corpo físico para o spawn imediatamente
