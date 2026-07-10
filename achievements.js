@@ -70,7 +70,7 @@ export function checkAchievements(levelsCompletedCount) {
   const totalLevels = LEVELS.length;
   if (levelsCompletedCount >= 1) unlockAchievement("primeiros_passos");
   if (historiesReadCount >= 10) unlockAchievement("curioso");
-  if (correctAnswersTotal >= 25) unlockAchievement("sabio");
+  if (correctAnswersTotal >= 20) unlockAchievement("sabio");
   if (levelsCompletedCount >= totalLevels) unlockAchievement("guardiao");
 
   // Mestre VanBerto's — todas as perguntas respondidas à primeira tentativa

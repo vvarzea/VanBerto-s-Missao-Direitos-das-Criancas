@@ -54,7 +54,7 @@ export const ACHIEVEMENTS_DEFS = [
   { id:"primeiros_passos", tier:"🥉", name:"Primeiros Passos",      desc:"Completa o primeiro nível." },
   { id:"curioso",          tier:"🥉", name:"Curioso",                desc:"Lê 10 curiosidades." },
   { id:"explorador",       tier:"🥈", name:"Explorador",             desc:"Encontra todos os segredos de um nível." },
-  { id:"sabio",            tier:"🥈", name:"Sábio",                  desc:"Acerta 25 perguntas." },
+  { id:"sabio",            tier:"🥈", name:"Sábio",                  desc:"Acerta 20 perguntas." },
   { id:"guardiao",         tier:"🥇", name:"Guardião dos Direitos",  desc:"Completa o jogo." },
   { id:"mestre",           tier:"🥇", name:"Mestre VanBerto's",      desc:"Acerta todas as perguntas à primeira tentativa." },
   { id:"lenda",            tier:"🏆", name:"Lenda dos Direitos",     desc:"100% de conclusão — todos os níveis e todas as estrelas." },
