@@ -2177,7 +2177,7 @@ window.addEventListener("DOMContentLoaded", () => {
       padding:{ x:6, y:6 }
     }).setOrigin(0.5).setDepth(3);
     scene.tweens.add({ targets:badge, scaleX:{from:0.8,to:1.15}, scaleY:{from:0.8,to:1.15}, duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-    return { x, y, obj, badge, triggered:false, text };
+    return { x, y, obj, badge, wasNear:false, activeLbl:null, text };
   }
   function spawnLevelSign(scene, L, idx) {
     clearSign();
@@ -2202,25 +2202,36 @@ window.addEventListener("DOMContentLoaded", () => {
     currentSign = _createSignAt(scene, x, y, emoji, text);
   }
   function updateSigns() {
-    if (!currentSign || currentSign.triggered || !player) return;
+    if (!currentSign || !player) return;
     const dx = Math.abs(player.x - currentSign.x), dy = Math.abs(player.y - currentSign.y);
-    if (dx > 130 || dy > 170) return;
-    currentSign.triggered = true;
+    const near = dx <= 130 && dy <= 170;
+    // Volta a mostrar a informação sempre que o jogador ENTRA na zona do
+    // letreiro (não só na primeira vez) — dispara na transição longe→perto,
+    // por isso não repete a cada frame enquanto o jogador está parado ali.
+    if (near && !currentSign.wasNear) {
+      currentSign.wasNear = true;
+      showSignMessage(currentSign);
+    } else if (!near) {
+      currentSign.wasNear = false;
+    }
+  }
+  function showSignMessage(sign) {
+    // Se já houver uma mensagem deste letreiro a meio (ex.: o jogador saiu e
+    // voltou a entrar muito depressa), substitui-a em vez de empilhar as duas.
+    if (sign.activeLbl) { try { sign.activeLbl.destroy(); } catch {} sign.activeLbl = null; }
     // Texto aparece junto ao próprio letreiro (não no balão do VanBerto's) — só
     // um sítio a mostrar a informação, em vez de duplicar em dois locais.
-    const lbl = sceneRef.add.text(currentSign.x, currentSign.y-56, currentSign.text, {
+    const lbl = sceneRef.add.text(sign.x, sign.y-56, sign.text, {
       fontSize:"13px", fontStyle:"800", color:"#baffef", stroke:"#062a28", strokeThickness:4,
       align:"center", wordWrap:{width:200, useAdvancedWrap:true},
       padding:{ x:10, y:8 }
     }).setOrigin(0.5).setDepth(200).setAlpha(0).setScale(0.7);
-    sceneRef.tweens.add({ targets:lbl, alpha:1, scaleX:1, scaleY:1, y:currentSign.y-70, duration:260, ease:"Back.easeOut" });
+    sign.activeLbl = lbl;
+    sceneRef.tweens.add({ targets:lbl, alpha:1, scaleX:1, scaleY:1, y:sign.y-70, duration:260, ease:"Back.easeOut" });
     sceneRef.time.delayedCall(4200, () => {
       if (!lbl.active) return;
-      sceneRef.tweens.add({ targets:lbl, alpha:0, duration:300, onComplete:()=>{ try{lbl.destroy();}catch{} } });
+      sceneRef.tweens.add({ targets:lbl, alpha:0, duration:300, onComplete:()=>{ try{lbl.destroy();}catch{} if(sign.activeLbl===lbl) sign.activeLbl=null; } });
     });
-    if (currentSign.badge && currentSign.badge.active) {
-      sceneRef.tweens.add({ targets:currentSign.badge, alpha:0, y:currentSign.badge.y-16, duration:300, onComplete:()=>{ try{currentSign.badge.destroy();}catch{} } });
-    }
   }
 
   function difficultyFactor(idx) {
