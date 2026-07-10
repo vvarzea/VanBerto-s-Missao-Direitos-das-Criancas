@@ -50,7 +50,7 @@ export const BOSS_VICTORY_VB = [
 export const NPC_SIGNS = [
   { emoji:"🎈", text:"Sabias que há dois grandes 'Dias da Criança'? O de 1 de junho e o Dia Universal da Criança, a 20 de novembro!" },
   { emoji:"📜", text:"Sabias que já existia uma declaração ainda mais antiga, de 1924? A de 1959 tornou-a muito mais forte!" },
-  { emoji:"🇵🇹", text:"Sabias que Portugal ratificou a Convenção a 21 de setembro de 1990?" },
+  { emoji:"🌍", text:"Sabias que Portugal ratificou a Convenção a 21 de setembro de 1990?" },
   { emoji:"⚽", text:"Sabias que o direito a brincar é tão oficial como o direito à educação? Está mesmo escrito na Convenção!" },
   { emoji:"📚", text:"A educação é uma chave que abre todas as portas do futuro!" },
   { emoji:"💊", text:"Uma alimentação saudável e check-ups regulares ajudam-te a crescer forte!" },

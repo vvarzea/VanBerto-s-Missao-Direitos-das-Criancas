@@ -630,7 +630,12 @@ window.addEventListener("DOMContentLoaded", () => {
     ARTEFACTS.forEach((art,i)=>{
       const got=!!collectedArtefacts[i],orb=document.createElement("div");orb.title=art.name;
       if(got){
-        const themeIdx=LEVELS[i]?.theme??0,theme=THEMES[themeIdx]??THEMES[0];
+        // Nota: usar THEMES[i] diretamente (não LEVELS[i].theme) — desde a
+        // reorganização em 4 mundos, a posição física em LEVELS[] já não
+        // corresponde ao artIdx para vários níveis; theme e artIdx são
+        // sempre o mesmo valor em data-levels.js, por isso THEMES[i] dá
+        // sempre a cor certa para o artefacto i.
+        const theme=THEMES[i]??THEMES[0];
         const skyCol="#"+theme.skyBot.toString(16).padStart(6,"0");
         const grassCol="#"+theme.grassTop.toString(16).padStart(6,"0");
         orb.style.cssText="width:18px;height:18px;border-radius:50%;background:"+skyCol+";box-shadow:0 0 5px "+grassCol+"99,0 0 2px rgba(255,255,255,0.5) inset;border:1.5px solid "+grassCol+";display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;";
