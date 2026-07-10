@@ -2391,9 +2391,14 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     player.setPosition(L.spawn.x, L.spawn.y); player.setVelocity(0, 0);
     if (player.body) player.body.reset(L.spawn.x, L.spawn.y); // forçar corpo físico para o spawn imediatamente
-    // Snap instantâneo da câmara para o spawn, depois repor lerp suave para o jogo
+    // Snap instantâneo da câmara para o spawn, depois repor lerp suave para o jogo.
+    // Importante: centrar em L.spawn.y (posição real do VanBerto's), não num Y fixo —
+    // um valor fixo (ex: 270) não corresponde ao chão do nível, o que fazia o
+    // VanBerto's aparecer "afundado" perto do fundo do ecrã ao arrancar o nível
+    // (visível sobretudo no ecrã "Sabias que...?", que aparece antes de a câmara
+    // ter tempo de se corrigir sozinha a seguir o jogador).
     scene.cameras.main.startFollow(player, true, 1.0, 1.0);
-    scene.cameras.main.centerOn(L.spawn.x, 270);
+    scene.cameras.main.centerOn(L.spawn.x, L.spawn.y);
     scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
     touch.left=touch.right=touch.jump=false;
     // Robot aparece com fade-in e pequeno "pop" no início do nível seguinte
