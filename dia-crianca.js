@@ -189,7 +189,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const Lh = LEVELS[levelIndex];
     const histIdx = (Lh && Lh.artIdx != null) ? Lh.artIdx : levelIndex;
     const entry = HISTORY[histIdx] || null;
-    if (!entry) { awaitingQuiz=false; onDone?.(); return; }
+    if (!entry) { awaitingQuiz=false; if (sceneRef) revealPlayerEntrance(sceneRef); onDone?.(); return; }
     awaitingStory = true;
     // Cancelar qualquer fala pendente do VanBerto's (ex: setTimeout do nível anterior)
     // para o balão não aparecer "pendurado" por cima do cartão "Sabias que...?".
@@ -215,8 +215,10 @@ window.addEventListener("DOMContentLoaded", () => {
       }
       if (sceneRef && !pausedByTeacher
           && startOverlay.classList.contains("hidden")
-          && quizOverlay.classList.contains("hidden"))
+          && quizOverlay.classList.contains("hidden")) {
         sceneRef.physics.resume();
+        revealPlayerEntrance(sceneRef);
+      }
       onDone?.();
     };
   }
@@ -769,6 +771,14 @@ window.addEventListener("DOMContentLoaded", () => {
   let movingPlatforms=[], trampolines=[], secretDoors=[], hazards=[];
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
+  // Fase "entrada visível só quando o jogo arranca": loadLevel() já posiciona
+  // e alinha o VanBerto's ao chão, mas mantém-no invisível (alpha 0). A
+  // animação de "pop" (fade-in + estica-encolhe) só corre quando o "Sabias
+  // que...?" fecha e o jogo arranca de verdade — ver revealPlayerEntrance(),
+  // chamada a partir de showHistory(). Isto evita qualquer desalinhamento
+  // visível ENQUANTO a física está pausada (nesse período nada corrige a
+  // posição automaticamente, ao contrário do que acontece já em jogo).
+  let _pendingEntranceReveal = false;
   let cursors, keySpace;
   let hudText, scoreText, heartsGfx, tipText, itemCountText;
   let progressBg, progressFill, powerIndicator, playerNameHUD;
@@ -2391,14 +2401,11 @@ window.addEventListener("DOMContentLoaded", () => {
 
     player.setAlpha(0); player.setAngle(0); player.setFlipX(false); player.setOrigin(0.5,0.5); player.setDepth(3);
     // Importante: manter o tamanho NORMAL aqui (não o "achatado" do pop de
-    // entrada) — snapPlayerToGround() corre 80ms depois e precisa de medir o
-    // corpo físico ao tamanho real. Se o sprite já estivesse encolhido/esticado
-    // nesse momento, o alinhamento ao chão saía errado e o VanBerto's ficava
-    // a aparecer enterrado no chão ao início do nível (só se corrigia depois,
-    // quando a animação terminava — daí "ainda ficar mais para baixo"). O
-    // efeito de "pop" continua a acontecer na mesma, só que agora é aplicado
-    // pela própria tween (via "from") DEPOIS de o alinhamento ao chão já
-    // estar calculado com o tamanho correto.
+    // entrada) — snapPlayerToGround(), chamado mais abaixo, precisa de medir
+    // o corpo físico ao tamanho real. A animação de "pop" (encolhida→normal)
+    // só é aplicada mais tarde por revealPlayerEntrance(), quando o jogo
+    // realmente arranca — nunca aqui, enquanto a física ainda está pausada
+    // e nada corrigiria um eventual desalinhamento entretanto.
     if(player.getData("usingPng")){
       player.setDisplaySize(72, 72);
     } else {
@@ -2416,48 +2423,14 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.cameras.main.centerOn(L.spawn.x, L.spawn.y);
     scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
     touch.left=touch.right=touch.jump=false;
-    // Robot aparece com fade-in e pequeno "pop" no início do nível seguinte
-    scene.time.delayedCall(80,()=>{
-      snapPlayerToGround();
-      // Guardar o Y "correto" (pés assentes no chão, já calculado por
-      // snapPlayerToGround ao tamanho FINAL) e a altura final de referência.
-      // O tween a seguir aumenta temporariamente a altura visual do sprite
-      // (efeito de "pop" em estica-e-encolhe) — como a origem é o centro
-      // (0.5,0.5), ficar mais alto empurra a parte de baixo para depois da
-      // linha do chão (VanBerto's "enterrado"). onUpdate compensa isso,
-      // subindo/baixando o Y na mesma medida em que a altura muda, para os
-      // pés ficarem sempre presos ao chão durante toda a animação.
-      const groundY  = player.y;
-      const finalH   = player.displayHeight;
-      const pinFeet  = () => { player.y = groundY - (player.displayHeight - finalH) / 2; };
-      if(player.getData("usingPng")){
-        scene.tweens.add({
-          targets: player,
-          alpha: { from: 0, to: 1 },
-          displayWidth:  { from: 72*0.6, to: 72 },
-          displayHeight: { from: 72*1.3, to: 72 },
-          duration: 320, ease: "Back.easeOut",
-          onUpdate: pinFeet,
-          onComplete: () => {
-            pinFeet();
-            if (sceneRef && !sceneRef.physics.world.isPaused) player.setVelocityY(-160);
-          }
-        });
-      } else {
-        scene.tweens.add({
-          targets: player,
-          alpha: { from: 0, to: 1 },
-          scaleX: { from: 0.6, to: 1 },
-          scaleY: { from: 1.3, to: 1 },
-          duration: 320, ease: "Back.easeOut",
-          onUpdate: pinFeet,
-          onComplete: () => {
-            pinFeet();
-            if (sceneRef && !sceneRef.physics.world.isPaused) player.setVelocityY(-160);
-          }
-        });
-      }
-    });
+    // Alinhar já o VanBerto's ao chão (mesmo cálculo que antes corria 80ms
+    // depois) — mas sem o revelar. Enquanto o cartão de transição/"Sabias
+    // que...?" estiver a decorrer, a física continua pausada, por isso
+    // nada vai desalinhar isto entretanto. A animação de entrada (fade-in +
+    // "pop") só corre em revealPlayerEntrance(), chamada quando o jogo
+    // realmente arranca (ver showHistory).
+    snapPlayerToGround();
+    _pendingEntranceReveal = true;
 
     const TIPS = [
       "🌟 Apanha estrelas e chega ao Portal ✨!",
@@ -2663,6 +2636,45 @@ window.addEventListener("DOMContentLoaded", () => {
       heartsGfx.fillCircle(x-r*0.55,y-r*0.18,r); heartsGfx.fillCircle(x+r*0.55,y-r*0.18,r);
       heartsGfx.fillTriangle(x-size,y-r*0.1,x+size,y-r*0.1,x,y+size*1.05);
       if(full){heartsGfx.fillStyle(0xffffff,0.3);heartsGfx.fillCircle(x-r*0.3,y-r*0.5,r*0.3);}
+    }
+  }
+
+  // Anima a entrada do VanBerto's (fade-in + "pop" estica-encolhe) — chamada
+  // só quando o jogo realmente arranca (ver showHistory), nunca enquanto o
+  // cartão de transição ou o "Sabias que...?" ainda estão visíveis. Os pés
+  // ficam sempre presos ao chão durante a animação (ver pinFeet), mesmo que
+  // esta corra já com a física em andamento.
+  function revealPlayerEntrance(scene) {
+    if (!_pendingEntranceReveal) return;
+    _pendingEntranceReveal = false;
+    if (!player) return;
+    const groundY = player.y;
+    const finalH  = player.displayHeight;
+    const pinFeet = () => { player.y = groundY - (player.displayHeight - finalH) / 2; };
+    const onComplete = () => {
+      pinFeet();
+      if (sceneRef && !sceneRef.physics.world.isPaused) player.setVelocityY(-160);
+    };
+    if (player.getData("usingPng")) {
+      scene.tweens.add({
+        targets: player,
+        alpha: { from: 0, to: 1 },
+        displayWidth:  { from: 72*0.6, to: 72 },
+        displayHeight: { from: 72*1.3, to: 72 },
+        duration: 320, ease: "Back.easeOut",
+        onUpdate: pinFeet,
+        onComplete
+      });
+    } else {
+      scene.tweens.add({
+        targets: player,
+        alpha: { from: 0, to: 1 },
+        scaleX: { from: 0.6, to: 1 },
+        scaleY: { from: 1.3, to: 1 },
+        duration: 320, ease: "Back.easeOut",
+        onUpdate: pinFeet,
+        onComplete
+      });
     }
   }
 
