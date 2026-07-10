@@ -2201,7 +2201,18 @@ window.addEventListener("DOMContentLoaded", () => {
     const dx = Math.abs(player.x - currentSign.x), dy = Math.abs(player.y - currentSign.y);
     if (dx > 130 || dy > 170) return;
     currentSign.triggered = true;
-    vbSay(currentSign.text, "npc", 4800);
+    // Texto aparece junto ao próprio letreiro (não no balão do VanBerto's) — só
+    // um sítio a mostrar a informação, em vez de duplicar em dois locais.
+    const lbl = sceneRef.add.text(currentSign.x, currentSign.y-56, currentSign.text, {
+      fontSize:"13px", fontStyle:"800", color:"#baffef", stroke:"#062a28", strokeThickness:4,
+      align:"center", wordWrap:{width:200, useAdvancedWrap:true},
+      padding:{ x:10, y:8 }
+    }).setOrigin(0.5).setDepth(200).setAlpha(0).setScale(0.7);
+    sceneRef.tweens.add({ targets:lbl, alpha:1, scaleX:1, scaleY:1, y:currentSign.y-70, duration:260, ease:"Back.easeOut" });
+    sceneRef.time.delayedCall(4200, () => {
+      if (!lbl.active) return;
+      sceneRef.tweens.add({ targets:lbl, alpha:0, duration:300, onComplete:()=>{ try{lbl.destroy();}catch{} } });
+    });
     if (currentSign.badge && currentSign.badge.active) {
       sceneRef.tweens.add({ targets:currentSign.badge, alpha:0, y:currentSign.badge.y-16, duration:300, onComplete:()=>{ try{currentSign.badge.destroy();}catch{} } });
     }
