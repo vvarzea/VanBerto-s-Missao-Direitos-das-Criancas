@@ -43,6 +43,13 @@ export const SFX = {
     setTimeout(() => beep({ freq:1120,dur:0.18, type:"triangle", vol:0.055, slideTo:1400 }), 490);
   },
   power()   { beep({ freq:360, dur:0.10, type:"square",   vol:0.055, slideTo:960  }); },
+  bossArrive() {
+    // Chegada de boss — mais grave e ameaçador que o SFX.door() genérico,
+    // usado só neste momento para o distinguir de qualquer outra transição.
+    beep({ freq:110, dur:0.22, type:"sawtooth", vol:0.07, slideTo:70 });
+    setTimeout(() => beep({ freq:90,  dur:0.30, type:"square",   vol:0.065, slideTo:50 }), 140);
+    setTimeout(() => beep({ freq:200, dur:0.12, type:"sawtooth", vol:0.05,  slideTo:160 }), 340);
+  },
   life()    { beep({ freq:800, dur:0.07, type:"triangle", vol:0.055, slideTo:1100 }); },
   starMelody() {
     // Melodia Super Mario Star — sequência cromática ascendente/descendente

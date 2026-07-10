@@ -22,7 +22,7 @@ import { unlockedAchievements, checkAchievements, onSecretFoundForAchievements,
          resetAchievements, showAchievementToast } from "./achievements.js";
 import { BOSS_BY_LEVEL } from "./data-bosses.js";
 import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS } from "./data-story.js";
-import { playTitleCard } from "./cinematics.js";
+import { playTitleCard, playCinematic } from "./cinematics.js";
 import { loadNamespace, saveNamespace } from "./storage.js";
 import { makeTextures, makePlatformTextureThemed } from "./textures.js";
 import { initBackground, applyBackground, drawSun, drawStars, drawCloud,
@@ -72,26 +72,13 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   function vbSayRandom(arr,type,duration){vbSay(arr[Math.floor(Math.random()*arr.length)],type,duration);}
 
-  // Diálogo de boss (entrada/derrota) — antes usava playCinematic() com barras
-  // pretas a cobrir o ecrã; agora reaproveita o mesmo balão informativo do
-  // VanBerto's (vbSay) que já é usado nos letreiros dos níveis normais, para
-  // não tapar o jogo. Falas do boss ficam com a cor "vb-boss" e o nome do boss
-  // à frente do texto; falas do VanBerto's mantêm o estilo normal.
+  // Diálogo de boss (entrada/derrota) — usa a caixa de diálogo de cinematics.js
+  // (retrato + nome + texto, avança ao toque) SEM as barras pretas, para não
+  // tapar a arena. Antes disto usava o balão vbSay (canto inferior direito,
+  // pensado para dicas rápidas) — ficava pequeno, avançava sozinho por tempo
+  // e longe da ação; agora fica centrado, legível, e o jogador controla o ritmo.
   function playBossDialogue(slides, onComplete) {
-    if (!slides || !slides.length) { onComplete?.(); return; }
-    let i = 0;
-    let timer = null;
-    function step() {
-      if (i >= slides.length) { onComplete?.(); return; }
-      const s = slides[i];
-      const isBoss = s.speaker === "boss";
-      const text = isBoss ? `${s.name}: ${s.text}` : s.text;
-      const dur = isBoss ? 3800 : 3400;
-      vbSay(text, isBoss ? "boss" : "intro", dur);
-      i++;
-      timer = setTimeout(step, dur + 200);
-    }
-    step();
+    playCinematic(slides, onComplete, false);
   }
 
   // ===== Guardar =====
@@ -3023,6 +3010,25 @@ window.addEventListener("DOMContentLoaded", () => {
                            // sem depender de o jogador ler o texto do objetivo
   let controlsInvertedUntil = 0; // usado pelo "livro mau" do Monstro da Ignorância
 
+  // Cartão que desliza rapidamente do topo do ecrã e desaparece sozinho —
+  // usado na chegada do boss ("⚠️ NOME DO BOSS") e na vitória ("✅ VITÓRIA!").
+  // Não bloqueia nada (não precisa de toque) — é só um flourish visual rápido.
+  function showBossBanner(scene, text, color = "#ffffff") {
+    const label = scene.add.text(800, -40, text, {
+      fontSize: "30px", fontStyle: "900", color, stroke: "#1a0025", strokeThickness: 7
+    }).setOrigin(0.5).setDepth(50).setScrollFactor(0).setAlpha(0);
+    scene.tweens.add({
+      targets: label, y: 54, alpha: 1, duration: 380, ease: "Back.easeOut",
+      onComplete: () => {
+        scene.time.delayedCall(1400, () => {
+          if (!label.active) return;
+          scene.tweens.add({ targets: label, y: -40, alpha: 0, duration: 320, ease: "Sine.easeIn",
+            onComplete: () => { try{label.destroy();}catch{} } });
+        });
+      }
+    });
+  }
+
   function startBossFight(scene, levelJustCompleted, onComplete) {
     const def = BOSS_BY_LEVEL[levelJustCompleted];
     if (!def) { onComplete(); return; } // sem boss neste ponto — segue o fluxo normal
@@ -3089,6 +3095,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const starTimer = scene.time.addEvent({ delay: 1000, loop: true, callback: () => spawnBossStarItem(scene) });
     bossTimers.push(starTimer);
 
+    // Entrada com mais impacto — antes o boss só "aparecia" sem drama nenhum.
+    scene.cameras.main.shake(220, 0.012);
+    const arriveBurst = scene.add.particles(0, 0, "spark_item", {
+      x: worldW-200, y: 380, speed:{min:80,max:260}, lifespan:700, quantity:34,
+      scale:{start:1.2,end:0}, gravityY:120, angle:{min:0,max:360},
+      tint:[def.color, 0x000000, 0xffffff]
+    });
+    scene.time.delayedCall(600, () => { try{arriveBurst.destroy();}catch{} });
+    showBossBanner(scene, `⚠️ ${def.name.toUpperCase()} ⚠️`, "#ff9090");
+
     if (def.movingArena) {
       spawnMovingPlatforms(scene, {
         theme: LEVELS[currentLevel] ? LEVELS[currentLevel].theme : 0,
@@ -3116,7 +3132,7 @@ window.addEventListener("DOMContentLoaded", () => {
     hudText.setText(`${def.emoji} ${def.name}`);
     itemCountText.setText("");
     tipText.setText("🎬 " + def.name + " apareceu!");
-    ensureAudio(); SFX.door();
+    ensureAudio(); SFX.bossArrive();
 
     // Mantém awaitingQuiz=true (já estava) durante a cinemática — assim update()
     // não avança o boss/timers/vilões enquanto o diálogo decorre.
@@ -3129,7 +3145,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const introVB = BOSS_INTRO_VB[def.id] || { reaction: "Sinto algo estranho aqui...", rally: "Vamos enfrentar isto juntos!" };
     playBossDialogue([
       { speaker:"vb",   text: introVB.reaction },
-      { speaker:"boss", name: `${def.name} ${def.emoji}`, text: def.intro },
+      { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro },
       { speaker:"vb",   text: introVB.rally }
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
@@ -3183,6 +3199,10 @@ window.addEventListener("DOMContentLoaded", () => {
     if (bossState.hpBarFill) { try{bossState.hpBarFill.destroy();}catch{} }
     bossState.hpBarBg = scene.add.graphics().setDepth(6);
     bossState.hpBarFill = scene.add.graphics().setDepth(7);
+    // Cresce de 0 até cheia em vez de aparecer já cheia — pequeno detalhe que
+    // dá a sensação de "a vida a ser carregada", como em jogos profissionais.
+    bossState.hpGrowFactor = 0;
+    scene.tweens.add({ targets: bossState, hpGrowFactor: 1, duration: 550, ease: "Cubic.easeOut", onUpdate: drawBossHpBar });
     drawBossHpBar();
   }
   function drawBossHpBar() {
@@ -3197,7 +3217,8 @@ window.addEventListener("DOMContentLoaded", () => {
     bossState.hpBarBg.lineStyle(2, 0xffffff, 0.9);
     bossState.hpBarBg.strokeRoundedRect(x, y, w, h, 5);
     bossState.hpBarFill.clear();
-    const pct = Math.max(0, bossState.hp / bossState.def.hp);
+    const growFactor = bossState.hpGrowFactor != null ? bossState.hpGrowFactor : 1;
+    const pct = Math.max(0, bossState.hp / bossState.def.hp) * growFactor;
     const fillColor = pct > 0.5 ? 0x60e060 : (pct > 0.25 ? 0xffd700 : 0xff5050);
     bossState.hpBarFill.fillStyle(fillColor, 1);
     bossState.hpBarFill.fillRoundedRect(x+2, y+2, Math.max(0,(w-4)*pct), h-4, 3);
@@ -3303,6 +3324,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // com dados do nível já terminado).
   function handleBossMalwareCollision(malwareObj) {
     if (!inBossFight || !malwareObj || !malwareObj.getData("isBoss") || bossState.phase !== "platform") return false;
+    if (invuln) return true; // já protegido — ignora este toque, sem reprocessar dano
 
     if (starPower) {
       // Reaproveita a mesma sensação de "atropelar vilão" que já existe no jogo
@@ -3315,17 +3337,48 @@ window.addEventListener("DOMContentLoaded", () => {
       showFloat(sceneRef, malwareObj.x, malwareObj.y-60, "💥 Boss atingido!", "#ff6b35");
       if (bossState.hp <= 0) startBossCollectPhase();
     } else {
-      // Sem Star Power: só empurra o jogador, sem perder vida nem tocar em LEVELS[currentLevel]
-      if(sceneRef.time.now < bossState.hitCooldownUntil) return true;
-      bossState.hitCooldownUntil = sceneRef.time.now + 400;
-      const dir = player.x < malwareObj.x ? -1 : 1;
-      player.setVelocityX(dir*280); player.setVelocityY(-220);
-      ensureAudio(); SFX.hit();
-      sceneRef.cameras.main.shake(140,0.010);
-      sceneRef.cameras.main.flash(120,180,40,40);
-      showFloat(sceneRef, player.x, player.y-60, "⭐ Precisas de Star Power!", "#ffd700");
+      // Sem Star Power, tocar no boss agora DÓI a sério — antes só empurrava,
+      // o que tornava os bosses demasiado inofensivos. Perde-se uma vida, tal
+      // como ao tocar num vilão normal, com o mesmo knockback e i-frames.
+      bossHitPlayer(sceneRef, malwareObj, "⭐ Precisas de Star Power!");
     }
     return true; // sinaliza a onHitMalware para NÃO aplicar a lógica normal de dano
+  }
+
+  // Dano do boss (toque direto ou projétil mau) — perde-se 1 vida, sofre-se um
+  // knockback e fica-se protegido por instantes (i-frames), reaproveitando a
+  // mesma sensação de onHitMalware. warnMsg é o aviso mostrado por cima da
+  // perda de vida (varia consoante veio de um toque ou de um projétil).
+  function bossHitPlayer(scene, sourceObj, warnMsg) {
+    if (invuln || lives <= 0) return;
+    ensureAudio(); SFX.hit();
+    hitFlash.classList.add("active"); setTimeout(()=>hitFlash.classList.remove("active"),200);
+    const knockDir = (sourceObj && sourceObj.x < player.x) ? 1 : -1;
+    player.setVelocityX(knockDir * 300);
+    player.setVelocityY(-320);
+    scene.cameras.main.shake(160, 0.010);
+    scene.cameras.main.flash(120,180,40,40);
+    scene.tweens.add({
+      targets: player,
+      angle: { from: knockDir * -22, to: knockDir * 22 },
+      duration: 80, yoyo: true, repeat: 2,
+      ease: "Sine.easeInOut",
+      onComplete: () => { if(player) player.setAngle(0); }
+    });
+    lives -= 1; updateHearts(); livesLostThisLevel++; _hudDirty = true;
+    if (heartsGfx) scene.tweens.add({targets:heartsGfx,x:{from:-4,to:4},duration:60,yoyo:true,repeat:3,ease:"Sine.easeInOut",onComplete:()=>{if(heartsGfx)heartsGfx.x=0;}});
+    invuln = true; // bloqueia novos toques já durante o voo de knockback
+    if (warnMsg) showFloat(scene, player.x, player.y-60, warnMsg, "#ffd700");
+    showFloat(scene, player.x, player.y-90, "💥 -1 Vida!", "#ff5050");
+    if (lives <= 0) {
+      scene.time.delayedCall(400, () => { if (lives<=0) showGameOver(); });
+      return;
+    }
+    scene.time.delayedCall(400, () => {
+      if (!player || !inBossFight) return;
+      setInvuln(scene, 1400);
+      tipText.setText("⚡ Protegido por instantes!");
+    });
   }
 
   function startBossCollectPhase() {
@@ -3361,10 +3414,10 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     if (itemObj.getData("bossProjBad")) {
       itemObj.destroy();
+      if (invuln) return true; // já protegido — livro mau não conta durante i-frames
       ensureAudio(); beep({freq:180,dur:0.16,type:"sawtooth",vol:0.06,slideTo:80});
-      sceneRef.cameras.main.shake(160,0.010);
-      showFloat(sceneRef, player.x, player.y-68, "😵 Informação errada!", "#ff5050");
       controlsInvertedUntil = sceneRef.time.now + 1500;
+      bossHitPlayer(sceneRef, null, "😵 Informação errada!");
       return true;
     }
     if (!itemObj.getData("bossCollect")) return false;
@@ -3415,6 +3468,10 @@ window.addEventListener("DOMContentLoaded", () => {
         tint: [0xffd700, 0xff6b35, 0x80d0ff, 0xffffff, 0x60ff80]
       });
       sceneRef.time.delayedCall(750, () => { try{bossConfetti.destroy();}catch{} });
+      // Cartão "✅ VITÓRIA!" a deslizar do topo — o mesmo tipo de flourish do
+      // cartão de chegada do boss, para fechar a cena com o mesmo impacto com
+      // que começou (antes só havia confetti, sem nenhum destaque de texto).
+      showBossBanner(sceneRef, "✅ VITÓRIA!", "#8fffb0");
       // Toast "Direito Recuperado!" — nomeia concretamente o direito que este boss
       // guardava (em vez de só confetti genérico), reaproveitando o visual das
       // conquistas (achv-toast) que já existe e já é usado neste jogo.
@@ -3424,7 +3481,7 @@ window.addEventListener("DOMContentLoaded", () => {
       // awaitingQuiz continua true durante a cinemática de vitória — só liberta
       // o jogador quando o portal for criado, a seguir ao diálogo.
       playBossDialogue([
-        { speaker:"boss", name:`${def.name} ${def.emoji}`, text: def.defeatLine },
+        { speaker:"boss", name:def.name, emoji:def.emoji, text: def.defeatLine },
         { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!" }
       ], () => {
         awaitingQuiz = false;

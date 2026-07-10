@@ -41,16 +41,19 @@ const SPEAKER_STYLE = {
   npc:  { name: "",           emoji: "🪧", cls: "cine-npc" }
 };
 
-export function playCinematic(slides, onComplete) {
+// bars=true → cinemática completa (barras pretas), usada nas cutscenes de boss antigas.
+// bars=false → só a caixa de diálogo (retrato+nome+texto), sem tapar o resto do ecrã —
+// usada agora no diálogo de boss, para não esconder a arena atrás das barras.
+export function playCinematic(slides, onComplete, bars = true) {
   if (!slides || !slides.length) { onComplete?.(); return; }
   ensureDialogDOM();
   let i = 0;
   let finished = false;
   // 1) barras entram primeiro, a estabelecer o "modo cinema"...
-  document.body.classList.add("cine-active");
+  if (bars) document.body.classList.add("cine-active");
   // 2) ...só depois a caixa de diálogo desliza para cima — sem isto tudo
   //    aparecia de golpe, o que dava a sensação de corte/salto brusco.
-  const showTimer = setTimeout(() => { dialogEl.classList.add("cine-show"); render(); }, 220);
+  const showTimer = setTimeout(() => { dialogEl.classList.add("cine-show"); render(); }, bars ? 220 : 0);
 
   function render() {
     const s = slides[i];
@@ -78,8 +81,8 @@ export function playCinematic(slides, onComplete) {
     // Sair na ordem inversa: diálogo desce primeiro, barras fecham a seguir.
     dialogEl.classList.remove("cine-show");
     setTimeout(() => {
-      document.body.classList.remove("cine-active");
-      setTimeout(() => onComplete?.(), 340);
+      if (bars) document.body.classList.remove("cine-active");
+      setTimeout(() => onComplete?.(), bars ? 340 : 120);
     }, 260);
   }
 
