@@ -900,6 +900,17 @@ window.addEventListener("DOMContentLoaded", () => {
     this.cameras.main.startFollow(player, true, 1.0, 1.0);
     this.cameras.main.setDeadzone(140, 90);
 
+    // Pausar a física e escoder o VanBerto's já aqui, logo após a criação —
+    // sem isto, entre este ponto e a chamada a loadLevel() (que só acontece
+    // ~350ms depois, no midpoint do ecrã de transição) a gravidade já estava
+    // a puxar o robô para baixo sem nenhuma plataforma criada ainda, e via-se
+    // essa queda por trás do overlay de transição enquanto ele ainda estava
+    // semitransparente (fade de 0→1 em 300ms). loadLevel() já pausa a física
+    // de novo (idempotente) e showHistory() é quem sempre a resume — este
+    // pause() extra só cobre a janela entre create() e o primeiro loadLevel().
+    player.setAlpha(0);
+    this.physics.pause();
+
     createTouchInput(this);
     loadGame();
     btnMute.textContent = isMuted() ? "🔇 Som: OFF" : "🔊 Som: ON";
