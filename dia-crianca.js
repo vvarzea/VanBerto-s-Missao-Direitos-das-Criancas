@@ -631,14 +631,18 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   function updateArtOrbs(){
     if(!_artOrbsEl)return;_artOrbsEl.innerHTML="";
-    ARTEFACTS.forEach((art,i)=>{
+    // Percorrer LEVELS (ordem física, Nível 1→20) em vez de ARTEFACTS (ordem
+    // fixa por artIdx) — desde a reorganização em 4 mundos, essas duas ordens
+    // já não coincidem para vários níveis (ex: "Nível 4 — Participação" tem
+    // artIdx:7). Sem isto, o orbe de um nível aparecia na posição do seu
+    // artIdx antigo em vez da posição do nível a que agora corresponde.
+    LEVELS.forEach((L)=>{
+      const i=L.artIdx; if(i==null) return;
+      const art=ARTEFACTS[i]; if(!art) return;
       const got=!!collectedArtefacts[i],orb=document.createElement("div");orb.title=art.name;
       if(got){
-        // Nota: usar THEMES[i] diretamente (não LEVELS[i].theme) — desde a
-        // reorganização em 4 mundos, a posição física em LEVELS[] já não
-        // corresponde ao artIdx para vários níveis; theme e artIdx são
-        // sempre o mesmo valor em data-levels.js, por isso THEMES[i] dá
-        // sempre a cor certa para o artefacto i.
+        // THEMES[i] (não L.theme) — theme e artIdx são sempre o mesmo valor
+        // em data-levels.js, por isso THEMES[i] dá sempre a cor certa.
         const theme=THEMES[i]??THEMES[0];
         const skyCol="#"+theme.skyBot.toString(16).padStart(6,"0");
         const grassCol="#"+theme.grassTop.toString(16).padStart(6,"0");
