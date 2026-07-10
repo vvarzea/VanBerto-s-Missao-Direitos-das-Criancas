@@ -48,24 +48,24 @@ export const BOSS_VICTORY_VB = [
 
 // Um "letreiro"/NPC por nível — alinhado por artIdx (0-19), tal como HISTORY[].
 export const NPC_SIGNS = [
-  { emoji:"📜", text:"Sabias que o Dia da Criança é comemorado a 1 de junho em muitos países? 🎈" },
-  { emoji:"🪧", text:"Em 1959 a ONU aprovou a Declaração dos Direitos da Criança — o primeiro grande passo!" },
-  { emoji:"🌍", text:"A Convenção sobre os Direitos da Criança de 1989 é o tratado mais ratificado da história!" },
-  { emoji:"⚽", text:"Brincar não é só diversão — ajuda-te a crescer, a pensar e a fazer amigos!" },
+  { emoji:"🎈", text:"Sabias que há dois grandes 'Dias da Criança'? O de 1 de junho e o Dia Universal da Criança, a 20 de novembro!" },
+  { emoji:"📜", text:"Sabias que já existia uma declaração ainda mais antiga, de 1924? A de 1959 tornou-a muito mais forte!" },
+  { emoji:"🇵🇹", text:"Sabias que Portugal ratificou a Convenção a 21 de setembro de 1990?" },
+  { emoji:"⚽", text:"Sabias que o direito a brincar é tão oficial como o direito à educação? Está mesmo escrito na Convenção!" },
   { emoji:"📚", text:"A educação é uma chave que abre todas as portas do futuro!" },
   { emoji:"💊", text:"Uma alimentação saudável e check-ups regulares ajudam-te a crescer forte!" },
   { emoji:"🛡️", text:"Se alguma vez te sentires em perigo, fala sempre com um adulto de confiança." },
-  { emoji:"🗣️", text:"A tua opinião conta! As crianças têm o direito de ser ouvidas." },
+  { emoji:"🗣️", text:"Sabias que este direito obriga os adultos a OUVIR-te, não só a deixar-te falar?" },
   { emoji:"🌱", text:"Pequenas ações — poupar água, reciclar — ajudam a construir um futuro melhor." },
-  { emoji:"🌟", text:"A UNICEF trabalha em mais de 190 países para proteger crianças como tu!" },
+  { emoji:"🌟", text:"Sabias que UNICEF significa 'Fundo das Nações Unidas para a Infância'?" },
   { emoji:"🪪", text:"O teu nome e a tua identidade são só teus — ninguém tos pode tirar." },
   { emoji:"🏠", text:"Todas as crianças têm direito a crescer rodeadas de carinho e cuidado." },
-  { emoji:"✈️", text:"Crianças refugiadas têm exatamente os mesmos direitos que qualquer outra criança." },
-  { emoji:"🚫", text:"Nenhuma criança deve ser obrigada a trabalhar — o teu trabalho é aprender e brincar!" },
-  { emoji:"🗽", text:"Podes expressar as tuas ideias livremente — a tua voz é importante!" },
+  { emoji:"✈️", text:"Sabias que uma criança refugiada tem sempre direito à escola, tal como qualquer outra criança?" },
+  { emoji:"🚫", text:"Sabias que em Portugal a idade mínima para trabalhar é 16 anos? Antes disso, o teu trabalho é aprender e brincar!" },
+  { emoji:"🗽", text:"Sabias que também tens o direito de não concordar com um adulto, desde que o digas com respeito?" },
   { emoji:"🔒", text:"As tuas mensagens e segredos são teus — a privacidade também é um direito." },
-  { emoji:"🎭", text:"Há mais de 7000 línguas no mundo — cada cultura é um tesouro único!" },
+  { emoji:"🎭", text:"Sabias que em Portugal o mirandês é uma língua oficialmente reconhecida, além do português?" },
   { emoji:"♿", text:"Um mundo inclusivo é um mundo onde ninguém fica para trás." },
-  { emoji:"🌿", text:"Viver num ambiente saudável é um direito de todas as crianças do mundo." },
-  { emoji:"💻", text:"Online também tens direitos: à segurança, à privacidade e à informação correta." }
+  { emoji:"🌿", text:"Sabias que plantar uma árvore ou reduzir o plástico ajuda o teu direito a um ambiente saudável?" },
+  { emoji:"💻", text:"Sabias que nunca deves partilhar dados pessoais ou fotos com desconhecidos online?" }
 ];
