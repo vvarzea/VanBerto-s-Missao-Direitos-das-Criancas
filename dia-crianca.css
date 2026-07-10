@@ -2158,6 +2158,10 @@ body.hc-mode .ag-name { color:#ffff00 !important; }
 
 /* ── VanBerto speech bubble ── */
 #vbSpeech{position:fixed;bottom:36px;right:12px;display:flex;flex-direction:row;align-items:flex-end;gap:8px;z-index:8700;pointer-events:none;opacity:0;transform:translateY(12px) scale(0.92);transition:opacity 0.28s ease,transform 0.28s cubic-bezier(.34,1.56,.64,1);}
+/* Nunca deixar o balão flutuar por cima do cartão "Sabias que...?" — este ecrã
+   tem o seu próprio ícone do VanBerto's, o balão fixo no canto ficava fora de
+   sítio (ver dia-crianca.js: showHistory() já cancela o timer, isto é reforço). */
+#historyOverlay:not(.hidden) ~ #vbSpeech{opacity:0 !important;transform:translateY(12px) scale(0.92) !important;transition:none !important;}
 #vbSpeech.vb-show{opacity:1;transform:translateY(0) scale(1);}
 #vbSpeech.vb-hit{--vb-border:#ff4444;--vb-bg:rgba(60,8,8,0.92);--vb-text:#ffb8b8;}
 #vbSpeech.vb-good{--vb-border:#4cdf80;--vb-bg:rgba(6,40,18,0.92);--vb-text:#b8ffd0;}

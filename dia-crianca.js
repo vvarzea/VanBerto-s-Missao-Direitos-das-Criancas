@@ -191,6 +191,10 @@ window.addEventListener("DOMContentLoaded", () => {
     const entry = HISTORY[histIdx] || null;
     if (!entry) { awaitingQuiz=false; onDone?.(); return; }
     awaitingStory = true;
+    // Cancelar qualquer fala pendente do VanBerto's (ex: setTimeout do nível anterior)
+    // para o balão não aparecer "pendurado" por cima do cartão "Sabias que...?".
+    if (_vbTimer) { clearTimeout(_vbTimer); _vbTimer = null; }
+    document.getElementById("vbSpeech")?.classList.remove("vb-show");
     historyText.innerHTML = `<strong class="history-title">${entry.title}</strong>\n${entry.text}`;
     historyOverlay.classList.remove("hidden");
     if (sceneRef) sceneRef.physics.pause();
