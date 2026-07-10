@@ -2419,6 +2419,17 @@ window.addEventListener("DOMContentLoaded", () => {
     // Robot aparece com fade-in e pequeno "pop" no início do nível seguinte
     scene.time.delayedCall(80,()=>{
       snapPlayerToGround();
+      // Guardar o Y "correto" (pés assentes no chão, já calculado por
+      // snapPlayerToGround ao tamanho FINAL) e a altura final de referência.
+      // O tween a seguir aumenta temporariamente a altura visual do sprite
+      // (efeito de "pop" em estica-e-encolhe) — como a origem é o centro
+      // (0.5,0.5), ficar mais alto empurra a parte de baixo para depois da
+      // linha do chão (VanBerto's "enterrado"). onUpdate compensa isso,
+      // subindo/baixando o Y na mesma medida em que a altura muda, para os
+      // pés ficarem sempre presos ao chão durante toda a animação.
+      const groundY  = player.y;
+      const finalH   = player.displayHeight;
+      const pinFeet  = () => { player.y = groundY - (player.displayHeight - finalH) / 2; };
       if(player.getData("usingPng")){
         scene.tweens.add({
           targets: player,
@@ -2426,7 +2437,9 @@ window.addEventListener("DOMContentLoaded", () => {
           displayWidth:  { from: 72*0.6, to: 72 },
           displayHeight: { from: 72*1.3, to: 72 },
           duration: 320, ease: "Back.easeOut",
+          onUpdate: pinFeet,
           onComplete: () => {
+            pinFeet();
             if (sceneRef && !sceneRef.physics.world.isPaused) player.setVelocityY(-160);
           }
         });
@@ -2437,7 +2450,9 @@ window.addEventListener("DOMContentLoaded", () => {
           scaleX: { from: 0.6, to: 1 },
           scaleY: { from: 1.3, to: 1 },
           duration: 320, ease: "Back.easeOut",
+          onUpdate: pinFeet,
           onComplete: () => {
+            pinFeet();
             if (sceneRef && !sceneRef.physics.world.isPaused) player.setVelocityY(-160);
           }
         });
