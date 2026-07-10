@@ -1111,7 +1111,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if (el("pauseProgress")) el("pauseProgress").textContent = `${lvl} / ${total}`;
       // Dica contextual: priorizar dicas dos níveis especiais
       let tipIdx;
-      if (currentLevel === 4)  tipIdx = 8;  // nível trampolins (Direito ao Brincar)
+      if (currentLevel === 6)  tipIdx = 8;  // nível trampolins (Direito ao Brincar) — atualizado depois de mover este nível para o Reino da Educação
       else if (currentLevel === 19) tipIdx = 10; // nível esteira (Direito à Inclusão)
       else { _pauseTipIdx = (_pauseTipIdx + 1) % 8; tipIdx = _pauseTipIdx; }
       if (el("pauseTip")) el("pauseTip").innerHTML = PAUSE_TIPS[tipIdx];

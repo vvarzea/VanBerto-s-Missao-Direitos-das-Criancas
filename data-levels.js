@@ -67,42 +67,26 @@ export const LEVELS = [
     malwares:[{x:1000,y:480,vx:0,pattern:"mini"},{x:1700,y:480,vx:-160,pattern:"patrol"},{x:2350,y:480,vx:155,pattern:"patrol"}]
   },
   {
-    name: "Nível 4 — O Direito ao Brincar",
-    artIdx:3, theme:3, quizTheme:"brincar", worldW:2800,
-    spawn:{x:480,y:460}, doorX:2630,
-    // ══ MECÂNICA ESPECIAL: TRAMPOLINS ══
-    // Plataformas mais largas (240px) e vãos mais curtos (~200px) — acessível em mobile.
-    // Os trampolins são o caminho principal mas um bom salto normal chega às plataformas mais baixas.
-    // Tematicamente: "brincar é essencial — sem brincar não chegas lá!"
+    name: "Nível 4 — O Direito à Participação",
+    artIdx:7, theme:7, quizTheme:"participacao", worldW:3300,
+    spawn:{x:480,y:460}, doorX:2950,
+    // Layout: "trampolim central obrigatório" — vão largo a meio onde o trampolim é o único caminho
     platforms:[
-      // Ilhas separadas por vãos de ~200px — desafiante mas praticável em telemóvel
-      {x:500,y:390,w:240,h:22},
-      {x:880,y:430,w:240,h:22},
-      {x:1260,y:370,w:240,h:22},
-      {x:1640,y:420,w:240,h:22},
-      {x:2020,y:360,w:240,h:22},
-      {x:2400,y:410,w:240,h:22},
-      // Plataforma final com o portal
-      {x:2580,y:518,w:260,h:22}
+      {x:520,y:520,w:1000,h:28},
+      {x:840,y:440,w:200,h:22},
+      {x:1080,y:360,w:200,h:22},
+      {x:1320,y:460,w:140,h:22},   // plataforma baixa antes do vão
+      // Vão de 400px — só o trampolim chega ao outro lado
+      {x:1880,y:460,w:140,h:22},   // plataforma baixa depois do vão
+      {x:2100,y:360,w:200,h:22},
+      {x:2340,y:440,w:200,h:22},
+      {x:2580,y:360,w:200,h:22},
+      {x:2980,y:520,w:1000,h:28}
     ],
-    // Trampolins entre ilhas — caminho mais rápido e divertido
-    trampolines:[
-      {x:680,y:490},{x:1060,y:490},{x:1440,y:490},
-      {x:1820,y:490},{x:2200,y:490}
-    ],
-    items:[
-      {x:500,y:340,kind:"estrela"},{x:880,y:380,kind:"brinquedo"},
-      {x:1260,y:320,kind:"medalha"},{x:1640,y:370,kind:"duplosalto"},
-      {x:2020,y:310,kind:"balao"}
-    ],
-    malwares:[
-      {x:650,y:480,vx:0,pattern:"mini"},
-      {x:1030,y:480,vx:-145,pattern:"patrol"},
-      {x:1410,y:480,vx:150,pattern:"patrol"},
-      {x:1790,y:480,vx:-150,pattern:"jumper"},
-      {x:2170,y:480,vx:145,pattern:"jumper"}
-    ],
-    secrets:[{x:1060,y:415,kind:"estrela",points:20}]
+    items:[{x:840,y:390,kind:"brinquedo"},{x:1080,y:310,kind:"estrela"},{x:1600,y:330,kind:"duplosalto"},{x:2100,y:310,kind:"balao"},{x:2580,y:310,kind:"medalha"},{x:560,y:470,kind:"heart"}],
+    malwares:[{x:980,y:480,vx:180,pattern:"patrol"},{x:1580,y:480,vx:-183,pattern:"jumper"},{x:2040,y:480,vx:182,pattern:"jumper"},{x:2450,y:480,vx:-179,pattern:"jumper"},{x:2780,y:480,vx:177}],
+    trampolines:[{x:1600,y:462}],
+    secrets:[{x:1190,y:355,kind:"estrela",points:25}]
   },
   {
     name: "Nível 5 — O Direito à Educação",
@@ -141,26 +125,42 @@ export const LEVELS = [
     secrets:[{x:2160,y:355,kind:"estrela",points:20}]
   },
   {
-    name: "Nível 7 — O Direito à Participação",
-    artIdx:7, theme:7, quizTheme:"participacao", worldW:3300,
-    spawn:{x:480,y:460}, doorX:2950,
-    // Layout: "trampolim central obrigatório" — vão largo a meio onde o trampolim é o único caminho
+    name: "Nível 7 — O Direito ao Brincar",
+    artIdx:3, theme:3, quizTheme:"brincar", worldW:2800,
+    spawn:{x:480,y:460}, doorX:2630,
+    // ══ MECÂNICA ESPECIAL: TRAMPOLINS ══
+    // Plataformas mais largas (240px) e vãos mais curtos (~200px) — acessível em mobile.
+    // Os trampolins são o caminho principal mas um bom salto normal chega às plataformas mais baixas.
+    // Tematicamente: "brincar é essencial — sem brincar não chegas lá!"
     platforms:[
-      {x:520,y:520,w:1000,h:28},
-      {x:840,y:440,w:200,h:22},
-      {x:1080,y:360,w:200,h:22},
-      {x:1320,y:460,w:140,h:22},   // plataforma baixa antes do vão
-      // Vão de 400px — só o trampolim chega ao outro lado
-      {x:1880,y:460,w:140,h:22},   // plataforma baixa depois do vão
-      {x:2100,y:360,w:200,h:22},
-      {x:2340,y:440,w:200,h:22},
-      {x:2580,y:360,w:200,h:22},
-      {x:2980,y:520,w:1000,h:28}
+      // Ilhas separadas por vãos de ~200px — desafiante mas praticável em telemóvel
+      {x:500,y:390,w:240,h:22},
+      {x:880,y:430,w:240,h:22},
+      {x:1260,y:370,w:240,h:22},
+      {x:1640,y:420,w:240,h:22},
+      {x:2020,y:360,w:240,h:22},
+      {x:2400,y:410,w:240,h:22},
+      // Plataforma final com o portal
+      {x:2580,y:518,w:260,h:22}
     ],
-    items:[{x:840,y:390,kind:"brinquedo"},{x:1080,y:310,kind:"estrela"},{x:1600,y:330,kind:"duplosalto"},{x:2100,y:310,kind:"balao"},{x:2580,y:310,kind:"medalha"},{x:560,y:470,kind:"heart"}],
-    malwares:[{x:980,y:480,vx:180,pattern:"patrol"},{x:1580,y:480,vx:-183,pattern:"jumper"},{x:2040,y:480,vx:182,pattern:"jumper"},{x:2450,y:480,vx:-179,pattern:"jumper"},{x:2780,y:480,vx:177}],
-    trampolines:[{x:1600,y:462}],
-    secrets:[{x:1190,y:355,kind:"estrela",points:25}]
+    // Trampolins entre ilhas — caminho mais rápido e divertido
+    trampolines:[
+      {x:680,y:490},{x:1060,y:490},{x:1440,y:490},
+      {x:1820,y:490},{x:2200,y:490}
+    ],
+    items:[
+      {x:500,y:340,kind:"estrela"},{x:880,y:380,kind:"brinquedo"},
+      {x:1260,y:320,kind:"medalha"},{x:1640,y:370,kind:"duplosalto"},
+      {x:2020,y:310,kind:"balao"}
+    ],
+    malwares:[
+      {x:650,y:480,vx:0,pattern:"mini"},
+      {x:1030,y:480,vx:-145,pattern:"patrol"},
+      {x:1410,y:480,vx:150,pattern:"patrol"},
+      {x:1790,y:480,vx:-150,pattern:"jumper"},
+      {x:2170,y:480,vx:145,pattern:"jumper"}
+    ],
+    secrets:[{x:1060,y:415,kind:"estrela",points:20}]
   },
   {
     name: "Nível 8 — O Futuro Sustentável",
