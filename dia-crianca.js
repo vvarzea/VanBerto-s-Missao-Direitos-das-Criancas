@@ -2610,7 +2610,22 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function snapPlayerToGround(){
     if(!player?.body||!platforms) return;
-    player.body.updateFromGameObject();
+    // Nota: NÃO usar updateFromGameObject() aqui — esta função corre 80ms
+    // depois do início do nível, ENQUANTO o "pop" de entrada ainda está a
+    // meio (o VanBerto's começa achatado/pequeno e só depois anima até ao
+    // tamanho normal). updateFromGameObject() copiava esse tamanho
+    // temporário e distorcido para o corpo físico, o que desalinhava o
+    // cálculo do chão e fazia o VanBerto's aparecer meio enterrado no
+    // passeio/relva assim que o nível arrancava. Repor sempre o hitbox
+    // definido em create() garante que o alinhamento ao chão usa o
+    // tamanho real do personagem, independentemente da animação em curso.
+    if(player.getData("usingPng")){
+      player.body.setSize(44,52);
+      player.body.setOffset((72-44)/2,(72-52)/2+4);
+    } else {
+      player.body.setSize(44,48);
+      player.body.setOffset(26,46);
+    }
     const pb=player.body; let best=null,bestTop=Infinity;
     platforms.getChildren().forEach(p=>{
       if(!p.body) return;
