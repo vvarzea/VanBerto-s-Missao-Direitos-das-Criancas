@@ -16,12 +16,13 @@ export const BOSSES = [
     movementType: "blink",   // some e reaparece noutra plataforma
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
-    collectKind: "estrela",  // tem de existir em ITEM_LABELS/ITEM_TINTS/keyMap
+    collectKind: "livro",    // livros, não estrelas — a estrela ⭐ continua a ser só o power-up universal para o atingires
     collectCount: 5,
     quizTheme: "educacao",
     hp: 3,
     themeIdx: 16,              // índigo cósmico noturno
-    throwsBooks: true          // atira livros (bons e maus) enquanto foges dele
+    throwsBooks: true,         // atira livros (bons e maus) enquanto foges dele
+    rightRecovered: { emoji: "📚", name: "Direito à Educação" }
   },
   {
     id: "virus_gigante",
@@ -36,7 +37,8 @@ export const BOSSES = [
     collectCount: 5,
     quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
     hp: 3,
-    themeIdx: 13              // teal escuro noturno — combina com o verde-água do boss
+    themeIdx: 13,              // teal escuro noturno — combina com o verde-água do boss
+    rightRecovered: { emoji: "💊", name: "Direito à Saúde" }
   },
   {
     id: "guardiao_sombras",
@@ -51,7 +53,8 @@ export const BOSSES = [
     collectCount: 5,
     quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
     hp: 3,
-    themeIdx: 11              // azul oceano noturno — fortaleza escura, sem exagerar no preto
+    themeIdx: 11,              // azul oceano noturno — fortaleza escura, sem exagerar no preto
+    rightRecovered: { emoji: "🛡️", name: "Direito à Proteção" }
   },
   {
     id: "poluidor_mecanico",
@@ -69,7 +72,8 @@ export const BOSSES = [
     collectCount: 5,
     quizTheme: "ambiente",
     hp: 3,
-    themeIdx: 9                // âmbar dourado enevoado — céu poluído, ainda de dia
+    themeIdx: 9,                // âmbar dourado enevoado — céu poluído, ainda de dia
+    rightRecovered: { emoji: "🌿", name: "Ambiente Saudável" }
   }
 ];
 

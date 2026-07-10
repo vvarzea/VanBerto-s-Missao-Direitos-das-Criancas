@@ -42,7 +42,7 @@ export function unlockAchievement(id) {
   showAchievementToast(def);
 }
 
-export function showAchievementToast(def) {
+export function showAchievementToast(def, label = "Conquista desbloqueada!") {
   const host = document.getElementById("achievementToastHost");
   if (!host) return;
   const toast = document.createElement("div");
@@ -50,7 +50,7 @@ export function showAchievementToast(def) {
   toast.innerHTML = `
     <div class="achv-toast-icon">${def.tier}</div>
     <div class="achv-toast-body">
-      <p class="achv-toast-label">Conquista desbloqueada!</p>
+      <p class="achv-toast-label">${label}</p>
       <p class="achv-toast-name">${def.name}</p>
     </div>
   `;

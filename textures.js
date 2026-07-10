@@ -979,6 +979,49 @@ function makeItemTextures(scene){
 
     tex.refresh();
   }
+  // Livro do saber — 46×44, item de recolha do Monstro da Ignorância (fase "collect").
+  // Reaproveita a paleta dourada/brilhante do projétil "boss_proj_book", mas maior
+  // e com mais detalhe (páginas abertas), para não parecer um projétil a voar.
+  if(!scene.textures.exists("item_livro")){
+    const w=46,h=44,tex=scene.textures.createCanvas("item_livro",w,h), ctx=tex.getContext();
+    ctx.save(); ctx.translate(w/2,h/2+2);
+    ctx.shadowColor="rgba(255,220,80,0.75)"; ctx.shadowBlur=9;
+    // capa de trás (levemente rodada, dá volume ao livro aberto)
+    ctx.fillStyle="#c07a10";
+    ctx.beginPath(); ctx.ellipse(0,2,19,13,0,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    // página esquerda
+    const grL=ctx.createLinearGradient(-19,-10,0,10);
+    grL.addColorStop(0,"#fffdf0"); grL.addColorStop(1,"#ffe9a0");
+    ctx.fillStyle=grL;
+    ctx.beginPath();
+    ctx.moveTo(0,-11); ctx.quadraticCurveTo(-20,-14,-19,0); ctx.quadraticCurveTo(-20,14,0,11); ctx.closePath(); ctx.fill();
+    // página direita
+    const grR=ctx.createLinearGradient(0,-10,19,10);
+    grR.addColorStop(0,"#ffe9a0"); grR.addColorStop(1,"#fffdf0");
+    ctx.fillStyle=grR;
+    ctx.beginPath();
+    ctx.moveTo(0,-11); ctx.quadraticCurveTo(20,-14,19,0); ctx.quadraticCurveTo(20,14,0,11); ctx.closePath(); ctx.fill();
+    // lombada central
+    ctx.strokeStyle="#8a5200"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(0,-11); ctx.lineTo(0,11); ctx.stroke();
+    // linhas de texto simuladas em cada página
+    ctx.strokeStyle="rgba(138,82,0,0.45)"; ctx.lineWidth=1;
+    for(let i=0;i<3;i++){
+      ctx.beginPath(); ctx.moveTo(-15,-5+i*5); ctx.lineTo(-3,-5+i*5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(3,-5+i*5); ctx.lineTo(15,-5+i*5); ctx.stroke();
+    }
+    // contorno geral
+    ctx.strokeStyle="#8a5200"; ctx.lineWidth=1.6;
+    ctx.beginPath();
+    ctx.moveTo(0,-11); ctx.quadraticCurveTo(-20,-14,-19,0); ctx.quadraticCurveTo(-20,14,0,11);
+    ctx.quadraticCurveTo(20,14,19,0); ctx.quadraticCurveTo(20,-14,0,-11); ctx.stroke();
+    // brilho de "conhecimento" a saltar do livro
+    ctx.fillStyle="rgba(255,255,255,0.6)";
+    ctx.beginPath(); ctx.ellipse(-9,-8,3,2.2,Math.PI/4,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    tex.refresh();
+  }
   // Borboleta — 48×40, asas coloridas com padrão
   const BUTTERFLY_COLORS=[
     {top:"#ff80c0",bot:"#e0209a",pat:"#ffd700",stroke:"#800040"}, // rosa

@@ -19,7 +19,7 @@ import { starsForLevel, totalStarsEarned, resetLevelStarTracking, finalizeLevelS
          resetAllStars } from "./stars.js";
 import { unlockedAchievements, checkAchievements, onSecretFoundForAchievements,
          onHistoryReadForAchievements, onCorrectAnswerForAchievements, renderAchievements,
-         resetAchievements } from "./achievements.js";
+         resetAchievements, showAchievementToast } from "./achievements.js";
 import { BOSS_BY_LEVEL } from "./data-bosses.js";
 import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS } from "./data-story.js";
 import { playTitleCard } from "./cinematics.js";
@@ -3124,9 +3124,13 @@ window.addEventListener("DOMContentLoaded", () => {
     // A explicação do objetivo já não vai no diálogo (passava depressa demais) —
     // passa a ser um letreiro, tal como nos níveis normais: o jogador aproxima-se
     // e "lê-o" ao seu ritmo. Só a apresentação dramática (VanBerto's + boss) fica no diálogo.
+    // 3 falas em vez de 2: o VanBerto's reage ANTES do boss se apresentar, e responde
+    // com um "grito de guerra" DEPOIS — dá a sensação de cena, não de anúncio a passar depressa.
+    const introVB = BOSS_INTRO_VB[def.id] || { reaction: "Sinto algo estranho aqui...", rally: "Vamos enfrentar isto juntos!" };
     playBossDialogue([
-      { speaker:"vb",   text: BOSS_INTRO_VB[Math.floor(Math.random()*BOSS_INTRO_VB.length)] },
-      { speaker:"boss", name: `${def.name} ${def.emoji}`, text: def.intro }
+      { speaker:"vb",   text: introVB.reaction },
+      { speaker:"boss", name: `${def.name} ${def.emoji}`, text: def.intro },
+      { speaker:"vb",   text: introVB.rally }
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
@@ -3332,7 +3336,7 @@ window.addEventListener("DOMContentLoaded", () => {
     destroyBossHpBar(); // vida chegou a 0 — a barra já não tem função a partir daqui
     itemsGroup.getChildren().slice().forEach(o => { if(o.getData("kind")==="estrela" && !o.getData("bossCollect")) o.destroy(); });
     const keyMap = { estrela:"item_estrela", heart:"item_heart", medalha:"item_medalha",
-                     brinquedo:"item_brinquedo", balao:"item_chupachupa" };
+                     brinquedo:"item_brinquedo", balao:"item_chupachupa", livro:"item_livro" };
     const key = keyMap[bossState.def.collectKind] || "item_estrela";
     for (let i=0;i<bossState.def.collectCount;i++){
       const x = 250 + i*((1600-500)/bossState.def.collectCount);
@@ -3411,11 +3415,17 @@ window.addEventListener("DOMContentLoaded", () => {
         tint: [0xffd700, 0xff6b35, 0x80d0ff, 0xffffff, 0x60ff80]
       });
       sceneRef.time.delayedCall(750, () => { try{bossConfetti.destroy();}catch{} });
+      // Toast "Direito Recuperado!" — nomeia concretamente o direito que este boss
+      // guardava (em vez de só confetti genérico), reaproveitando o visual das
+      // conquistas (achv-toast) que já existe e já é usado neste jogo.
+      if (def.rightRecovered) {
+        showAchievementToast({ tier: def.rightRecovered.emoji, name: def.rightRecovered.name }, "🎉 Direito Recuperado!");
+      }
       // awaitingQuiz continua true durante a cinemática de vitória — só liberta
       // o jogador quando o portal for criado, a seguir ao diálogo.
       playBossDialogue([
         { speaker:"boss", name:`${def.name} ${def.emoji}`, text: def.defeatLine },
-        { speaker:"vb", text: BOSS_VICTORY_VB[Math.floor(Math.random()*BOSS_VICTORY_VB.length)] }
+        { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!" }
       ], () => {
         awaitingQuiz = false;
         scene_resumeAfterBoss();
@@ -3430,12 +3440,15 @@ window.addEventListener("DOMContentLoaded", () => {
   // próximo nível. Reaproveita a mesma coreografia em fases da porta normal
   // (startDoorAnimation): aviso a pulsar → giro/crescimento com antecipação →
   // burst de partículas → jogador é puxado e desaparece no vórtice.
-  // "color" vem de BOSSES[].color em data-bosses.js — cada boss/mundo tem o
-  // seu próprio portal em vez do roxo fixo de antes.
+  // Centrado na arena (tal como o portal fica sempre bem visível a meio de um
+  // nível normal) e SEM tinta — usa o mesmo "door_party" com o mesmo aspeto
+  // exato da porta normal, para não parecer um objeto diferente. "color" só é
+  // usado agora no brilho das partículas à volta, para manter alguma
+  // identidade do boss sem alterar o próprio portal.
   function spawnBossPortal(scene, onEnter, color = 0x9060ff) {
-    const px = 1400, py = 380;
-    const portal = scene.physics.add.staticSprite(px, py, "door_party").setDisplaySize(92,112);
-    portal.setTint(color);
+    const px = 800, py = 380;
+    const portal = scene.physics.add.staticSprite(px, py, "door_party").setDisplaySize(88,104);
+    portal.clearTint();
     portal.refreshBody();
     scene.tweens.add({ targets:portal, scaleX:{from:1,to:1.1}, scaleY:{from:1,to:1.1}, duration:700, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     const ring = scene.add.particles(0,0,"spark_item",{

@@ -27,24 +27,42 @@ export const REGION_INTRO = {
 };
 
 export const BOSS_OBJECTIVE = {
-  monstro_ignorancia: "Foge dele até apanhares uma estrela ⭐ — só assim consegues atingi-lo! Depois apanha 5 estrelas espalhadas e responde à pergunta final.",
+  monstro_ignorancia: "Foge dele até apanhares uma estrela ⭐ — só assim consegues atingi-lo! Depois apanha 5 livros 📖 espalhados e responde à pergunta final.",
   virus_gigante: "Foge dele até apanhares uma estrela ⭐ para o atingires! Depois apanha 5 corações ❤️ e responde à pergunta final.",
   guardiao_sombras: "Ele teleporta-se pela arena escura — apanha uma estrela ⭐ para o atingires! Depois apanha 5 medalhas 🏅 e responde à pergunta final.",
   poluidor_mecanico: "Ele patrulha depressa numa arena com plataformas móveis — apanha uma estrela ⭐ para o atingires! Depois apanha 5 brinquedos 🧸 e responde à pergunta final."
 };
 
-export const BOSS_INTRO_VB = [
-  "Sinto uma energia estranha aqui... prepara-te!",
-  "Espera! Algo — ou alguém — está a bloquear-nos o caminho!",
-  "Cuidado! Isto não é um vilão comum...",
-  "Sente-se o perigo no ar! Vamos enfrentar isto juntos!"
-];
+// Diálogo de boss, agora por boss (em vez de frases genéricas sorteadas ao acaso).
+// "reaction" = fala do VanBerto's ANTES do boss se apresentar (pressentir o perigo).
+// "rally"    = fala do VanBerto's DEPOIS da ameaça do boss, mesmo antes do combate
+//              começar — um "grito de guerra" ligado ao tema do boss.
+export const BOSS_INTRO_VB = {
+  monstro_ignorancia: {
+    reaction: "Sinto uma névoa estranha... como se as palavras se estivessem a apagar à nossa volta!",
+    rally: "Não vai resultar! Os livros são sempre mais fortes do que o esquecimento!"
+  },
+  virus_gigante: {
+    reaction: "Ugh, sinto o ar pesado... alguma coisa aqui não está nada bem.",
+    rally: "Vamos mostrar-lhe que cuidar da saúde também é um ato de coragem!"
+  },
+  guardiao_sombras: {
+    reaction: "Está tudo tão escuro aqui dentro... mas eu sei que não estamos sozinhos.",
+    rally: "As sombras não resistem quando enfrentamos o medo juntos!"
+  },
+  poluidor_mecanico: {
+    reaction: "Cheira a fumo e óleo no ar... isto não pode continuar assim!",
+    rally: "Vamos mostrar-lhe que o verde é sempre mais forte do que o cinzento!"
+  }
+};
 
-export const BOSS_VICTORY_VB = [
-  "Conseguimos! Mais um direito está a salvo!",
-  "Vitória! Vamos continuar a nossa missão!",
-  "Excelente trabalho! O caminho está livre outra vez!"
-];
+// Uma única fala de vitória por boss, ligada ao direito que acabou de ser recuperado.
+export const BOSS_VICTORY_VB = {
+  monstro_ignorancia: "Conseguimos! O direito à educação vai continuar a brilhar! 📚✨",
+  virus_gigante: "Vencemos! A saúde de todas as crianças está mais protegida! 💊",
+  guardiao_sombras: "A proteção venceu as sombras! Estamos todos mais seguros! 🛡️",
+  poluidor_mecanico: "O planeta agradece! Vamos continuar a cuidar dele juntos! 🌱"
+};
 
 // Um "letreiro"/NPC por nível — alinhado por artIdx (0-19), tal como HISTORY[].
 export const NPC_SIGNS = [
