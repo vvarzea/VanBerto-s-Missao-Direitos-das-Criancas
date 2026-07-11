@@ -21,7 +21,8 @@ import { unlockedAchievements, checkAchievements, onSecretFoundForAchievements,
          onHistoryReadForAchievements, onCorrectAnswerForAchievements, renderAchievements,
          resetAchievements, showAchievementToast } from "./achievements.js";
 import { BOSS_BY_LEVEL } from "./data-bosses.js";
-import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS } from "./data-story.js";
+import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS,
+         KNOWLEDGE_FACTS, BOSS_HP_TAUNTS } from "./data-story.js";
 import { playTitleCard, playCinematic } from "./cinematics.js";
 import { loadNamespace, saveNamespace } from "./storage.js";
 import { makeTextures, makePlatformTextureThemed } from "./textures.js";
@@ -2213,9 +2214,13 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   // Letreiro do objetivo do boss — mesma UX dos letreiros normais (aproxima-te
   // para "ler"), em vez de depender só do diálogo inicial, que passa depressa.
+  // wrapWidth mais largo do que os letreiros normais (200px): o texto do
+  // objetivo do boss costuma ser mais longo do que uma curiosidade de nível,
+  // e com 200px crescia demasiado em altura e sobrepunha-se ao VanBerto's.
   function spawnBossSign(scene, x, y, emoji, text) {
     clearSign();
     currentSign = _createSignAt(scene, x, y, emoji, text);
+    currentSign.wrapWidth = 280;
   }
   function updateSigns() {
     if (!currentSign || !player) return;
@@ -2239,7 +2244,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // um sítio a mostrar a informação, em vez de duplicar em dois locais.
     const lbl = sceneRef.add.text(sign.x, sign.y-56, sign.text, {
       fontSize:"13px", fontStyle:"800", color:"#baffef", stroke:"#062a28", strokeThickness:4,
-      align:"center", wordWrap:{width:200, useAdvancedWrap:true},
+      align:"center", wordWrap:{width: sign.wrapWidth || 200, useAdvancedWrap:true},
       padding:{ x:10, y:8 }
     }).setOrigin(0.5).setDepth(200).setAlpha(0).setScale(0.7);
     sign.activeLbl = lbl;
@@ -3008,7 +3013,6 @@ window.addEventListener("DOMContentLoaded", () => {
   let bossOverlay = null; // rectangle usado pelo Guardião das Sombras
   let bossLockIcon = null; // 🔒/⭐ flutuante por cima do boss — lembrete visual permanente,
                            // sem depender de o jogador ler o texto do objetivo
-  let bossRageIcon = null; // 😠/😡 flutuante por cima do boss — mostra a fase de raiva atual
   let controlsInvertedUntil = 0; // usado pelo "livro mau" do Monstro da Ignorância
 
   // Cartão que desliza rapidamente do topo do ecrã e desaparece sozinho —
@@ -3030,6 +3034,17 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Timers do boss guardados por nome em bossState, para poderem ser substituídos
+  // por versões mais rápidas a meio do combate (fases de HP) sem duplicar lógica.
+  function setBossTimer(scene, name, delay, callback) {
+    if (!bossState) return;
+    if (!bossState._namedTimers) bossState._namedTimers = {};
+    if (bossState._namedTimers[name]) { try{bossState._namedTimers[name].remove(false);}catch{} }
+    const t = scene.time.addEvent({ delay, loop: true, callback });
+    bossState._namedTimers[name] = t;
+    bossTimers.push(t);
+  }
+
   function startBossFight(scene, levelJustCompleted, onComplete) {
     const def = BOSS_BY_LEVEL[levelJustCompleted];
     if (!def) { onComplete(); return; } // sem boss neste ponto — segue o fluxo normal
@@ -3040,9 +3055,14 @@ window.addEventListener("DOMContentLoaded", () => {
     // combate depois de perder todas as vidas), destruir ANTES de substituir
     // bossState — senão a referência perde-se e a barra antiga fica órfã no ecrã.
     destroyBossHpBar();
+    // Fuga corrigida: ao repetir o combate (ex. depois de perder todas as vidas),
+    // o ícone de expressão (😊/😠/😡) da tentativa anterior ficava esquecido e
+    // congelado no ecrã, porque só era destruído no callback de vitória — tem
+    // de ser feito ANTES de bossState ser substituído, senão perde-se a referência.
+    if (bossState && bossState.faceIcon) { try{bossState.faceIcon.destroy();}catch{} }
     // Começa em "intro": todos os timers/movimentos do boss (que verificam
     // phase!=="platform") ficam inertes enquanto decorre a cinemática de entrada.
-    bossState = { def, hp: def.hp, phase: "intro", collected: 0, onComplete, hitCooldownUntil: 0, rageLevel: 0, speedMult: 1 };
+    bossState = { def, hp: def.hp, phase: "intro", collected: 0, onComplete, hitCooldownUntil: 0, chargeCount: 0 };
 
     // Limpar o palco tal como loadLevel já faz — arena dedicada, isolada do nível anterior
     enemyTimers.forEach(t=>{try{t.remove(false);}catch{}}); enemyTimers=[];
@@ -3066,7 +3086,6 @@ window.addEventListener("DOMContentLoaded", () => {
     clearSign();
     if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
     if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
-    if(bossRageIcon){ try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
     if(door){ door.destroy(); door=null; }
 
     const worldW = 1600;
@@ -3091,99 +3110,126 @@ window.addEventListener("DOMContentLoaded", () => {
     if(player.body) player.body.reset(120,460);
     scene.cameras.main.startFollow(player,true,0.08,0.08);
 
-    spawnBossSprite(scene, def, worldW-200);
-    createBossHpBar(scene, def);
-    if (def.specialAttack) {
-      // Bosses com ataque especial próprio (ex.: Monstro da Ignorância) não usam
-      // a lógica genérica de "apanha a estrela para atropelar o boss" — em vez
-      // disso recolhem itens temáticos que carregam um ataque nomeado.
-      bossState.chargeCollected = 0;
-      spawnChargeItem(scene);
-      const chargeTimer = scene.time.addEvent({ delay: 950, loop: true, callback: () => spawnChargeItem(scene) });
-      bossTimers.push(chargeTimer);
-    } else {
-      spawnBossStarItem(scene);
-      const starTimer = scene.time.addEvent({ delay: 1000, loop: true, callback: () => spawnBossStarItem(scene) });
-      bossTimers.push(starTimer);
-    }
+    // Entrada — para o Monstro da Ignorância (protótipo "vitrine"), toca primeiro
+    // um instante de suspense (escurece, treme, só os olhos se veem) ANTES do
+    // boss aparecer por completo; os outros 3 bosses mantêm a entrada direta
+    // que já tinham.
+    function revealBoss() {
+      spawnBossSprite(scene, def, worldW-200);
+      createBossHpBar(scene, def);
+      if (def.knowledgeAttack) {
+        spawnKnowledgeItem(scene);
+        setBossTimer(scene, "knowledge", 1300, () => spawnKnowledgeItem(scene));
+        if (bossState) {
+          bossState.faceIcon = scene.add.text(worldW-200, 300, "😊", { fontSize:"26px" }).setOrigin(0.5).setDepth(7);
+        }
+      } else {
+        spawnBossStarItem(scene);
+        setBossTimer(scene, "star", 1000, () => spawnBossStarItem(scene));
+      }
 
-    // Entrada com mais impacto — antes o boss só "aparecia" sem drama nenhum.
-    scene.cameras.main.shake(220, 0.012);
-    const arriveBurst = scene.add.particles(0, 0, "spark_item", {
-      x: worldW-200, y: 380, speed:{min:80,max:260}, lifespan:700, quantity:34,
-      scale:{start:1.2,end:0}, gravityY:120, angle:{min:0,max:360},
-      tint:[def.color, 0x000000, 0xffffff]
-    });
-    scene.time.delayedCall(600, () => { try{arriveBurst.destroy();}catch{} });
-    showBossBanner(scene, `⚠️ ${def.name.toUpperCase()} ⚠️`, "#ff9090");
+      scene.cameras.main.shake(220, 0.012);
+      const arriveBurst = scene.add.particles(0, 0, "spark_item", {
+        x: worldW-200, y: 380, speed:{min:80,max:260}, lifespan:700, quantity:34,
+        scale:{start:1.2,end:0}, gravityY:120, angle:{min:0,max:360},
+        tint:[def.color, 0x000000, 0xffffff]
+      });
+      scene.time.delayedCall(600, () => { try{arriveBurst.destroy();}catch{} });
+      showBossBanner(scene, `⚠️ ${def.name.toUpperCase()} ⚠️`, "#ff9090");
 
-    if (def.movingArena) {
-      spawnMovingPlatforms(scene, {
-        theme: LEVELS[currentLevel] ? LEVELS[currentLevel].theme : 0,
-        movingPlatforms: [
-          { x: 550, y: 430, w: 190, h: 22, rangeX: 220, speed: 95 },
-          { x: 1050, y: 430, w: 190, h: 22, rangeY: 90, speed: 75 }
-        ]
+      if (def.movingArena) {
+        spawnMovingPlatforms(scene, {
+          theme: LEVELS[currentLevel] ? LEVELS[currentLevel].theme : 0,
+          movingPlatforms: [
+            { x: 550, y: 430, w: 190, h: 22, rangeX: 220, speed: 95 },
+            { x: 1050, y: 430, w: 190, h: 22, rangeY: 90, speed: 75 }
+          ]
+        });
+      }
+      if (def.movementType === "blink") {
+        setBossTimer(scene, "blink", 2600, () => doBossBlink(scene));
+      } else if (def.movementType === "teleport") {
+        // Véu de sombra suave, ligado à cor do próprio boss (não um bloco opaco fixo)
+        bossOverlay = scene.add.rectangle(worldW/2, 257, worldW, 514, def.color, 0.16).setDepth(1);
+        scene.tweens.add({ targets: bossOverlay, alpha:{from:0.75,to:1}, duration:1900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+        setBossTimer(scene, "teleport", 2400, () => doBossTeleport(scene));
+      }
+      if (def.throwsBooks) {
+        setBossTimer(scene, "book", 1700, () => doBossThrowBook(scene));
+      }
+
+      hudText.setText(`${def.emoji} ${def.name}`);
+      itemCountText.setText("");
+      tipText.setText("🎬 " + def.name + " apareceu!");
+      ensureAudio(); SFX.bossArrive();
+
+      // Mantém awaitingQuiz=true (já estava) durante a cinemática — assim update()
+      // não avança o boss/timers/vilões enquanto o diálogo decorre.
+      const objective = BOSS_OBJECTIVE[def.id] || "Foge dele até apanhares uma estrela ⭐ para o atingires!";
+      const introVB = BOSS_INTRO_VB[def.id] || { reaction: "Sinto algo estranho aqui...", rally: "Vamos enfrentar isto juntos!" };
+      // "Menos conversa, mais espetáculo": o Monstro da Ignorância usa só 2 falas
+      // (boss ameaça → VanBerto's responde), sem a reação inicial — os outros
+      // bosses mantêm as 3 falas já existentes.
+      const introSlides = def.knowledgeAttack
+        ? [
+            { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro },
+            { speaker:"vb",   text: introVB.rally }
+          ]
+        : [
+            { speaker:"vb",   text: introVB.reaction },
+            { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro },
+            { speaker:"vb",   text: introVB.rally }
+          ];
+      playBossDialogue(introSlides, () => {
+        if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
+        bossState.phase = "platform";
+        awaitingQuiz = false; awaitingStory = false;
+        scene.physics.resume();
+        if (def.knowledgeAttack) {
+          // Não há "tocar para atingir" — o letreiro/ícone refletem isso: um
+          // 🚫 fixo por cima do boss (nunca fica tocável) e a dica explica o
+          // ataque temático em vez da Star Power genérica.
+          tipText.setText("📚 " + objective);
+          itemCountText.setText(`💡 Conhecimento: 0/${def.chargeGoal || 5}`);
+          spawnBossSign(scene, 280, 486, "📚", objective);
+          if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} }
+          bossLockIcon = scene.add.text(0, 0, "🚫", { fontSize:"22px" }).setOrigin(0.5).setDepth(6);
+          showFloat(scene, worldW-200, 300, bossStartTaunt(def), "#ffb0b0");
+        } else {
+          tipText.setText("⭐ " + objective);
+          // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
+          // para ser o primeiro coisa que encontra ao começar a andar.
+          spawnBossSign(scene, 280, 486, "⭐", objective);
+          // Lembrete visual permanente por cima do boss — 🔒 enquanto não podes
+          // tocar-lhe, ⭐ assim que apanhas o poder da estrela. Substitui/completa
+          // o texto do objetivo, que passa depressa e nem todos leem a tempo.
+          if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} }
+          bossLockIcon = scene.add.text(0, 0, "🔒", { fontSize:"24px" }).setOrigin(0.5).setDepth(6);
+          scene.tweens.add({ targets:bossLockIcon, scaleX:{from:0.85,to:1.15}, scaleY:{from:0.85,to:1.15},
+            duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+        }
       });
     }
-    if (def.movementType === "blink") {
-      const blinkTimer = scene.time.addEvent({ delay: 2600, loop: true, callback: () => doBossBlink(scene) });
-      bossTimers.push(blinkTimer); bossState.blinkTimer = blinkTimer; bossState.blinkBaseDelay = 2600;
-    } else if (def.movementType === "teleport") {
-      // Véu de sombra suave, ligado à cor do próprio boss (não um bloco opaco fixo)
-      bossOverlay = scene.add.rectangle(worldW/2, 257, worldW, 514, def.color, 0.16).setDepth(1);
-      scene.tweens.add({ targets: bossOverlay, alpha:{from:0.75,to:1}, duration:1900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-      const teleTimer = scene.time.addEvent({ delay: 2400, loop: true, callback: () => doBossTeleport(scene) });
-      bossTimers.push(teleTimer); bossState.teleTimer = teleTimer; bossState.teleBaseDelay = 2400;
-    }
-    if (def.throwsBooks) {
-      const bookTimer = scene.time.addEvent({ delay: 1700, loop: true, callback: () => doBossThrowBook(scene) });
-      bossTimers.push(bookTimer); bossState.bookTimer = bookTimer; bossState.bookBaseDelay = 1700;
+
+    function bossStartTaunt(d) {
+      const t = BOSS_HP_TAUNTS[d.id];
+      return t ? ("💬 " + t.atStart) : "";
     }
 
-    hudText.setText(`${def.emoji} ${def.name}`);
-    itemCountText.setText("");
-    tipText.setText("🎬 " + def.name + " apareceu!");
-    ensureAudio(); SFX.bossArrive();
-
-    // Mantém awaitingQuiz=true (já estava) durante a cinemática — assim update()
-    // não avança o boss/timers/vilões enquanto o diálogo decorre.
-    const objective = BOSS_OBJECTIVE[def.id] || "Foge dele até apanhares uma estrela ⭐ para o atingires!";
-    // A explicação do objetivo já não vai no diálogo (passava depressa demais) —
-    // passa a ser um letreiro, tal como nos níveis normais: o jogador aproxima-se
-    // e "lê-o" ao seu ritmo. Só a apresentação dramática (VanBerto's + boss) fica no diálogo.
-    // 3 falas em vez de 2: o VanBerto's reage ANTES do boss se apresentar, e responde
-    // com um "grito de guerra" DEPOIS — dá a sensação de cena, não de anúncio a passar depressa.
-    const introVB = BOSS_INTRO_VB[def.id] || { reaction: "Sinto algo estranho aqui...", rally: "Vamos enfrentar isto juntos!" };
-    playBossDialogue([
-      { speaker:"vb",   text: introVB.reaction },
-      { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro },
-      { speaker:"vb",   text: introVB.rally }
-    ], () => {
-      if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
-      bossState.phase = "platform";
-      const objEmoji = def.specialAttack ? "📚" : "⭐";
-      tipText.setText(objEmoji + " " + objective);
-      awaitingQuiz = false; awaitingStory = false;
-      scene.physics.resume();
-      // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
-      // para ser o primeiro coisa que encontra ao começar a andar.
-      spawnBossSign(scene, 280, 486, objEmoji, objective);
-      if (!def.specialAttack) {
-        // Lembrete visual permanente por cima do boss — 🔒 enquanto não podes
-        // tocar-lhe, ⭐ assim que apanhas o poder da estrela. Substitui/completa
-        // o texto do objetivo, que passa depressa e nem todos leem a tempo.
-        // (Bosses com ataque especial próprio mostram o progresso da carga no
-        // HUD — itemCountText — em vez deste ícone, porque tocar-lhes dói SEMPRE,
-        // não há um estado "desbloqueado" por toque.)
-        if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} }
-        bossLockIcon = scene.add.text(0, 0, "🔒", { fontSize:"24px" }).setOrigin(0.5).setDepth(6);
-        scene.tweens.add({ targets:bossLockIcon, scaleX:{from:0.85,to:1.15}, scaleY:{from:0.85,to:1.15},
-          duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-      } else {
-        itemCountText.setText(`⚡ Carga: 0/${def.specialAttack.chargeCount}`);
-      }
-    });
+    if (def.knowledgeAttack) {
+      // Suspense antes da revelação total: escurece, a câmara treme, só os
+      // "olhos" se veem na escuridão — só depois o boss aparece por inteiro.
+      const dark = scene.add.rectangle(worldW/2, 257, worldW, 514, 0x000000, 0).setDepth(40);
+      scene.tweens.add({ targets: dark, fillAlpha: 0.6, duration: 260, yoyo: true, hold: 260,
+        onComplete: () => { try{dark.destroy();}catch{} } });
+      scene.cameras.main.shake(260, 0.014);
+      const eyes = scene.add.text(worldW-200, 380, "👀", { fontSize:"46px" }).setOrigin(0.5).setDepth(41).setAlpha(0);
+      scene.tweens.add({ targets: eyes, alpha:1, duration:200, yoyo:true, hold:240,
+        onComplete: () => { try{eyes.destroy();}catch{} } });
+      scene.time.delayedCall(620, revealBoss);
+    } else {
+      revealBoss();
+    }
   }
 
   function spawnBossSprite(scene, def, x) {
@@ -3263,21 +3309,21 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.tweens.add({targets:it,y:it.y-8,duration:820,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
   }
 
-  // Itens de carga do ataque especial (ex.: 📚 do Monstro da Ignorância) — reaproveita
-  // a textura do livro (item_livro), mas com um tom azulado para se distinguir dos
-  // livros dourados da fase de recolha pós-derrota. Ao contrário da estrela (só 1 de
-  // cada vez), aqui mantemos até 2 em simultâneo — com 5 para apanhar, um só de cada
-  // vez tornaria o ritmo demasiado lento.
-  function spawnChargeItem(scene) {
-    if (!inBossFight || !bossState || bossState.phase !== "platform" || !bossState.def.specialAttack) return;
-    const already = itemsGroup.getChildren().filter(o => o.active && o.getData("bossCharge")).length;
-    if (already >= 2) return;
+  // Objeto de conhecimento (Monstro da Ignorância, Fase B) — livro/lápis/diploma/
+  // lâmpada à vez, todos com o mesmo efeito (carregam o Raio do Conhecimento),
+  // só a imagem varia para dar sensação de variedade temática.
+  const KNOWLEDGE_TEXTURES = ["item_livro", "item_lapis", "item_diploma", "item_lampada"];
+  function spawnKnowledgeItem(scene) {
+    if (!inBossFight || !bossState || bossState.phase !== "platform") return;
+    const hasOne = itemsGroup.getChildren().some(o => o.active && o.getData("knowledgeItem"));
+    if (hasOne) return;
     const spots = [280, 800, 1320];
     const x = spots[Math.floor(Math.random()*spots.length)];
-    const it = itemsGroup.create(x, 330 + Math.random()*40, "item_livro");
-    it.setDepth(2).setTint(0x80d8ff).setData("kind","conhecimento").setData("bossCharge", true);
-    scene.tweens.add({targets:it,y:it.y-10,duration:760,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
-    scene.tweens.add({targets:it,angle:{from:-6,to:6},duration:900,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+    const tex = KNOWLEDGE_TEXTURES[Math.floor(Math.random()*KNOWLEDGE_TEXTURES.length)];
+    const it = itemsGroup.create(x, 300+Math.random()*80, tex);
+    it.setDepth(2).setData("knowledgeItem", true);
+    scene.tweens.add({targets:it,y:it.y-10,duration:780,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+    scene.tweens.add({targets:it,angle:{from:-8,to:8},duration:900,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
   }
 
   // ---- Movimento "blink" (Monstro da Ignorância): some e reaparece noutro sítio ----
@@ -3316,6 +3362,16 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!inBossFight || !bossState || bossState.phase !== "platform") return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
+    throwOneBook(scene, b);
+    // Fase HP1: "mais ataques" — atira um segundo livro logo a seguir, com um
+    // pequeno atraso para não ficarem sobrepostos.
+    if (bossState.dualThrow) {
+      scene.time.delayedCall(180, () => {
+        if (inBossFight && bossState && bossState.phase === "platform" && b.active) throwOneBook(scene, b);
+      });
+    }
+  }
+  function throwOneBook(scene, b) {
     const isBad = Math.random() < 0.25;
     const key = isBad ? "boss_proj_badbook" : "boss_proj_book";
     const book = itemsGroup.create(b.x, b.y, key);
@@ -3333,21 +3389,14 @@ window.addEventListener("DOMContentLoaded", () => {
     if (bossState.phase !== "platform") return;
     const b = bossState.sprite;
     const mt = bossState.def.movementType;
-    // O ícone de raiva (😠/😡) acompanha o boss, tal como a barra de vida —
-    // sem isto ficava preso no sítio onde apareceu, mesmo com o boss em movimento.
-    if (bossRageIcon) {
-      bossRageIcon.x = b.x;
-      bossRageIcon.y = b.y - (b.displayHeight/2 || 40) - 26;
-    }
-    const speedMult = bossState.speedMult || 1;
     if (mt === "wave") {
-      const t = scene.time.now * 0.0016 * speedMult;
+      const t = scene.time.now * 0.0016;
       const range = 480;
       b.x = bossState.baseX - 700 + Math.sin(t) * range; // oscila em torno do centro da arena
       b.y = bossState.baseY + Math.sin(t*1.7) * 44;
       if (b.body) b.body.reset(b.x, b.y);
     } else if (mt === "patrol" || !mt) {
-      const speed = (bossState.def.patrolSpeed || 110) * speedMult;
+      const speed = bossState.def.patrolSpeed || 110;
       if (b.x < 250) b.setVelocityX(speed);
       if (b.x > 1600-250) b.setVelocityX(-speed);
     }
@@ -3355,63 +3404,19 @@ window.addEventListener("DOMContentLoaded", () => {
 
     drawBossHpBar();
 
-    // Ícone 🔒/⭐ acompanha o boss e reflete se já podes tocar-lhe ou não
+    // Ícone acompanha o boss: 🔒/⭐ nos bosses "clássicos" (reflete se já podes
+    // tocar-lhe), 🚫 fixo no Monstro da Ignorância (nunca se toca, ataca-se com
+    // conhecimento) — e o rostinho de expressão (😊/😠/😡) segue-o também.
     if (bossLockIcon && bossLockIcon.active) {
       bossLockIcon.setPosition(b.x, b.y - (b.displayHeight/2 || 40) - 18);
-      const wantIcon = starPower ? "⭐" : "🔒";
-      if (bossLockIcon.text !== wantIcon) bossLockIcon.setText(wantIcon);
+      if (!bossState.def.knowledgeAttack) {
+        const wantIcon = starPower ? "⭐" : "🔒";
+        if (bossLockIcon.text !== wantIcon) bossLockIcon.setText(wantIcon);
+      }
     }
-  }
-
-  // ---- Fases de raiva: chamado quando o boss perde uma vida (level 1 = zangado,
-  // level 2 = desesperado). Só dispara uma vez por fase (rageLevel só sobe). ----
-  function bossEnterRage(scene, level) {
-    if (!bossState || bossState.rageLevel >= level) return;
-    bossState.rageLevel = level;
-    bossState.speedMult = level === 1 ? 1.35 : 1.7;
-    const def = bossState.def, b = bossState.sprite;
-
-    // Acelerar os timers de movimento/ataque já existentes — o boss não ganha
-    // ataques novos, só fica mais rápido e imprevisível, o que é suficiente
-    // para se sentir a escalada sem complicar o combate para uma criança.
-    if (bossState.blinkTimer) bossState.blinkTimer.delay = bossState.blinkBaseDelay / bossState.speedMult;
-    if (bossState.teleTimer)  bossState.teleTimer.delay  = bossState.teleBaseDelay  / bossState.speedMult;
-    if (bossState.bookTimer)  bossState.bookTimer.delay  = bossState.bookBaseDelay  / bossState.speedMult;
-
-    // Ícone de emoção por cima do boss — 😠 zangado, 😡 desesperado — substitui
-    // o 🔒/⭐ só por um instante (bossLockIcon continua a atualizar-se por cima).
-    if (bossRageIcon) { try{bossRageIcon.destroy();}catch{} }
-    const emo = level === 1 ? "😠" : "😡";
-    bossRageIcon = scene.add.text(b ? b.x : bossState.baseX, (b ? b.y - (b.displayHeight/2||40) - 26 : bossState.baseY), emo, { fontSize:"26px" }).setOrigin(0.5).setDepth(8);
-    scene.tweens.add({ targets:bossRageIcon, scaleX:{from:0.7,to:1.3}, scaleY:{from:0.7,to:1.3}, duration:260, yoyo:true, repeat:2, ease:"Back.easeOut" });
-
-    // Reação de câmara mais forte quanto mais zangado — sem exagerar, só o
-    // suficiente para se notar a diferença entre as duas fases.
-    scene.cameras.main.shake(level===1?160:240, level===1?0.008:0.014);
-    scene.cameras.main.flash(level===1?140:200, 255, level===1?150:70, 60);
-
-    // Fala curta do boss, flutuante por cima dele — não pausa o jogo nem abre
-    // diálogo, só reforça a personalidade durante o combate, como pedido.
-    const lines = def.rageLines || {};
-    const text = level === 1 ? (lines.angry || "Ainda não acabou!") : (lines.desperate || "Não... não pode ser!");
-    showFloat(scene, b ? b.x : bossState.baseX, (b ? b.y : bossState.baseY) - 74, text, level===1 ? "#ffae42" : "#ff4040");
-
-    ensureAudio();
-    beep({ freq: level===1?260:200, dur:0.16, type:"sawtooth", vol:0.06, slideTo: level===1?140:90 });
-  }
-
-  // Dano ao boss (1 HP) reutilizável — tanto o toque com Star Power (bosses normais)
-  // como o Raio do Conhecimento (bosses com ataque especial) passam por aqui, para
-  // as fases de raiva e o fim do combate funcionarem sempre da mesma forma.
-  function damageBoss(scene, x, y, label = "💥 Boss atingido!", shakeAmount = 0.006) {
-    if (!bossState) return;
-    bossState.hp -= 1;
-    scene.cameras.main.shake(100, shakeAmount);
-    score += 20; scoreText.setText(`🌟 Pontos: ${score}`);
-    showFloat(scene, x, y, label, "#ff6b35");
-    const hitsTaken = bossState.def.hp - bossState.hp;
-    if (hitsTaken > 0 && bossState.hp > 0) bossEnterRage(scene, Math.min(2, hitsTaken));
-    if (bossState.hp <= 0) startBossCollectPhase();
+    if (bossState.faceIcon && bossState.faceIcon.active) {
+      bossState.faceIcon.setPosition(b.x, b.y - (b.displayHeight/2 || 40) - 66);
+    }
   }
 
   // Chamado a partir do TOPO de onHitMalware — intercepta QUALQUER colisão com o boss
@@ -3421,23 +3426,23 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!inBossFight || !malwareObj || !malwareObj.getData("isBoss") || bossState.phase !== "platform") return false;
     if (invuln) return true; // já protegido — ignora este toque, sem reprocessar dano
 
-    // Bosses com ataque especial próprio (ex.: Monstro da Ignorância) não têm um
-    // estado "desbloqueado por Star Power" — o único jeito de lhe fazer dano é o
-    // ataque nomeado, disparado ao completar a carga. Tocar-lhe dói SEMPRE.
-    if (starPower && !bossState.def.specialAttack) {
+    // Monstro da Ignorância: "não se derrota com força" — tocar-lhe NUNCA ajuda,
+    // mesmo com Star Power. O único dano possível vem do Raio do Conhecimento
+    // (fireKnowledgeRay, disparado ao carregar objetos — ver handleBossItemCollect).
+    if (starPower && !bossState.def.knowledgeAttack) {
       // Reaproveita a mesma sensação de "atropelar vilão" que já existe no jogo
       if(sceneRef.time.now < bossState.hitCooldownUntil) return true; // debita 1x por toque
       bossState.hitCooldownUntil = sceneRef.time.now + 500;
+      bossState.hp -= 1;
       ensureAudio(); beep({freq:600,dur:0.05,type:"square",vol:0.07,slideTo:200});
-      damageBoss(sceneRef, malwareObj.x, malwareObj.y-60);
+      sceneRef.cameras.main.shake(100,0.006);
+      score+=20; scoreText.setText(`🌟 Pontos: ${score}`);
+      showFloat(sceneRef, malwareObj.x, malwareObj.y-60, "💥 Boss atingido!", "#ff6b35");
+      if (bossState.hp <= 0) startBossCollectPhase();
     } else {
-      // Sem Star Power (ou num boss de ataque especial), tocar no boss agora DÓI
-      // a sério — antes só empurrava, o que tornava os bosses demasiado
-      // inofensivos. Perde-se uma vida, tal como ao tocar num vilão normal, com
-      // o mesmo knockback e i-frames.
-      const warn = bossState.def.specialAttack
-        ? `⚡ Precisas do ${bossState.def.specialAttack.name}!`
-        : "⭐ Precisas de Star Power!";
+      // Sem Star Power (ou neste boss, SEMPRE): tocar no boss dói a sério —
+      // perde-se uma vida, com o mesmo knockback e i-frames de um vilão normal.
+      const warn = bossState.def.knowledgeAttack ? "📚 A força não funciona aqui!" : "⭐ Precisas de Star Power!";
       bossHitPlayer(sceneRef, malwareObj, warn);
     }
     return true; // sinaliza a onHitMalware para NÃO aplicar a lógica normal de dano
@@ -3484,7 +3489,6 @@ window.addEventListener("DOMContentLoaded", () => {
     const b = bossState.sprite;
     b.setVelocity(0,0); b.body.setEnable(false); b.setAlpha(0.35);
     if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} bossLockIcon=null; } // boss já não é tocável — ícone deixa de fazer sentido
-    if (bossRageIcon) { try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
     destroyBossHpBar(); // vida chegou a 0 — a barra já não tem função a partir daqui
     itemsGroup.getChildren().slice().forEach(o => { if(o.getData("kind")==="estrela" && !o.getData("bossCollect")) o.destroy(); });
     const keyMap = { estrela:"item_estrela", heart:"item_heart", medalha:"item_medalha",
@@ -3519,8 +3523,17 @@ window.addEventListener("DOMContentLoaded", () => {
       bossHitPlayer(sceneRef, null, "😵 Informação errada!");
       return true;
     }
-    if (itemObj.getData("bossCharge")) {
-      handleChargeItemCollect(itemObj);
+    if (itemObj.getData("knowledgeItem")) {
+      itemObj.destroy();
+      if (!bossState || bossState.phase !== "platform") return true;
+      bossState.chargeCount += 1;
+      score += 8; scoreText.setText(`🌟 Pontos: ${score}`);
+      ensureAudio(); SFX.coin();
+      const fact = KNOWLEDGE_FACTS[Math.floor(Math.random()*KNOWLEDGE_FACTS.length)];
+      showFloat(sceneRef, player.x, player.y-68, fact, "#ffd700");
+      const goal = bossState.def.chargeGoal || 5;
+      itemCountText.setText(`💡 Conhecimento: ${bossState.chargeCount}/${goal}`);
+      if (bossState.chargeCount >= goal) fireKnowledgeRay(sceneRef);
       return true;
     }
     if (!itemObj.getData("bossCollect")) return false;
@@ -3534,70 +3547,66 @@ window.addEventListener("DOMContentLoaded", () => {
     return true;
   }
 
-  // Recolha de um item de carga (📚 do Monstro da Ignorância, por agora). Cada
-  // item mostra uma curiosidade muito curta e quase invisível (não pausa nada),
-  // reforçando a ideia de que o conhecimento é a arma — só ao apanhar o número
-  // definido em specialAttack.chargeCount é que o ataque nomeado dispara sozinho.
-  function handleChargeItemCollect(itemObj) {
-    itemObj.destroy();
-    if (!bossState || !bossState.def.specialAttack) return;
-    const sa = bossState.def.specialAttack;
-    bossState.chargeCollected = (bossState.chargeCollected || 0) + 1;
-    score += 10; scoreText.setText(`🌟 Pontos: ${score}`);
-    ensureAudio(); SFX.coin();
-    const facts = sa.chargeFacts || [];
-    const fact = facts.length ? facts[(bossState.chargeCollected - 1) % facts.length] : `+1 (${bossState.chargeCollected}/${sa.chargeCount})`;
-    showFloat(sceneRef, player.x, player.y-68, fact, "#80d8ff");
-    itemCountText.setText(`⚡ Carga: ${bossState.chargeCollected}/${sa.chargeCount}`);
-    if (bossState.chargeCollected >= sa.chargeCount) fireKnowledgeAttack(sceneRef);
+  // Raio do Conhecimento — o ataque do Monstro da Ignorância. Dispara sozinho
+  // assim que o medidor de conhecimento enche (não é preciso tocar no boss).
+  // Desenha um raio em ziguezague do VanBerto's até ao boss, tira 1 HP, e
+  // atualiza a fase do combate (expressão/velocidade/ataques) se for o caso.
+  function fireKnowledgeRay(scene) {
+    if (!bossState || !bossState.sprite || !bossState.sprite.active) return;
+    const b = bossState.sprite;
+    bossState.chargeCount = 0;
+    ensureAudio(); SFX.knowledgeRay();
+    const g = scene.add.graphics().setDepth(8);
+    const segs = 7;
+    const draw = (alpha) => {
+      g.clear();
+      g.lineStyle(5, 0xfff066, alpha);
+      g.beginPath();
+      g.moveTo(player.x, player.y-30);
+      for (let i=1;i<segs;i++){
+        const t=i/segs;
+        const jx = Phaser.Math.Linear(player.x, b.x, t) + (Math.random()-0.5)*30;
+        const jy = Phaser.Math.Linear(player.y-30, b.y, t) + (Math.random()-0.5)*20;
+        g.lineTo(jx,jy);
+      }
+      g.lineTo(b.x,b.y);
+      g.strokePath();
+    };
+    draw(1);
+    scene.cameras.main.shake(160,0.010);
+    scene.cameras.main.flash(90,255,240,150);
+    scene.tweens.addCounter({from:1,to:0,duration:260,onUpdate:(tw)=>draw(tw.getValue()),onComplete:()=>{try{g.destroy();}catch{}}});
+    showFloat(scene, b.x, b.y-70, "⚡📚 Raio do Conhecimento!", "#fff066");
+    score += 25; scoreText.setText(`🌟 Pontos: ${score}`);
+    itemCountText.setText(`💡 Conhecimento: 0/${bossState.def.chargeGoal || 5}`);
+    bossState.hp -= 1;
+    drawBossHpBar();
+    if (bossState.hp <= 0) { startBossQuizPhase(); return; }
+    applyBossPhase(scene, bossState.hp);
   }
 
-  // O ataque especial em si — dispara automaticamente assim que a carga enche.
-  // Visualmente: um raio desenhado do VanBerto's até ao boss + brilho no impacto,
-  // sem precisar de nenhuma arte nova. Reaproveita damageBoss() para o dano em
-  // si, para as fases de raiva reagirem exatamente como num boss normal.
-  function fireKnowledgeAttack(scene) {
+  // 3 fases de HP — o boss fica visivelmente mais bravo, mais rápido e com mais
+  // ataques à medida que perde vida, em vez de se manter sempre igual até cair.
+  function applyBossPhase(scene, hp) {
     if (!bossState || !bossState.sprite || !bossState.sprite.active) return;
-    const sa = bossState.def.specialAttack;
-    bossState.chargeCollected = 0;
-    // Limpar itens de carga por apanhar, para a arena não ficar com "sobras"
-    // enquanto decorre a animação do ataque.
-    itemsGroup.getChildren().slice().forEach(o => { if (o.getData("bossCharge")) o.destroy(); });
-
     const b = bossState.sprite;
-    itemCountText.setText(`⚡ ${sa.name}!`);
-    showFloat(scene, player.x, player.y-90, `⚡ ${sa.name}!`, "#80d8ff");
-
-    // O raio propriamente dito: uma linha grossa que cresce do jogador até ao
-    // boss e desaparece rapidamente — desenhado com Graphics, sem precisar de
-    // nenhuma textura nova.
-    const beamGfx = scene.add.graphics().setDepth(9);
-    beamGfx.lineStyle(6, 0x80d8ff, 0.95);
-    beamGfx.beginPath();
-    beamGfx.moveTo(player.x, player.y - 20);
-    beamGfx.lineTo(b.x, b.y);
-    beamGfx.strokePath();
-    beamGfx.lineStyle(2, 0xffffff, 0.9);
-    beamGfx.beginPath();
-    beamGfx.moveTo(player.x, player.y - 20);
-    beamGfx.lineTo(b.x, b.y);
-    beamGfx.strokePath();
-    scene.tweens.add({ targets: beamGfx, alpha: 0, duration: 340, delay: 90, onComplete: () => { try{beamGfx.destroy();}catch{} } });
-
-    scene.cameras.main.flash(200, 130, 210, 255);
-    scene.cameras.main.shake(160, 0.010);
-    ensureAudio();
-    beep({ freq:440, dur:0.10, type:"square", vol:0.06, slideTo:1200 });
-    setTimeout(() => beep({ freq:900, dur:0.16, type:"triangle", vol:0.06, slideTo:1600 }), 90);
-
-    const impactBurst = scene.add.particles(0, 0, "spark_item", {
-      x: b.x, y: b.y, speed:{min:100,max:260}, lifespan:520, quantity:26,
-      scale:{start:1.1,end:0}, angle:{min:0,max:360}, tint:[0x80d8ff, 0xffffff, 0xffd700]
-    });
-    scene.time.delayedCall(90, () => {
-      damageBoss(scene, b.x, b.y-60, "💥 Atingido!", 0.012);
-      scene.time.delayedCall(500, () => { try{impactBurst.destroy();}catch{} });
-    });
+    const taunts = BOSS_HP_TAUNTS[bossState.def.id];
+    if (hp === 2) {
+      b.setTint(0xffb0b0);
+      if (bossState.faceIcon) bossState.faceIcon.setText("😠");
+      setBossTimer(scene, "blink", 1900, () => doBossBlink(scene));
+      if (bossState.def.throwsBooks) setBossTimer(scene, "book", 1300, () => doBossThrowBook(scene));
+      if (taunts) showFloat(scene, b.x, b.y-70, "💬 " + taunts.hp2, "#ff9090");
+      scene.cameras.main.shake(140, 0.008);
+    } else if (hp === 1) {
+      b.setTint(0xff4040);
+      if (bossState.faceIcon) bossState.faceIcon.setText("😡");
+      bossState.dualThrow = true; // "mais ataques": atira 2 livros de cada vez
+      setBossTimer(scene, "blink", 1300, () => doBossBlink(scene));
+      if (bossState.def.throwsBooks) setBossTimer(scene, "book", 950, () => doBossThrowBook(scene));
+      if (taunts) showFloat(scene, b.x, b.y-70, "💬 " + taunts.hp1, "#ff5050");
+      scene.cameras.main.shake(200, 0.012);
+    }
   }
 
   function startBossQuizPhase() {
@@ -3613,14 +3622,13 @@ window.addEventListener("DOMContentLoaded", () => {
     showQuiz(quiz, () => {
       const def = bossState.def;
       const finished = bossState.onComplete;
+      const bossX = bossState.baseX, bossY = bossState.baseY;
+      const faceIcon = bossState.faceIcon;
       ensureAudio(); SFX.win();
       player.setAlpha(1);
-      // Pequena "pose de vitória" — dois saltinhos rápidos do VanBerto's, para
-      // o jogador sentir que o herói também está a celebrar, não só o ecrã.
-      sceneRef.tweens.add({ targets: player, y: player.y - 24, duration: 170, yoyo: true, repeat: 1, ease: "Sine.easeOut" });
       if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
       if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
-      if(bossRageIcon){ try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
+      if(faceIcon){ try{faceIcon.destroy();}catch{} }
       destroyBossHpBar();
       inBossFight = false; bossState = null;
       // Limpar o HUD do combate ANTES da cinemática — sem isto ficavam valores
@@ -3628,6 +3636,32 @@ window.addEventListener("DOMContentLoaded", () => {
       hudText.setText("🏆 Vitória!");
       itemCountText.setText("");
       tipText.setText("");
+
+      if (def.knowledgeAttack) {
+        // Vitrine completa: explosão no sítio do boss (em vez de confetti
+        // genérico no jogador), seguida — depois do diálogo curto — do
+        // espetáculo de transformação do mundo e da cena "Direito Recuperado".
+        sceneRef.cameras.main.flash(280, 255, 215, 60);
+        const burst = sceneRef.add.particles(0, 0, "spark_item", {
+          x: bossX, y: bossY, speed: { min: 100, max: 300 }, lifespan: 950,
+          quantity: 40, scale: { start: 1.2, end: 0 }, gravityY: 140,
+          angle: { min: 0, max: 360 }, tint: [0x8a5cff, 0x000000, 0xffd700, 0xffffff]
+        });
+        sceneRef.time.delayedCall(800, () => { try{burst.destroy();}catch{} });
+        playBossDialogue([
+          { speaker:"boss", name:def.name, emoji:def.emoji, text: def.defeatLine },
+          { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!" }
+        ], () => {
+          playKnowledgeVictorySpectacle(sceneRef, def, () => {
+            awaitingQuiz = false;
+            scene_resumeAfterBoss();
+            tipText.setText("🌀 Caminha até ao portal para continuares a aventura!");
+            spawnBossPortal(sceneRef, finished, def.color);
+          });
+        });
+        return;
+      }
+
       // Momento de celebração — flash dourado + confetti no ecrã, logo após o
       // boss ser derrotado e antes do diálogo de despedida. Sem isto, vencer um
       // boss não tinha nenhum "clímax" visual, ao contrário do ecrã de vitória
@@ -3641,25 +3675,6 @@ window.addEventListener("DOMContentLoaded", () => {
         tint: [0xffd700, 0xff6b35, 0x80d0ff, 0xffffff, 0x60ff80]
       });
       sceneRef.time.delayedCall(750, () => { try{bossConfetti.destroy();}catch{} });
-      // Segunda onda de confetti, um pouco depois e com a cor do próprio boss
-      // misturada — dá a sensação de uma celebração maior em vez de um único
-      // burst instantâneo, sem exigir arte nova nenhuma.
-      sceneRef.time.delayedCall(400, () => {
-        const bossConfetti2 = sceneRef.add.particles(0, 0, "spark_item", {
-          x: player.x, y: player.y - 30,
-          speed: { min: 70, max: 220 }, lifespan: 1000, quantity: 26,
-          scale: { start: 1, end: 0 }, gravityY: 140,
-          angle: { min: 0, max: 360 },
-          tint: [def.color, 0xffd700, 0xff80c0, 0x80ffea, 0xffffff]
-        });
-        sceneRef.time.delayedCall(900, () => { try{bossConfetti2.destroy();}catch{} });
-      });
-      // Pequeno acorde final a fechar a vitória — mais festivo do que o SFX.win()
-      // sozinho, sem chegar ao exagero do fanfarrão do fim de jogo (finalWin()).
-      setTimeout(() => {
-        [880,1108,1318].forEach((f,i) => setTimeout(() =>
-          beep({ freq:f, dur:0.22, type:"triangle", vol:0.05, slideTo:f*1.05 }), i*45));
-      }, 300);
       // Cartão "✅ VITÓRIA!" a deslizar do topo — o mesmo tipo de flourish do
       // cartão de chegada do boss, para fechar a cena com o mesmo impacto com
       // que começou (antes só havia confetti, sem nenhum destaque de texto).
@@ -3684,6 +3699,75 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Espetáculo de vitória do Monstro da Ignorância — o mundo transforma-se
+  // visualmente em vez de só aparecer confetti: o céu clareia, aparecem
+  // crianças a bater palmas, livros voam, o VanBerto's festeja, e por fim o
+  // "Direito Recuperado" nasce como uma cena própria (livro gigante que abre,
+  // liberta luz e sobe ao céu) antes do portal aparecer.
+  function playKnowledgeVictorySpectacle(scene, def, onDone) {
+    ensureAudio(); SFX.knowledgeVictory();
+    const worldW = 1600;
+
+    // 1) O céu clareia
+    const skyWash = scene.add.rectangle(worldW/2, 257, worldW, 514, 0xfff3c0, 0).setDepth(30);
+    scene.tweens.add({ targets: skyWash, fillAlpha: 0.32, duration: 700, yoyo: true, hold: 1400, ease: "Sine.easeInOut",
+      onComplete: () => { try{skyWash.destroy();}catch{} } });
+
+    // 2) Crianças a bater palmas, dos dois lados
+    [260, 1340].forEach((x, i) => {
+      const kid = scene.add.text(x, 500, i === 0 ? "🧒" : "👧", { fontSize:"30px" }).setOrigin(0.5).setDepth(31).setAlpha(0).setScale(0.6);
+      scene.tweens.add({ targets: kid, alpha:1, scale:1, y: 480, duration: 380, ease:"Back.easeOut", delay: 200+i*120 });
+      scene.time.delayedCall(500+i*120, () => {
+        scene.tweens.add({ targets: kid, scaleX:{from:1,to:1.15}, duration:180, yoyo:true, repeat:5, ease:"Sine.easeInOut" });
+      });
+      scene.time.delayedCall(2600, () => { scene.tweens.add({ targets: kid, alpha:0, duration:400, onComplete:()=>{try{kid.destroy();}catch{}} }); });
+    });
+
+    // 3) Livros a voar, a subir e desaparecer
+    for (let i=0;i<5;i++){
+      scene.time.delayedCall(300+i*160, () => {
+        const bx = 300 + Math.random()*1000;
+        const book = scene.add.text(bx, 520, "📖", { fontSize:"26px" }).setOrigin(0.5).setDepth(31).setAlpha(0.95);
+        scene.tweens.add({ targets: book, y: 60+Math.random()*80, x: bx+(Math.random()-0.5)*160, angle: (Math.random()-0.5)*160,
+          alpha: 0, duration: 1700+Math.random()*400, ease:"Sine.easeOut", onComplete: () => { try{book.destroy();}catch{} } });
+      });
+    }
+
+    // 4) Arco-íris breve no topo
+    const rainbow = scene.add.text(worldW/2, 40, "🌈", { fontSize:"54px" }).setOrigin(0.5).setDepth(30).setAlpha(0);
+    scene.tweens.add({ targets: rainbow, alpha:1, duration:400, yoyo:true, hold:1200, delay:250,
+      onComplete: () => { try{rainbow.destroy();}catch{} } });
+
+    // 5) VanBerto's festeja — saltinho + troféu
+    scene.tweens.add({ targets: player, y: player.y-26, duration: 260, yoyo:true, repeat:2, ease:"Sine.easeOut" });
+    const trophy = scene.add.text(player.x, player.y-70, "🏆", { fontSize:"26px" }).setOrigin(0.5).setDepth(31).setAlpha(0).setScale(0.5);
+    scene.tweens.add({ targets: trophy, alpha:1, scale:1, y: trophy.y-14, duration: 420, ease:"Back.easeOut", delay:150 });
+    scene.time.delayedCall(2400, () => { scene.tweens.add({ targets: trophy, alpha:0, duration:400, onComplete:()=>{try{trophy.destroy();}catch{}} }); });
+
+    // 6) "Direito Recuperado" — livro gigante nasce do chão, abre-se, e sobe ao céu
+    scene.time.delayedCall(1500, () => {
+      const cx = worldW/2, groundY = 500;
+      const bigBook = scene.add.text(cx, groundY, "📕", { fontSize:"64px" }).setOrigin(0.5).setDepth(32).setAlpha(0).setScale(0.12);
+      scene.tweens.add({ targets: bigBook, alpha:1, scaleX:1, scaleY:1, y: 380, duration: 650, ease:"Back.easeOut" });
+      scene.time.delayedCall(700, () => {
+        bigBook.setText("📖");
+        ensureAudio(); beep({freq:700,dur:0.14,type:"triangle",vol:0.06,slideTo:1200});
+        const flash = scene.add.circle(cx, 380, 6, 0xfff6c0, 0.9).setDepth(33);
+        scene.tweens.add({ targets: flash, radius:120, alpha:0, duration:520, ease:"Sine.easeOut", onComplete:()=>{try{flash.destroy();}catch{}} });
+        const rightName = (def.rightRecovered && def.rightRecovered.name) || def.name;
+        const rightEmoji = (def.rightRecovered && def.rightRecovered.emoji) || "📚";
+        const label = scene.add.text(cx, 300, `${rightEmoji} ${rightName}`, {
+          fontSize:"24px", fontStyle:"900", color:"#fff6c0", stroke:"#3a2400", strokeThickness:6
+        }).setOrigin(0.5).setDepth(33).setAlpha(0);
+        scene.tweens.add({ targets: label, alpha:1, y:280, duration:420, ease:"Sine.easeOut" });
+        scene.time.delayedCall(1000, () => {
+          scene.tweens.add({ targets:[bigBook,label], y:"-=180", alpha:0, duration:750, ease:"Sine.easeIn",
+            onComplete: () => { try{bigBook.destroy();}catch{} try{label.destroy();}catch{} onDone?.(); } });
+        });
+      });
+    });
+  }
+
   // Portal que aparece na arena depois de um boss derrotado — o jogador tem de
   // caminhar até ele para avançar, em vez de seguir automaticamente para o
   // próximo nível. Reaproveita a mesma coreografia em fases da porta normal
@@ -3696,16 +3780,20 @@ window.addEventListener("DOMContentLoaded", () => {
   // identidade do boss sem alterar o próprio portal.
   function spawnBossPortal(scene, onEnter, color = 0x9060ff) {
     const px = 800, py = 380;
-    const portal = scene.physics.add.staticSprite(px, py, "door_party").setDisplaySize(88,104);
+    // Maior e com mais brilho do que a porta normal dos níveis — é o fecho de
+    // um combate de boss, faz sentido destacar-se mais.
+    const portal = scene.physics.add.staticSprite(px, py, "door_party").setDisplaySize(112,132);
     portal.clearTint();
     portal.refreshBody();
+    const glow = scene.add.circle(px, py, 70, color, 0.16).setDepth(3);
+    scene.tweens.add({ targets:glow, radius:{from:70,to:86}, alpha:{from:0.16,to:0.30}, duration:900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     scene.tweens.add({ targets:portal, scaleX:{from:1,to:1.1}, scaleY:{from:1,to:1.1}, duration:700, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     const ring = scene.add.particles(0,0,"spark_item",{
-      x:px, y:py, speed:{min:20,max:60}, lifespan:900, quantity:1, frequency:120,
-      scale:{start:0.7,end:0}, tint:[color,0xffd700,0xffffff]
+      x:px, y:py, speed:{min:26,max:80}, lifespan:1000, quantity:1, frequency:60,
+      scale:{start:0.85,end:0}, tint:[color,0xffd700,0xffffff]
     });
-    const lbl = scene.add.text(px, py-88, "🌀 Portal!", { fontSize:"16px", fontStyle:"900", color:"#e0c8ff", stroke:"#200040", strokeThickness:5 }).setOrigin(0.5).setDepth(20);
-    scene.tweens.add({ targets:lbl, y:py-98, duration:900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+    const lbl = scene.add.text(px, py-96, "🌀 Portal!", { fontSize:"16px", fontStyle:"900", color:"#e0c8ff", stroke:"#200040", strokeThickness:5 }).setOrigin(0.5).setDepth(20);
+    scene.tweens.add({ targets:lbl, y:py-106, duration:900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
 
     let triggered = false;
     let ov = null;
@@ -3714,6 +3802,8 @@ window.addEventListener("DOMContentLoaded", () => {
       triggered = true;
       try{ scene.physics.world.removeCollider(ov); }catch{}
       try{ ring.stop(); }catch{}
+      scene.tweens.killTweensOf(glow);
+      scene.tweens.add({ targets:glow, alpha:0, duration:250, onComplete:()=>{try{glow.destroy();}catch{}} });
       scene.tweens.killTweensOf(lbl);
       scene.tweens.add({ targets:lbl, alpha:0, duration:200, onComplete:()=>lbl.destroy() });
       ensureAudio(); SFX.doorOpen();

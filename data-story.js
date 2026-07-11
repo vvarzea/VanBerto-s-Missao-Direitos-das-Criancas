@@ -27,7 +27,7 @@ export const REGION_INTRO = {
 };
 
 export const BOSS_OBJECTIVE = {
-  monstro_ignorancia: "Foge dele e apanha 5 livros 📚 de conhecimento para carregares o Raio do Conhecimento — ele dispara sozinho e parte o escudo do monstro! Repete até o vencer, depois apanha mais 5 livros e responde à pergunta final.",
+  monstro_ignorancia: "Nunca lhe toques! Apanha livros, lápis, diplomas e lâmpadas para carregar o Raio do Conhecimento.",
   virus_gigante: "Foge dele até apanhares uma estrela ⭐ para o atingires! Depois apanha 5 corações ❤️ e responde à pergunta final.",
   guardiao_sombras: "Ele teleporta-se pela arena escura — apanha uma estrela ⭐ para o atingires! Depois apanha 5 medalhas 🏅 e responde à pergunta final.",
   poluidor_mecanico: "Ele patrulha depressa numa arena com plataformas móveis — apanha uma estrela ⭐ para o atingires! Depois apanha 5 brinquedos 🧸 e responde à pergunta final."
@@ -40,7 +40,7 @@ export const BOSS_OBJECTIVE = {
 export const BOSS_INTRO_VB = {
   monstro_ignorancia: {
     reaction: "Sinto uma névoa estranha... como se as palavras se estivessem a apagar à nossa volta!",
-    rally: "Não vai resultar! Os livros são sempre mais fortes do que o esquecimento!"
+    rally: "Vamos mostrar-lhe o poder dos livros!"
   },
   virus_gigante: {
     reaction: "Ugh, sinto o ar pesado... alguma coisa aqui não está nada bem.",
@@ -62,6 +62,27 @@ export const BOSS_VICTORY_VB = {
   virus_gigante: "Vencemos! A saúde de todas as crianças está mais protegida! 💊",
   guardiao_sombras: "A proteção venceu as sombras! Estamos todos mais seguros! 🛡️",
   poluidor_mecanico: "O planeta agradece! Vamos continuar a cuidar dele juntos! 🌱"
+};
+
+// Frases curtas mostradas (sem parar o jogo, só um "floatie") sempre que se
+// apanha um objeto de conhecimento no combate do Monstro da Ignorância —
+// reforça a aprendizagem quase sem se notar, tal como pedido.
+export const KNOWLEDGE_FACTS = [
+  "📖 Ler ajuda-nos a pensar.",
+  "🎒 A escola abre portas.",
+  "🌟 Aprender é um direito.",
+  "🧠 Cada livro é um super-poder.",
+  "✏️ Errar também é aprender."
+];
+
+// Falas curtas do boss em marcos de HP durante o combate (não só no início/fim) —
+// só o Monstro da Ignorância tem isto por agora (protótipo "vitrine").
+export const BOSS_HP_TAUNTS = {
+  monstro_ignorancia: {
+    atStart: "Nunca aprenderás!",
+    hp2: "Isso foi sorte!",
+    hp1: "Não! Estou a perder!"
+  }
 };
 
 // Um "letreiro"/NPC por nível — alinhado por artIdx (0-19), tal como HISTORY[].

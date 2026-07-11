@@ -16,37 +16,20 @@ export const BOSSES = [
     movementType: "blink",   // some e reaparece noutra plataforma
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
-    // Falas curtas mostradas por cima do boss a cada vida perdida — sem pausar o
-    // jogo, só para dar personalidade ao combate (rageLines.angry na 1ª vida
-    // perdida, rageLines.desperate na 2ª, já com o HP no mínimo).
-    rageLines: { angry: "Achas que sabes assim tanto?!", desperate: "Não... o conhecimento está a vencer-me!" },
-    // Ataque especial próprio — substitui completamente a lógica de "apanha a
-    // estrela para atropelar o boss" (que continua a ser usada por omissão nos
-    // outros bosses). Em vez disso: apanha `chargeCount` itens de conhecimento
-    // (reaproveita o item_livro existente, só com um tom azulado) para carregar
-    // e disparar automaticamente o Raio do Conhecimento — só ele parte o escudo.
-    // Precisa de 3 cargas completas para esvaziar o hp:3 do boss.
-    specialAttack: {
-      name: "Raio do Conhecimento",
-      chargeCount: 5,
-      // Uma frase muito curta por item apanhado — quase invisível, não pausa
-      // nada, só reforça a ideia por trás do combate (pedido explícito: o
-      // combate também devia ensinar, sem interromper o ritmo do jogo).
-      chargeFacts: [
-        "📖 Ler ajuda-nos a pensar.",
-        "🏫 A escola abre portas.",
-        "✨ Aprender é um direito.",
-        "🔑 Cada livro é uma chave.",
-        "🕊️ Saber mais é ser mais livre."
-      ]
-    },
-    collectKind: "livro",    // livros, não estrelas — a estrela ⭐ continua a ser só o power-up universal para o atingires
+    collectKind: "livro",    // fallback só usado se knowledgeAttack alguma vez for desligado
     collectCount: 5,
     quizTheme: "educacao",
     hp: 3,
     themeIdx: 16,              // índigo cósmico noturno
     throwsBooks: true,         // atira livros (bons e maus) enquanto foges dele
-    rightRecovered: { emoji: "📚", name: "Direito à Educação" }
+    rightRecovered: { emoji: "📚", name: "Direito à Educação" },
+    // Fase B — "vitrine": este boss não se derrota tocando-lhe. Apanha objetos
+    // de conhecimento (livro/lápis/diploma/lâmpada) para carregar o Raio do
+    // Conhecimento; cada raio completo tira 1 HP. Os outros 3 bosses continuam
+    // com a mecânica da Star Power universal — isto é deliberadamente exclusivo
+    // deste boss, como protótipo.
+    knowledgeAttack: true,
+    chargeGoal: 5
   },
   {
     id: "virus_gigante",
@@ -57,7 +40,6 @@ export const BOSSES = [
     movementType: "wave",    // flutua em onda, pulsa de tamanho
     intro: "Vou espalhar-me por todo o lado!",
     defeatLine: "Argh! Vacinado... derrotado! 💉",
-    rageLines: { angry: "Vou espalhar-me ainda mais depressa!", desperate: "Não... estou a ser derrotado!" },
     collectKind: "heart",
     collectCount: 5,
     quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
@@ -74,7 +56,6 @@ export const BOSSES = [
     movementType: "teleport", // arena escura, teleporta-se entre 3 pontos
     intro: "Nas sombras, ninguém te protege!",
     defeatLine: "A luz da proteção venceu! 🛡️✨",
-    rageLines: { angry: "As sombras vão engolir-te!", desperate: "A luz... está demasiado forte!" },
     collectKind: "medalha",
     collectCount: 5,
     quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
@@ -94,7 +75,6 @@ export const BOSSES = [
     movingArena: true,       // arena com plataformas móveis (reaproveita o sistema existente)
     intro: "O planeta é meu para sujar!",
     defeatLine: "O verde venceu o cinzento! 🌱",
-    rageLines: { angry: "Mais fumo, mais poluição!", desperate: "As minhas engrenagens... estão a falhar!" },
     collectKind: "brinquedo",
     collectCount: 5,
     quizTheme: "ambiente",

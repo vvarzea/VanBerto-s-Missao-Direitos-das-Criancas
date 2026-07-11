@@ -1022,6 +1022,24 @@ function makeItemTextures(scene){
     ctx.restore();
     tex.refresh();
   }
+  // Ícones de "conhecimento" — lápis, diploma, lâmpada — desenhados a partir do
+  // próprio emoji (glow por trás), para dar variedade rápida ao Monstro da
+  // Ignorância sem ter de desenhar 3 ícones vetoriais à mão. Junta-se ao
+  // item_livro já existente para formar o conjunto de 4 usado nesse combate.
+  function makeEmojiItemTexture(scene, key, emoji, size = 44, glow = "rgba(255,220,80,0.75)") {
+    if (scene.textures.exists(key)) return;
+    const tex = scene.textures.createCanvas(key, size, size), ctx = tex.getContext();
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = `${Math.round(size*0.78)}px sans-serif`;
+    ctx.shadowColor = glow; ctx.shadowBlur = 10;
+    ctx.fillText(emoji, size/2, size/2+2);
+    ctx.restore();
+    tex.refresh();
+  }
+  makeEmojiItemTexture(scene, "item_lapis",   "✏️", 44, "rgba(255,180,80,0.75)");
+  makeEmojiItemTexture(scene, "item_diploma", "🎓", 46, "rgba(160,140,255,0.75)");
+  makeEmojiItemTexture(scene, "item_lampada", "💡", 44, "rgba(255,240,120,0.85)");
   // Borboleta — 48×40, asas coloridas com padrão
   const BUTTERFLY_COLORS=[
     {top:"#ff80c0",bot:"#e0209a",pat:"#ffd700",stroke:"#800040"}, // rosa

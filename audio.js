@@ -50,6 +50,21 @@ export const SFX = {
     setTimeout(() => beep({ freq:90,  dur:0.30, type:"square",   vol:0.065, slideTo:50 }), 140);
     setTimeout(() => beep({ freq:200, dur:0.12, type:"sawtooth", vol:0.05,  slideTo:160 }), 340);
   },
+  knowledgeRay() {
+    // Raio do Conhecimento — zap brilhante e ascendente, distinto do "atingido"
+    // genérico dos outros bosses, para reforçar que este é um ataque especial.
+    beep({ freq:900, dur:0.05, type:"square",   vol:0.07, slideTo:1500 });
+    setTimeout(() => beep({ freq:1500, dur:0.09, type:"sawtooth", vol:0.06, slideTo:2200 }), 45);
+  },
+  knowledgeVictory() {
+    // Jingle curto e "épico" (dentro do possível com osciladores) para a
+    // vitória sobre o Monstro da Ignorância — mais grandioso que o SFX.win() normal.
+    const seq=[520,660,780,1040,940,1040,1240];
+    seq.forEach((n,i)=>setTimeout(()=>beep({freq:n,dur:i<4?0.09:0.16,type:i<4?"square":"triangle",vol:0.065,slideTo:n*1.15}),i*100));
+    setTimeout(()=>{
+      [520,780,1040].forEach((n,i)=>setTimeout(()=>beep({freq:n,dur:0.32,type:"triangle",vol:0.05,slideTo:n*1.05}),i*55));
+    }, seq.length*100+120);
+  },
   life()    { beep({ freq:800, dur:0.07, type:"triangle", vol:0.055, slideTo:1100 }); },
   starMelody() {
     // Melodia Super Mario Star — sequência cromática ascendente/descendente
