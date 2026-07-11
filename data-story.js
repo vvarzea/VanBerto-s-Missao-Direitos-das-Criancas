@@ -64,6 +64,27 @@ export const BOSS_VICTORY_VB = {
   poluidor_mecanico: "O planeta agradece! Vamos continuar a cuidar dele juntos! 🌱"
 };
 
+// Frases curtas mostradas (sem parar o jogo, só um "floatie") sempre que se
+// apanha um objeto de conhecimento no combate do Monstro da Ignorância —
+// reforça a aprendizagem quase sem se notar, tal como pedido.
+export const KNOWLEDGE_FACTS = [
+  "📖 Ler ajuda-nos a pensar.",
+  "🎒 A escola abre portas.",
+  "🌟 Aprender é um direito.",
+  "🧠 Cada livro é um super-poder.",
+  "✏️ Errar também é aprender."
+];
+
+// Falas curtas do boss em marcos de HP durante o combate (não só no início/fim) —
+// só o Monstro da Ignorância tem isto por agora (protótipo "vitrine").
+export const BOSS_HP_TAUNTS = {
+  monstro_ignorancia: {
+    atStart: "Nunca aprenderás!",
+    hp2: "Isso foi sorte!",
+    hp1: "Não! Estou a perder!"
+  }
+};
+
 // Um "letreiro"/NPC por nível — alinhado por artIdx (0-19), tal como HISTORY[].
 export const NPC_SIGNS = [
   { emoji:"🎈", text:"Sabias que há dois grandes 'Dias da Criança'? O de 1 de junho e o Dia Universal da Criança, a 20 de novembro!" },
