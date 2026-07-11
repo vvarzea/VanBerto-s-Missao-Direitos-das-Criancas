@@ -20,6 +20,26 @@ export const BOSSES = [
     // jogo, só para dar personalidade ao combate (rageLines.angry na 1ª vida
     // perdida, rageLines.desperate na 2ª, já com o HP no mínimo).
     rageLines: { angry: "Achas que sabes assim tanto?!", desperate: "Não... o conhecimento está a vencer-me!" },
+    // Ataque especial próprio — substitui completamente a lógica de "apanha a
+    // estrela para atropelar o boss" (que continua a ser usada por omissão nos
+    // outros bosses). Em vez disso: apanha `chargeCount` itens de conhecimento
+    // (reaproveita o item_livro existente, só com um tom azulado) para carregar
+    // e disparar automaticamente o Raio do Conhecimento — só ele parte o escudo.
+    // Precisa de 3 cargas completas para esvaziar o hp:3 do boss.
+    specialAttack: {
+      name: "Raio do Conhecimento",
+      chargeCount: 5,
+      // Uma frase muito curta por item apanhado — quase invisível, não pausa
+      // nada, só reforça a ideia por trás do combate (pedido explícito: o
+      // combate também devia ensinar, sem interromper o ritmo do jogo).
+      chargeFacts: [
+        "📖 Ler ajuda-nos a pensar.",
+        "🏫 A escola abre portas.",
+        "✨ Aprender é um direito.",
+        "🔑 Cada livro é uma chave.",
+        "🕊️ Saber mais é ser mais livre."
+      ]
+    },
     collectKind: "livro",    // livros, não estrelas — a estrela ⭐ continua a ser só o power-up universal para o atingires
     collectCount: 5,
     quizTheme: "educacao",

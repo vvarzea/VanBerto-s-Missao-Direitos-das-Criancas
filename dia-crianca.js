@@ -3093,9 +3093,19 @@ window.addEventListener("DOMContentLoaded", () => {
 
     spawnBossSprite(scene, def, worldW-200);
     createBossHpBar(scene, def);
-    spawnBossStarItem(scene);
-    const starTimer = scene.time.addEvent({ delay: 1000, loop: true, callback: () => spawnBossStarItem(scene) });
-    bossTimers.push(starTimer);
+    if (def.specialAttack) {
+      // Bosses com ataque especial próprio (ex.: Monstro da Ignorância) não usam
+      // a lógica genérica de "apanha a estrela para atropelar o boss" — em vez
+      // disso recolhem itens temáticos que carregam um ataque nomeado.
+      bossState.chargeCollected = 0;
+      spawnChargeItem(scene);
+      const chargeTimer = scene.time.addEvent({ delay: 950, loop: true, callback: () => spawnChargeItem(scene) });
+      bossTimers.push(chargeTimer);
+    } else {
+      spawnBossStarItem(scene);
+      const starTimer = scene.time.addEvent({ delay: 1000, loop: true, callback: () => spawnBossStarItem(scene) });
+      bossTimers.push(starTimer);
+    }
 
     // Entrada com mais impacto — antes o boss só "aparecia" sem drama nenhum.
     scene.cameras.main.shake(220, 0.012);
@@ -3152,19 +3162,27 @@ window.addEventListener("DOMContentLoaded", () => {
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
-      tipText.setText("⭐ " + objective);
+      const objEmoji = def.specialAttack ? "📚" : "⭐";
+      tipText.setText(objEmoji + " " + objective);
       awaitingQuiz = false; awaitingStory = false;
       scene.physics.resume();
       // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
       // para ser o primeiro coisa que encontra ao começar a andar.
-      spawnBossSign(scene, 280, 486, "⭐", objective);
-      // Lembrete visual permanente por cima do boss — 🔒 enquanto não podes
-      // tocar-lhe, ⭐ assim que apanhas o poder da estrela. Substitui/completa
-      // o texto do objetivo, que passa depressa e nem todos leem a tempo.
-      if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} }
-      bossLockIcon = scene.add.text(0, 0, "🔒", { fontSize:"24px" }).setOrigin(0.5).setDepth(6);
-      scene.tweens.add({ targets:bossLockIcon, scaleX:{from:0.85,to:1.15}, scaleY:{from:0.85,to:1.15},
-        duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      spawnBossSign(scene, 280, 486, objEmoji, objective);
+      if (!def.specialAttack) {
+        // Lembrete visual permanente por cima do boss — 🔒 enquanto não podes
+        // tocar-lhe, ⭐ assim que apanhas o poder da estrela. Substitui/completa
+        // o texto do objetivo, que passa depressa e nem todos leem a tempo.
+        // (Bosses com ataque especial próprio mostram o progresso da carga no
+        // HUD — itemCountText — em vez deste ícone, porque tocar-lhes dói SEMPRE,
+        // não há um estado "desbloqueado" por toque.)
+        if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} }
+        bossLockIcon = scene.add.text(0, 0, "🔒", { fontSize:"24px" }).setOrigin(0.5).setDepth(6);
+        scene.tweens.add({ targets:bossLockIcon, scaleX:{from:0.85,to:1.15}, scaleY:{from:0.85,to:1.15},
+          duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      } else {
+        itemCountText.setText(`⚡ Carga: 0/${def.specialAttack.chargeCount}`);
+      }
     });
   }
 
@@ -3243,6 +3261,23 @@ window.addEventListener("DOMContentLoaded", () => {
     const it = itemsGroup.create(x, 340, "item_estrela");
     it.setDepth(2).setData("kind","estrela").setData("itemIdx",-1);
     scene.tweens.add({targets:it,y:it.y-8,duration:820,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+  }
+
+  // Itens de carga do ataque especial (ex.: 📚 do Monstro da Ignorância) — reaproveita
+  // a textura do livro (item_livro), mas com um tom azulado para se distinguir dos
+  // livros dourados da fase de recolha pós-derrota. Ao contrário da estrela (só 1 de
+  // cada vez), aqui mantemos até 2 em simultâneo — com 5 para apanhar, um só de cada
+  // vez tornaria o ritmo demasiado lento.
+  function spawnChargeItem(scene) {
+    if (!inBossFight || !bossState || bossState.phase !== "platform" || !bossState.def.specialAttack) return;
+    const already = itemsGroup.getChildren().filter(o => o.active && o.getData("bossCharge")).length;
+    if (already >= 2) return;
+    const spots = [280, 800, 1320];
+    const x = spots[Math.floor(Math.random()*spots.length)];
+    const it = itemsGroup.create(x, 330 + Math.random()*40, "item_livro");
+    it.setDepth(2).setTint(0x80d8ff).setData("kind","conhecimento").setData("bossCharge", true);
+    scene.tweens.add({targets:it,y:it.y-10,duration:760,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+    scene.tweens.add({targets:it,angle:{from:-6,to:6},duration:900,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
   }
 
   // ---- Movimento "blink" (Monstro da Ignorância): some e reaparece noutro sítio ----
@@ -3365,6 +3400,20 @@ window.addEventListener("DOMContentLoaded", () => {
     beep({ freq: level===1?260:200, dur:0.16, type:"sawtooth", vol:0.06, slideTo: level===1?140:90 });
   }
 
+  // Dano ao boss (1 HP) reutilizável — tanto o toque com Star Power (bosses normais)
+  // como o Raio do Conhecimento (bosses com ataque especial) passam por aqui, para
+  // as fases de raiva e o fim do combate funcionarem sempre da mesma forma.
+  function damageBoss(scene, x, y, label = "💥 Boss atingido!", shakeAmount = 0.006) {
+    if (!bossState) return;
+    bossState.hp -= 1;
+    scene.cameras.main.shake(100, shakeAmount);
+    score += 20; scoreText.setText(`🌟 Pontos: ${score}`);
+    showFloat(scene, x, y, label, "#ff6b35");
+    const hitsTaken = bossState.def.hp - bossState.hp;
+    if (hitsTaken > 0 && bossState.hp > 0) bossEnterRage(scene, Math.min(2, hitsTaken));
+    if (bossState.hp <= 0) startBossCollectPhase();
+  }
+
   // Chamado a partir do TOPO de onHitMalware — intercepta QUALQUER colisão com o boss
   // antes de qualquer lógica de dano normal correr (evita usar LEVELS[currentLevel]
   // com dados do nível já terminado).
@@ -3372,27 +3421,24 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!inBossFight || !malwareObj || !malwareObj.getData("isBoss") || bossState.phase !== "platform") return false;
     if (invuln) return true; // já protegido — ignora este toque, sem reprocessar dano
 
-    if (starPower) {
+    // Bosses com ataque especial próprio (ex.: Monstro da Ignorância) não têm um
+    // estado "desbloqueado por Star Power" — o único jeito de lhe fazer dano é o
+    // ataque nomeado, disparado ao completar a carga. Tocar-lhe dói SEMPRE.
+    if (starPower && !bossState.def.specialAttack) {
       // Reaproveita a mesma sensação de "atropelar vilão" que já existe no jogo
       if(sceneRef.time.now < bossState.hitCooldownUntil) return true; // debita 1x por toque
       bossState.hitCooldownUntil = sceneRef.time.now + 500;
-      bossState.hp -= 1;
       ensureAudio(); beep({freq:600,dur:0.05,type:"square",vol:0.07,slideTo:200});
-      sceneRef.cameras.main.shake(100,0.006);
-      score+=20; scoreText.setText(`🌟 Pontos: ${score}`);
-      showFloat(sceneRef, malwareObj.x, malwareObj.y-60, "💥 Boss atingido!", "#ff6b35");
-      // Fases de raiva: HP cheio = confiante (comportamento normal), 1ª vida
-      // perdida = zangado (mais rápido), 2ª vida perdida = desesperado (ainda
-      // mais rápido) — dá a sensação de o boss estar a perder o controlo à
-      // medida que o combate avança, em vez de ficar sempre igual até cair.
-      const hitsTaken = bossState.def.hp - bossState.hp;
-      if (hitsTaken > 0 && bossState.hp > 0) bossEnterRage(sceneRef, Math.min(2, hitsTaken));
-      if (bossState.hp <= 0) startBossCollectPhase();
+      damageBoss(sceneRef, malwareObj.x, malwareObj.y-60);
     } else {
-      // Sem Star Power, tocar no boss agora DÓI a sério — antes só empurrava,
-      // o que tornava os bosses demasiado inofensivos. Perde-se uma vida, tal
-      // como ao tocar num vilão normal, com o mesmo knockback e i-frames.
-      bossHitPlayer(sceneRef, malwareObj, "⭐ Precisas de Star Power!");
+      // Sem Star Power (ou num boss de ataque especial), tocar no boss agora DÓI
+      // a sério — antes só empurrava, o que tornava os bosses demasiado
+      // inofensivos. Perde-se uma vida, tal como ao tocar num vilão normal, com
+      // o mesmo knockback e i-frames.
+      const warn = bossState.def.specialAttack
+        ? `⚡ Precisas do ${bossState.def.specialAttack.name}!`
+        : "⭐ Precisas de Star Power!";
+      bossHitPlayer(sceneRef, malwareObj, warn);
     }
     return true; // sinaliza a onHitMalware para NÃO aplicar a lógica normal de dano
   }
@@ -3473,6 +3519,10 @@ window.addEventListener("DOMContentLoaded", () => {
       bossHitPlayer(sceneRef, null, "😵 Informação errada!");
       return true;
     }
+    if (itemObj.getData("bossCharge")) {
+      handleChargeItemCollect(itemObj);
+      return true;
+    }
     if (!itemObj.getData("bossCollect")) return false;
     itemObj.destroy();
     bossState.collected += 1;
@@ -3482,6 +3532,72 @@ window.addEventListener("DOMContentLoaded", () => {
     itemCountText.setText(`${bossState.def.emoji} Itens: ${bossState.collected}/${bossState.def.collectCount}`);
     if (bossState.collected >= bossState.def.collectCount) startBossQuizPhase();
     return true;
+  }
+
+  // Recolha de um item de carga (📚 do Monstro da Ignorância, por agora). Cada
+  // item mostra uma curiosidade muito curta e quase invisível (não pausa nada),
+  // reforçando a ideia de que o conhecimento é a arma — só ao apanhar o número
+  // definido em specialAttack.chargeCount é que o ataque nomeado dispara sozinho.
+  function handleChargeItemCollect(itemObj) {
+    itemObj.destroy();
+    if (!bossState || !bossState.def.specialAttack) return;
+    const sa = bossState.def.specialAttack;
+    bossState.chargeCollected = (bossState.chargeCollected || 0) + 1;
+    score += 10; scoreText.setText(`🌟 Pontos: ${score}`);
+    ensureAudio(); SFX.coin();
+    const facts = sa.chargeFacts || [];
+    const fact = facts.length ? facts[(bossState.chargeCollected - 1) % facts.length] : `+1 (${bossState.chargeCollected}/${sa.chargeCount})`;
+    showFloat(sceneRef, player.x, player.y-68, fact, "#80d8ff");
+    itemCountText.setText(`⚡ Carga: ${bossState.chargeCollected}/${sa.chargeCount}`);
+    if (bossState.chargeCollected >= sa.chargeCount) fireKnowledgeAttack(sceneRef);
+  }
+
+  // O ataque especial em si — dispara automaticamente assim que a carga enche.
+  // Visualmente: um raio desenhado do VanBerto's até ao boss + brilho no impacto,
+  // sem precisar de nenhuma arte nova. Reaproveita damageBoss() para o dano em
+  // si, para as fases de raiva reagirem exatamente como num boss normal.
+  function fireKnowledgeAttack(scene) {
+    if (!bossState || !bossState.sprite || !bossState.sprite.active) return;
+    const sa = bossState.def.specialAttack;
+    bossState.chargeCollected = 0;
+    // Limpar itens de carga por apanhar, para a arena não ficar com "sobras"
+    // enquanto decorre a animação do ataque.
+    itemsGroup.getChildren().slice().forEach(o => { if (o.getData("bossCharge")) o.destroy(); });
+
+    const b = bossState.sprite;
+    itemCountText.setText(`⚡ ${sa.name}!`);
+    showFloat(scene, player.x, player.y-90, `⚡ ${sa.name}!`, "#80d8ff");
+
+    // O raio propriamente dito: uma linha grossa que cresce do jogador até ao
+    // boss e desaparece rapidamente — desenhado com Graphics, sem precisar de
+    // nenhuma textura nova.
+    const beamGfx = scene.add.graphics().setDepth(9);
+    beamGfx.lineStyle(6, 0x80d8ff, 0.95);
+    beamGfx.beginPath();
+    beamGfx.moveTo(player.x, player.y - 20);
+    beamGfx.lineTo(b.x, b.y);
+    beamGfx.strokePath();
+    beamGfx.lineStyle(2, 0xffffff, 0.9);
+    beamGfx.beginPath();
+    beamGfx.moveTo(player.x, player.y - 20);
+    beamGfx.lineTo(b.x, b.y);
+    beamGfx.strokePath();
+    scene.tweens.add({ targets: beamGfx, alpha: 0, duration: 340, delay: 90, onComplete: () => { try{beamGfx.destroy();}catch{} } });
+
+    scene.cameras.main.flash(200, 130, 210, 255);
+    scene.cameras.main.shake(160, 0.010);
+    ensureAudio();
+    beep({ freq:440, dur:0.10, type:"square", vol:0.06, slideTo:1200 });
+    setTimeout(() => beep({ freq:900, dur:0.16, type:"triangle", vol:0.06, slideTo:1600 }), 90);
+
+    const impactBurst = scene.add.particles(0, 0, "spark_item", {
+      x: b.x, y: b.y, speed:{min:100,max:260}, lifespan:520, quantity:26,
+      scale:{start:1.1,end:0}, angle:{min:0,max:360}, tint:[0x80d8ff, 0xffffff, 0xffd700]
+    });
+    scene.time.delayedCall(90, () => {
+      damageBoss(scene, b.x, b.y-60, "💥 Atingido!", 0.012);
+      scene.time.delayedCall(500, () => { try{impactBurst.destroy();}catch{} });
+    });
   }
 
   function startBossQuizPhase() {

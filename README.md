@@ -274,3 +274,25 @@
 
 
 
+
+# ## Bosses — fases de raiva, falas dinâmicas e ataque especial (nova)
+
+Todos os bosses ganharam **3 fases de raiva** ligadas ao HP (3/2/1): a cada
+vida perdida ficam mais rápidos (timers de movimento/ataque acelerados 35% e
+depois 70%), mostram um ícone de emoção (😊→😠→😡) e dizem uma fala curta e
+flutuante — sem pausar o jogo. O ecrã de vitória de boss também ficou mais
+festivo (pose de salto do VanBerto's, segunda onda de confetti, pequeno
+acorde final).
+
+O **Monstro da Ignorância** deixou de usar a estrela ⭐ genérica para lhe
+fazer dano: agora tem um ataque especial próprio, o **Raio do Conhecimento**
+(`specialAttack` em `data-bosses.js`). Apanhando 5 livros de conhecimento
+(tom azulado, reaproveita `item_livro`) o raio dispara sozinho — precisa de
+3 cargas completas para esvaziar o hp:3 do boss. Cada item mostra uma frase
+muito curta ("Ler ajuda-nos a pensar.") quase invisível, sem interromper o
+ritmo. Tocar neste boss dói SEMPRE (já não há Star Power a "desbloquear" o
+toque) — o único caminho é o ataque nomeado.
+
+Estrutura pensada para se repetir noutros bosses no futuro: basta acrescentar
+`specialAttack` (nome, chargeCount, chargeFacts) à definição do boss em
+`data-bosses.js` — o motor do jogo já trata do resto automaticamente.
