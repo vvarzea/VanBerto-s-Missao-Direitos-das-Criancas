@@ -3008,6 +3008,7 @@ window.addEventListener("DOMContentLoaded", () => {
   let bossOverlay = null; // rectangle usado pelo Guardião das Sombras
   let bossLockIcon = null; // 🔒/⭐ flutuante por cima do boss — lembrete visual permanente,
                            // sem depender de o jogador ler o texto do objetivo
+  let bossRageIcon = null; // 😠/😡 flutuante por cima do boss — mostra a fase de raiva atual
   let controlsInvertedUntil = 0; // usado pelo "livro mau" do Monstro da Ignorância
 
   // Cartão que desliza rapidamente do topo do ecrã e desaparece sozinho —
@@ -3041,7 +3042,7 @@ window.addEventListener("DOMContentLoaded", () => {
     destroyBossHpBar();
     // Começa em "intro": todos os timers/movimentos do boss (que verificam
     // phase!=="platform") ficam inertes enquanto decorre a cinemática de entrada.
-    bossState = { def, hp: def.hp, phase: "intro", collected: 0, onComplete, hitCooldownUntil: 0 };
+    bossState = { def, hp: def.hp, phase: "intro", collected: 0, onComplete, hitCooldownUntil: 0, rageLevel: 0, speedMult: 1 };
 
     // Limpar o palco tal como loadLevel já faz — arena dedicada, isolada do nível anterior
     enemyTimers.forEach(t=>{try{t.remove(false);}catch{}}); enemyTimers=[];
@@ -3065,6 +3066,7 @@ window.addEventListener("DOMContentLoaded", () => {
     clearSign();
     if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
     if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
+    if(bossRageIcon){ try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
     if(door){ door.destroy(); door=null; }
 
     const worldW = 1600;
@@ -3116,17 +3118,17 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     if (def.movementType === "blink") {
       const blinkTimer = scene.time.addEvent({ delay: 2600, loop: true, callback: () => doBossBlink(scene) });
-      bossTimers.push(blinkTimer);
+      bossTimers.push(blinkTimer); bossState.blinkTimer = blinkTimer; bossState.blinkBaseDelay = 2600;
     } else if (def.movementType === "teleport") {
       // Véu de sombra suave, ligado à cor do próprio boss (não um bloco opaco fixo)
       bossOverlay = scene.add.rectangle(worldW/2, 257, worldW, 514, def.color, 0.16).setDepth(1);
       scene.tweens.add({ targets: bossOverlay, alpha:{from:0.75,to:1}, duration:1900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
       const teleTimer = scene.time.addEvent({ delay: 2400, loop: true, callback: () => doBossTeleport(scene) });
-      bossTimers.push(teleTimer);
+      bossTimers.push(teleTimer); bossState.teleTimer = teleTimer; bossState.teleBaseDelay = 2400;
     }
     if (def.throwsBooks) {
       const bookTimer = scene.time.addEvent({ delay: 1700, loop: true, callback: () => doBossThrowBook(scene) });
-      bossTimers.push(bookTimer);
+      bossTimers.push(bookTimer); bossState.bookTimer = bookTimer; bossState.bookBaseDelay = 1700;
     }
 
     hudText.setText(`${def.emoji} ${def.name}`);
@@ -3296,14 +3298,21 @@ window.addEventListener("DOMContentLoaded", () => {
     if (bossState.phase !== "platform") return;
     const b = bossState.sprite;
     const mt = bossState.def.movementType;
+    // O ícone de raiva (😠/😡) acompanha o boss, tal como a barra de vida —
+    // sem isto ficava preso no sítio onde apareceu, mesmo com o boss em movimento.
+    if (bossRageIcon) {
+      bossRageIcon.x = b.x;
+      bossRageIcon.y = b.y - (b.displayHeight/2 || 40) - 26;
+    }
+    const speedMult = bossState.speedMult || 1;
     if (mt === "wave") {
-      const t = scene.time.now * 0.0016;
+      const t = scene.time.now * 0.0016 * speedMult;
       const range = 480;
       b.x = bossState.baseX - 700 + Math.sin(t) * range; // oscila em torno do centro da arena
       b.y = bossState.baseY + Math.sin(t*1.7) * 44;
       if (b.body) b.body.reset(b.x, b.y);
     } else if (mt === "patrol" || !mt) {
-      const speed = bossState.def.patrolSpeed || 110;
+      const speed = (bossState.def.patrolSpeed || 110) * speedMult;
       if (b.x < 250) b.setVelocityX(speed);
       if (b.x > 1600-250) b.setVelocityX(-speed);
     }
@@ -3317,6 +3326,43 @@ window.addEventListener("DOMContentLoaded", () => {
       const wantIcon = starPower ? "⭐" : "🔒";
       if (bossLockIcon.text !== wantIcon) bossLockIcon.setText(wantIcon);
     }
+  }
+
+  // ---- Fases de raiva: chamado quando o boss perde uma vida (level 1 = zangado,
+  // level 2 = desesperado). Só dispara uma vez por fase (rageLevel só sobe). ----
+  function bossEnterRage(scene, level) {
+    if (!bossState || bossState.rageLevel >= level) return;
+    bossState.rageLevel = level;
+    bossState.speedMult = level === 1 ? 1.35 : 1.7;
+    const def = bossState.def, b = bossState.sprite;
+
+    // Acelerar os timers de movimento/ataque já existentes — o boss não ganha
+    // ataques novos, só fica mais rápido e imprevisível, o que é suficiente
+    // para se sentir a escalada sem complicar o combate para uma criança.
+    if (bossState.blinkTimer) bossState.blinkTimer.delay = bossState.blinkBaseDelay / bossState.speedMult;
+    if (bossState.teleTimer)  bossState.teleTimer.delay  = bossState.teleBaseDelay  / bossState.speedMult;
+    if (bossState.bookTimer)  bossState.bookTimer.delay  = bossState.bookBaseDelay  / bossState.speedMult;
+
+    // Ícone de emoção por cima do boss — 😠 zangado, 😡 desesperado — substitui
+    // o 🔒/⭐ só por um instante (bossLockIcon continua a atualizar-se por cima).
+    if (bossRageIcon) { try{bossRageIcon.destroy();}catch{} }
+    const emo = level === 1 ? "😠" : "😡";
+    bossRageIcon = scene.add.text(b ? b.x : bossState.baseX, (b ? b.y - (b.displayHeight/2||40) - 26 : bossState.baseY), emo, { fontSize:"26px" }).setOrigin(0.5).setDepth(8);
+    scene.tweens.add({ targets:bossRageIcon, scaleX:{from:0.7,to:1.3}, scaleY:{from:0.7,to:1.3}, duration:260, yoyo:true, repeat:2, ease:"Back.easeOut" });
+
+    // Reação de câmara mais forte quanto mais zangado — sem exagerar, só o
+    // suficiente para se notar a diferença entre as duas fases.
+    scene.cameras.main.shake(level===1?160:240, level===1?0.008:0.014);
+    scene.cameras.main.flash(level===1?140:200, 255, level===1?150:70, 60);
+
+    // Fala curta do boss, flutuante por cima dele — não pausa o jogo nem abre
+    // diálogo, só reforça a personalidade durante o combate, como pedido.
+    const lines = def.rageLines || {};
+    const text = level === 1 ? (lines.angry || "Ainda não acabou!") : (lines.desperate || "Não... não pode ser!");
+    showFloat(scene, b ? b.x : bossState.baseX, (b ? b.y : bossState.baseY) - 74, text, level===1 ? "#ffae42" : "#ff4040");
+
+    ensureAudio();
+    beep({ freq: level===1?260:200, dur:0.16, type:"sawtooth", vol:0.06, slideTo: level===1?140:90 });
   }
 
   // Chamado a partir do TOPO de onHitMalware — intercepta QUALQUER colisão com o boss
@@ -3335,6 +3381,12 @@ window.addEventListener("DOMContentLoaded", () => {
       sceneRef.cameras.main.shake(100,0.006);
       score+=20; scoreText.setText(`🌟 Pontos: ${score}`);
       showFloat(sceneRef, malwareObj.x, malwareObj.y-60, "💥 Boss atingido!", "#ff6b35");
+      // Fases de raiva: HP cheio = confiante (comportamento normal), 1ª vida
+      // perdida = zangado (mais rápido), 2ª vida perdida = desesperado (ainda
+      // mais rápido) — dá a sensação de o boss estar a perder o controlo à
+      // medida que o combate avança, em vez de ficar sempre igual até cair.
+      const hitsTaken = bossState.def.hp - bossState.hp;
+      if (hitsTaken > 0 && bossState.hp > 0) bossEnterRage(sceneRef, Math.min(2, hitsTaken));
       if (bossState.hp <= 0) startBossCollectPhase();
     } else {
       // Sem Star Power, tocar no boss agora DÓI a sério — antes só empurrava,
@@ -3386,6 +3438,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const b = bossState.sprite;
     b.setVelocity(0,0); b.body.setEnable(false); b.setAlpha(0.35);
     if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} bossLockIcon=null; } // boss já não é tocável — ícone deixa de fazer sentido
+    if (bossRageIcon) { try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
     destroyBossHpBar(); // vida chegou a 0 — a barra já não tem função a partir daqui
     itemsGroup.getChildren().slice().forEach(o => { if(o.getData("kind")==="estrela" && !o.getData("bossCollect")) o.destroy(); });
     const keyMap = { estrela:"item_estrela", heart:"item_heart", medalha:"item_medalha",
@@ -3446,8 +3499,12 @@ window.addEventListener("DOMContentLoaded", () => {
       const finished = bossState.onComplete;
       ensureAudio(); SFX.win();
       player.setAlpha(1);
+      // Pequena "pose de vitória" — dois saltinhos rápidos do VanBerto's, para
+      // o jogador sentir que o herói também está a celebrar, não só o ecrã.
+      sceneRef.tweens.add({ targets: player, y: player.y - 24, duration: 170, yoyo: true, repeat: 1, ease: "Sine.easeOut" });
       if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
       if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
+      if(bossRageIcon){ try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
       destroyBossHpBar();
       inBossFight = false; bossState = null;
       // Limpar o HUD do combate ANTES da cinemática — sem isto ficavam valores
@@ -3468,6 +3525,25 @@ window.addEventListener("DOMContentLoaded", () => {
         tint: [0xffd700, 0xff6b35, 0x80d0ff, 0xffffff, 0x60ff80]
       });
       sceneRef.time.delayedCall(750, () => { try{bossConfetti.destroy();}catch{} });
+      // Segunda onda de confetti, um pouco depois e com a cor do próprio boss
+      // misturada — dá a sensação de uma celebração maior em vez de um único
+      // burst instantâneo, sem exigir arte nova nenhuma.
+      sceneRef.time.delayedCall(400, () => {
+        const bossConfetti2 = sceneRef.add.particles(0, 0, "spark_item", {
+          x: player.x, y: player.y - 30,
+          speed: { min: 70, max: 220 }, lifespan: 1000, quantity: 26,
+          scale: { start: 1, end: 0 }, gravityY: 140,
+          angle: { min: 0, max: 360 },
+          tint: [def.color, 0xffd700, 0xff80c0, 0x80ffea, 0xffffff]
+        });
+        sceneRef.time.delayedCall(900, () => { try{bossConfetti2.destroy();}catch{} });
+      });
+      // Pequeno acorde final a fechar a vitória — mais festivo do que o SFX.win()
+      // sozinho, sem chegar ao exagero do fanfarrão do fim de jogo (finalWin()).
+      setTimeout(() => {
+        [880,1108,1318].forEach((f,i) => setTimeout(() =>
+          beep({ freq:f, dur:0.22, type:"triangle", vol:0.05, slideTo:f*1.05 }), i*45));
+      }, 300);
       // Cartão "✅ VITÓRIA!" a deslizar do topo — o mesmo tipo de flourish do
       // cartão de chegada do boss, para fechar a cena com o mesmo impacto com
       // que começou (antes só havia confetti, sem nenhum destaque de texto).

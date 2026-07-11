@@ -16,6 +16,10 @@ export const BOSSES = [
     movementType: "blink",   // some e reaparece noutra plataforma
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
+    // Falas curtas mostradas por cima do boss a cada vida perdida — sem pausar o
+    // jogo, só para dar personalidade ao combate (rageLines.angry na 1ª vida
+    // perdida, rageLines.desperate na 2ª, já com o HP no mínimo).
+    rageLines: { angry: "Achas que sabes assim tanto?!", desperate: "Não... o conhecimento está a vencer-me!" },
     collectKind: "livro",    // livros, não estrelas — a estrela ⭐ continua a ser só o power-up universal para o atingires
     collectCount: 5,
     quizTheme: "educacao",
@@ -33,6 +37,7 @@ export const BOSSES = [
     movementType: "wave",    // flutua em onda, pulsa de tamanho
     intro: "Vou espalhar-me por todo o lado!",
     defeatLine: "Argh! Vacinado... derrotado! 💉",
+    rageLines: { angry: "Vou espalhar-me ainda mais depressa!", desperate: "Não... estou a ser derrotado!" },
     collectKind: "heart",
     collectCount: 5,
     quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
@@ -49,6 +54,7 @@ export const BOSSES = [
     movementType: "teleport", // arena escura, teleporta-se entre 3 pontos
     intro: "Nas sombras, ninguém te protege!",
     defeatLine: "A luz da proteção venceu! 🛡️✨",
+    rageLines: { angry: "As sombras vão engolir-te!", desperate: "A luz... está demasiado forte!" },
     collectKind: "medalha",
     collectCount: 5,
     quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
@@ -68,6 +74,7 @@ export const BOSSES = [
     movingArena: true,       // arena com plataformas móveis (reaproveita o sistema existente)
     intro: "O planeta é meu para sujar!",
     defeatLine: "O verde venceu o cinzento! 🌱",
+    rageLines: { angry: "Mais fumo, mais poluição!", desperate: "As minhas engrenagens... estão a falhar!" },
     collectKind: "brinquedo",
     collectCount: 5,
     quizTheme: "ambiente",
