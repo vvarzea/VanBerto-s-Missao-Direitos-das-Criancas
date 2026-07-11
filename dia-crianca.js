@@ -3013,6 +3013,8 @@ window.addEventListener("DOMContentLoaded", () => {
   let bossOverlay = null; // rectangle usado pelo Guardião das Sombras
   let bossLockIcon = null; // 🔒/⭐ flutuante por cima do boss — lembrete visual permanente,
                            // sem depender de o jogador ler o texto do objetivo
+  let bossObjLabel = null; // lembrete FIXO do objetivo, ancorado ao HUD (não ao boss) —
+                           // ao contrário do tipText, nunca é substituído por outras mensagens
   let controlsInvertedUntil = 0; // usado pelo "livro mau" do Monstro da Ignorância
 
   // Cartão que desliza rapidamente do topo do ecrã e desaparece sozinho —
@@ -3056,10 +3058,9 @@ window.addEventListener("DOMContentLoaded", () => {
     // bossState — senão a referência perde-se e a barra antiga fica órfã no ecrã.
     destroyBossHpBar();
     // Fuga corrigida: ao repetir o combate (ex. depois de perder todas as vidas),
-    // o ícone de expressão (😊/😠/😡) da tentativa anterior ficava esquecido e
-    // congelado no ecrã, porque só era destruído no callback de vitória — tem
-    // de ser feito ANTES de bossState ser substituído, senão perde-se a referência.
-    if (bossState && bossState.faceIcon) { try{bossState.faceIcon.destroy();}catch{} }
+    // o lembrete fixo do objetivo de uma tentativa anterior ficava esquecido no
+    // ecrã — tem de ser feito ANTES de bossState ser substituído.
+    if (bossObjLabel) { try{bossObjLabel.destroy();}catch{} bossObjLabel = null; }
     // Começa em "intro": todos os timers/movimentos do boss (que verificam
     // phase!=="platform") ficam inertes enquanto decorre a cinemática de entrada.
     bossState = { def, hp: def.hp, phase: "intro", collected: 0, onComplete, hitCooldownUntil: 0, chargeCount: 0 };
@@ -3120,9 +3121,6 @@ window.addEventListener("DOMContentLoaded", () => {
       if (def.knowledgeAttack) {
         spawnKnowledgeItem(scene);
         setBossTimer(scene, "knowledge", 1300, () => spawnKnowledgeItem(scene));
-        if (bossState) {
-          bossState.faceIcon = scene.add.text(worldW-200, 300, "😊", { fontSize:"26px" }).setOrigin(0.5).setDepth(7);
-        }
       } else {
         spawnBossStarItem(scene);
         setBossTimer(scene, "star", 1000, () => spawnBossStarItem(scene));
@@ -3186,10 +3184,15 @@ window.addEventListener("DOMContentLoaded", () => {
         awaitingQuiz = false; awaitingStory = false;
         scene.physics.resume();
         if (def.knowledgeAttack) {
-          // Não há "tocar para atingir" — o letreiro/ícone refletem isso: um
-          // 🚫 fixo por cima do boss (nunca fica tocável) e a dica explica o
-          // ataque temático em vez da Star Power genérica.
-          tipText.setText("📚 " + objective);
+          // Lembrete FIXO no HUD (não no letreiro que só aparece uma vez, nem no
+          // tipText que é constantemente substituído por outras mensagens) —
+          // fica sempre visível durante todo o combate: "nunca toques, apanha
+          // objetos". Isto responde diretamente a "quero que fique claro o objetivo".
+          if (bossObjLabel) { try{bossObjLabel.destroy();}catch{} }
+          bossObjLabel = scene.add.text(480, 12, "🚫 NUNCA TOQUES! Apanha 📚✏️🎓💡 para atacar", {
+            fontSize:"13px", fontStyle:"900", color:"#ffd0d0", stroke:"#3a0022", strokeThickness:4,
+            align:"center", wordWrap:{width:420}
+          }).setOrigin(0.5,0).setScrollFactor(0).setDepth(100);
           itemCountText.setText(`💡 Conhecimento: 0/${def.chargeGoal || 5}`);
           spawnBossSign(scene, 280, 486, "📚", objective);
           if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} }
@@ -3406,16 +3409,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Ícone acompanha o boss: 🔒/⭐ nos bosses "clássicos" (reflete se já podes
     // tocar-lhe), 🚫 fixo no Monstro da Ignorância (nunca se toca, ataca-se com
-    // conhecimento) — e o rostinho de expressão (😊/😠/😡) segue-o também.
+    // conhecimento). A expressão do Monstro da Ignorância já não é um emoji à
+    // parte — é a própria textura do boss que muda (ver applyBossPhase).
     if (bossLockIcon && bossLockIcon.active) {
       bossLockIcon.setPosition(b.x, b.y - (b.displayHeight/2 || 40) - 18);
       if (!bossState.def.knowledgeAttack) {
         const wantIcon = starPower ? "⭐" : "🔒";
         if (bossLockIcon.text !== wantIcon) bossLockIcon.setText(wantIcon);
       }
-    }
-    if (bossState.faceIcon && bossState.faceIcon.active) {
-      bossState.faceIcon.setPosition(b.x, b.y - (b.displayHeight/2 || 40) - 66);
     }
   }
 
@@ -3591,16 +3592,21 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!bossState || !bossState.sprite || !bossState.sprite.active) return;
     const b = bossState.sprite;
     const taunts = BOSS_HP_TAUNTS[bossState.def.id];
+    // A expressão vive na PRÓPRIA textura do boss (cara desenhada de raiz por
+    // fase — venda a franzir-se, depois a rasgar-se) em vez de tint + emoji
+    // flutuante por cima: fica mais claro e mais "o monstro está zangado",
+    // não "há um ícone zangado ao lado do monstro".
+    const phaseKey = "boss_" + bossState.def.id + (hp === 2 ? "_hp2" : hp === 1 ? "_hp1" : "");
+    if (hp === 2 || hp === 1) {
+      if (scene.textures.exists(phaseKey)) b.setTexture(phaseKey);
+      scene.tweens.add({ targets:b, scaleX:{from:b.scaleX*1.25,to:b.scaleX}, scaleY:{from:b.scaleY*1.25,to:b.scaleY}, duration:220, ease:"Back.easeOut" });
+    }
     if (hp === 2) {
-      b.setTint(0xffb0b0);
-      if (bossState.faceIcon) bossState.faceIcon.setText("😠");
       setBossTimer(scene, "blink", 1900, () => doBossBlink(scene));
       if (bossState.def.throwsBooks) setBossTimer(scene, "book", 1300, () => doBossThrowBook(scene));
       if (taunts) showFloat(scene, b.x, b.y-70, "💬 " + taunts.hp2, "#ff9090");
       scene.cameras.main.shake(140, 0.008);
     } else if (hp === 1) {
-      b.setTint(0xff4040);
-      if (bossState.faceIcon) bossState.faceIcon.setText("😡");
       bossState.dualThrow = true; // "mais ataques": atira 2 livros de cada vez
       setBossTimer(scene, "blink", 1300, () => doBossBlink(scene));
       if (bossState.def.throwsBooks) setBossTimer(scene, "book", 950, () => doBossThrowBook(scene));
@@ -3623,12 +3629,11 @@ window.addEventListener("DOMContentLoaded", () => {
       const def = bossState.def;
       const finished = bossState.onComplete;
       const bossX = bossState.baseX, bossY = bossState.baseY;
-      const faceIcon = bossState.faceIcon;
       ensureAudio(); SFX.win();
       player.setAlpha(1);
       if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
       if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
-      if(faceIcon){ try{faceIcon.destroy();}catch{} }
+      if(bossObjLabel){ try{bossObjLabel.destroy();}catch{} bossObjLabel=null; }
       destroyBossHpBar();
       inBossFight = false; bossState = null;
       // Limpar o HUD do combate ANTES da cinemática — sem isto ficavam valores

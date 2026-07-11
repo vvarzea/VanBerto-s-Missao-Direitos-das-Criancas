@@ -514,6 +514,89 @@ function makeBossTextures(scene){
     tex.refresh();
   }
 
+  // ── 1b/1c) Monstro da Ignorância — variantes de expressão por fase de HP ──
+  // Em vez de um emoji flutuante por cima (😊/😠/😡), o PRÓPRIO monstro muda de
+  // cara: a venda franze-se e a boca cosida vai-se rasgando à medida que perde
+  // força. Mesma silhueta/corpo da textura base — só a zona da cara muda.
+  function drawMonstroBody(ctx) {
+    bossShadow(ctx);
+    ctx.shadowColor="rgba(200,255,60,0.55)"; ctx.shadowBlur=14;
+    ctx.strokeStyle="rgba(220,255,120,0.65)"; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(C,C,40,0,Math.PI*2); ctx.stroke();
+    ctx.shadowBlur=0;
+    const gr=ctx.createRadialGradient(C-10,C-14,4,C,C,40);
+    gr.addColorStop(0,"#ff5cc8"); gr.addColorStop(0.45,"#c81860"); gr.addColorStop(1,"#240018");
+    ctx.fillStyle=gr;
+    [[0,0,36],[-24,10,20],[24,10,20],[-14,-24,18],[14,-24,18],[0,26,24]].forEach(([dx,dy,r])=>{
+      ctx.beginPath(); ctx.arc(C+dx,C+dy,r,0,Math.PI*2); ctx.fill();
+    });
+    ctx.strokeStyle="#1a0010"; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(C,C,38,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle="#5a0838";
+    ctx.beginPath(); ctx.moveTo(C-22,C-32); ctx.lineTo(C-30,C-48); ctx.lineTo(C-14,C-36); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(C+22,C-32); ctx.lineTo(C+30,C-48); ctx.lineTo(C+14,C-36); ctx.closePath(); ctx.fill();
+  }
+  // Fase HP2 — 😠: a venda franze-se em bico (tipo sobrolho zangado) e a boca
+  // aperta-se numa linha reta e tensa, em vez do arco calmo da fase inicial.
+  if(!scene.textures.exists("boss_monstro_ignorancia_hp2")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_hp2",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    ctx.fillStyle="#fff0f8";
+    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#3a0022"; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle="#200014"; ctx.lineWidth=4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-15,C-13); ctx.lineTo(C+15,C+5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+15,C-13); ctx.lineTo(C-15,C+5); ctx.stroke();
+    // sobrolho zangado por cima da venda
+    ctx.strokeStyle="#3a0022"; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-19,C-18); ctx.lineTo(C-4,C-12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+19,C-18); ctx.lineTo(C+4,C-12); ctx.stroke();
+    // boca tensa, reta
+    ctx.strokeStyle="#200014"; ctx.lineWidth=2.4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-11,C+21); ctx.lineTo(C+11,C+21); ctx.stroke();
+    for(let i=0;i<4;i++){
+      const sx=C-6+i*4;
+      ctx.beginPath(); ctx.moveTo(sx,C+18); ctx.lineTo(sx,C+24); ctx.stroke();
+    }
+    ctx.fillStyle="rgba(255,150,120,0.75)"; ctx.font="bold 13px sans-serif"; ctx.textAlign="center";
+    ctx.fillText("?", C-32, C-30); ctx.fillText("?", C+30, C+14);
+    tex.refresh();
+  }
+  // Fase HP1 — 😡: a venda rasga-se (deixa ver um olho vermelho furioso) e a
+  // boca cosida rebenta num grito aberto — o monstro está mesmo desesperado.
+  if(!scene.textures.exists("boss_monstro_ignorancia_hp1")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_hp1",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    // venda rasgada, já não cobre o olho todo
+    ctx.fillStyle="#fff0f8";
+    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.fill();
+    // olho furioso a espreitar por baixo da venda rasgada
+    glowEye(ctx, C, C-4, 8, "#ff2020");
+    ctx.strokeStyle="#3a0022"; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.stroke();
+    // farrapos da venda a esvoaçar, em vez do X inteiro
+    ctx.strokeStyle="#200014"; ctx.lineWidth=3.4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-15,C-13); ctx.lineTo(C-2,C-3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+15,C-13); ctx.lineTo(C+3,C-4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C-15,C+5); ctx.lineTo(C-4,C-1); ctx.stroke();
+    // sobrolho bem franzido
+    ctx.strokeStyle="#3a0022"; ctx.lineWidth=3.4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-20,C-20); ctx.lineTo(C-3,C-11); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+20,C-20); ctx.lineTo(C+3,C-11); ctx.stroke();
+    // boca aberta, stitches a rebentar
+    ctx.fillStyle="#3a0022";
+    ctx.beginPath(); ctx.ellipse(C,C+22,9,7,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#ff5050"; ctx.lineWidth=2; ctx.lineCap="round";
+    for(let i=0;i<4;i++){
+      const sx=C-8+i*5.3, sy=C+13+((i%2)?3:0);
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx+3,sy-6); ctx.stroke();
+    }
+    ctx.fillStyle="rgba(255,90,90,0.85)"; ctx.font="bold 13px sans-serif"; ctx.textAlign="center";
+    ctx.fillText("!", C-32, C-30); ctx.fillText("!", C+30, C+14);
+    tex.refresh();
+  }
+
   // ── 2) Vírus Gigante — esfera com espigões, estilo coronavírus ──────
   if(!scene.textures.exists("boss_virus_gigante")){
     const tex=scene.textures.createCanvas("boss_virus_gigante",S,S), ctx=tex.getContext();
