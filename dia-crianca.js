@@ -4989,6 +4989,9 @@ window.addEventListener("DOMContentLoaded", () => {
         const step=Math.floor(scene.time.now/140)%2;
         const tex=step===0?"vanberto_walk1":"vanberto_walk2";
         if(player.texture.key!==tex) player.setTexture(tex);
+      } else if(!onGround){
+        // No ar (a saltar ou a cair) — braços erguidos, tipo "hurra!"
+        if(player.texture.key!=="vanberto_jump") player.setTexture("vanberto_jump");
       } else { if(player.texture.key!=="vanberto_open") player.setTexture("vanberto_open"); }
     }
   }

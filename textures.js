@@ -33,6 +33,7 @@ export function makeTextures(scene){
   makeVanBertoTexture(scene,"vanberto_sad","sad",-1);
   makeVanBertoTexture(scene,"vanberto_walk1",false,0);
   makeVanBertoTexture(scene,"vanberto_walk2",false,1);
+  makeVanBertoTexture(scene,"vanberto_jump",false,-1,true);
 }
 
 // Plataforma colorida estilo cartoon
@@ -1440,7 +1441,7 @@ function cVan(ctx,x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
 function cfVan(ctx,x,y,r,color){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();}
 function lVan(ctx,x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
 
-function makeVanBertoTexture(scene,key,blink,step){
+function makeVanBertoTexture(scene,key,blink,step,armsUp){
   if(scene.textures.exists(key)) return;
   const w=96,h=96, tex=scene.textures.createCanvas(key,w,h), ctx=tex.getContext();
   ctx.clearRect(0,0,w,h);
@@ -1470,9 +1471,13 @@ function makeVanBertoTexture(scene,key,blink,step){
   // ===== BRAÇOS (curtos e encostados; balançam ao contrário da perna do
   // mesmo lado — braço esquerdo para trás quando a perna esquerda avança,
   // tal como um passo natural — só nos frames de caminhar, step 0/1) =====
+  // Frame de salto (armsUp=true): braços erguidos para cima e para fora,
+  // tipo "hurra!" — ignora o balanço de andar, usa outro ângulo.
   const ARM_SWING = 0.24; // radianos
+  const JUMP_RAISE = 2.4; // radianos — braço roda de "para baixo" para "para cima e para fora"
   let lArmSwing = 0, rArmSwing = 0;
-  if(step===0){ lArmSwing=-ARM_SWING; rArmSwing=ARM_SWING; }
+  if(armsUp){ lArmSwing = JUMP_RAISE; rArmSwing = -JUMP_RAISE; }
+  else if(step===0){ lArmSwing=-ARM_SWING; rArmSwing=ARM_SWING; }
   else if(step===1){ lArmSwing=ARM_SWING; rArmSwing=-ARM_SWING; }
   function arm(sx,swing){
     ctx.save();
