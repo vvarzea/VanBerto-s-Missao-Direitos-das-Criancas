@@ -1248,8 +1248,13 @@ window.addEventListener("DOMContentLoaded", () => {
     if (_overlayOpen) {
       // ── Watchdog anti-bloqueio ──────────────────────────────────────────────
       // Deteta awaitingQuiz=true sem nenhum overlay visível E sem transição de
-      // nível a decorrer. O threshold é 3000ms — acima do tempo máximo da
-      // animação da porta (≈1640ms) mas abaixo de qualquer bloqueio real.
+      // nível a decorrer. O threshold é 6000ms — acima do tempo máximo da
+      // animação da porta/portal (≈3.5s, já a incluir a dança do robô antes
+      // de ser sugado) mas abaixo de qualquer bloqueio real. Era 3000ms,
+      // calibrado para a animação antiga (≈1640ms, sem dança) — ficava
+      // apertado demais depois de a dança ser acrescentada e disparava a meio
+      // da transição, impedindo o quiz de aparecer e devolvendo o jogador ao
+      // mesmo nível.
       const _noVisibleOverlay =
             historyOverlay.classList.contains("hidden")
          && quizOverlay.classList.contains("hidden")
@@ -1258,7 +1263,7 @@ window.addEventListener("DOMContentLoaded", () => {
          && document.getElementById("winOverlay").classList.contains("hidden")
          // Ecrãs mostrados depois do winOverlay (galeria de artefactos, certificado)
          // também têm de "contar" como overlay visível — senão o watchdog conclui
-         // (ao fim de 3s) que o jogo ficou preso por engano e retoma a física
+         // (ao fim do threshold) que o jogo ficou preso por engano e retoma a física
          // por trás do certificado/galeria, deixando o VanBerto's a apanhar dano
          // invisível. Bug corrigido: adicionadas as verificações abaixo.
          && (document.getElementById("certificateOverlay")?.classList.contains("hidden") ?? true)
@@ -1268,7 +1273,7 @@ window.addEventListener("DOMContentLoaded", () => {
          && !document.getElementById("artefactRevealOverlay")?.classList.contains("show");
       if ((awaitingQuiz || awaitingStory) && !_overlayPaused && _noVisibleOverlay) {
         if (!sceneRef._wdStart) sceneRef._wdStart = Date.now();
-        if (Date.now() - sceneRef._wdStart > 3000) {
+        if (Date.now() - sceneRef._wdStart > 6000) {
           sceneRef._wdStart = 0;
           awaitingQuiz = false;
           awaitingStory = false;
