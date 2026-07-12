@@ -5000,45 +5000,54 @@ window.addEventListener("DOMContentLoaded", () => {
   // existentes). Puramente visual e não mexe no body físico — o jogo já está
   // em pausa nesta altura (scene.physics.pause() já foi chamado antes), tal
   // como o resto da animação de entrada no portal.
+  //
+  // IMPORTANTE: onComplete tem de disparar SEMPRE, exatamente uma vez, ou o
+  // resto da animação do portal (e a transição de nível) fica presa. Por
+  // isso os passos da dança em si (tweens, beeps, troca de textura) estão
+  // isolados em try/catch e onComplete só é chamado a partir de UM único
+  // temporizador de segurança com a duração total já prevista — nunca a
+  // partir do fim de cada passo individual.
   function playVanBertoDance(scene, onComplete, beats = 4) {
-    if (!player) { onComplete?.(); return; }
+    if (!player || !scene) { onComplete?.(); return; }
     const baseX = player.x, baseY = player.y;
-    const usingPng = player.getData("usingPng");
-    ensureAudio();
-    let i = 0;
-    const beatMs = 190;
+    let usingPng = false;
+    try { usingPng = !!(player.getData && player.getData("usingPng")); } catch (e) {}
+    try { ensureAudio(); } catch (e) {}
 
-    function doBeat() {
-      if (!player) { onComplete?.(); return; }
-      const dir = i % 2 === 0 ? 1 : -1;
-      scene.tweens.add({
-        targets: player,
-        y: baseY - 14,
-        angle: dir * 16,
-        duration: beatMs * 0.5,
-        ease: "Sine.easeOut",
-        yoyo: true,
-        onYoyo: () => {
-          beep({ freq: 500 + i * 60, dur: 0.06, type: "square", vol: 0.05, slideTo: 700 + i * 60 });
-          if (!usingPng) player.setTexture(i % 2 === 0 ? "vanberto_happy" : "vanberto_wink");
-        }
-      });
-      if (i % 2 === 0) showFloat(scene, baseX, baseY - 46, "🎵", "#ffd700");
-      i++;
-      if (i < beats) {
-        scene.time.delayedCall(beatMs, doBeat);
-      } else {
-        scene.time.delayedCall(beatMs, () => {
-          if (player) {
-            player.setAngle(0);
-            player.y = baseY;
-            if (!usingPng) player.setTexture("vanberto_open");
-          }
-          onComplete?.();
+    const beatMs = 190;
+    const totalMs = beatMs * (beats + 1);
+
+    function doBeat(i) {
+      if (i >= beats || !player) return;
+      try {
+        const dir = i % 2 === 0 ? 1 : -1;
+        scene.tweens.add({
+          targets: player,
+          y: baseY - 14,
+          angle: dir * 16,
+          duration: beatMs * 0.5,
+          ease: "Sine.easeOut",
+          yoyo: true
         });
-      }
+        beep({ freq: 500 + i * 60, dur: 0.06, type: "square", vol: 0.05, slideTo: 700 + i * 60 });
+        if (!usingPng && player.setTexture) player.setTexture(i % 2 === 0 ? "vanberto_happy" : "vanberto_wink");
+        if (i % 2 === 0) showFloat(scene, baseX, baseY - 46, "🎵", "#ffd700");
+      } catch (e) { /* nunca deixar um erro visual travar a dança */ }
+      scene.time.delayedCall(beatMs, () => doBeat(i + 1));
     }
-    doBeat();
+    doBeat(0);
+
+    // Único ponto de saída — garante sempre a continuação do portal.
+    scene.time.delayedCall(totalMs + 60, () => {
+      try {
+        if (player) {
+          player.setAngle(0);
+          player.y = baseY;
+          if (!usingPng && player.setTexture) player.setTexture("vanberto_open");
+        }
+      } catch (e) {}
+      onComplete?.();
+    });
   }
 
   // ===== Texturas — ver textures.js =====
