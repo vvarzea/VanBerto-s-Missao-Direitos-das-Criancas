@@ -27,10 +27,10 @@ export const REGION_INTRO = {
 };
 
 export const BOSS_OBJECTIVE = {
-  monstro_ignorancia: "Foge dele e apanha 5 livros 📚 para carregares o Raio do Conhecimento — dispara sozinho e parte o escudo do monstro! Repete até o vencer, depois apanha mais 5 livros e responde à pergunta final.",
-  virus_gigante: "Foge dele até apanhares uma estrela ⭐ para o atingires! Depois apanha 5 corações ❤️ e responde à pergunta final.",
-  guardiao_sombras: "Ele teleporta-se pela arena escura — apanha uma estrela ⭐ para o atingires! Depois apanha 5 medalhas 🏅 e responde à pergunta final.",
-  poluidor_mecanico: "Ele patrulha depressa numa arena com plataformas móveis — apanha uma estrela ⭐ para o atingires! Depois apanha 5 brinquedos 🧸 e responde à pergunta final."
+  monstro_ignorancia: "Foge e apanha 5 livros 📚 para disparar o Raio do Conhecimento! Repete, depois apanha mais 5 e responde à pergunta.",
+  virus_gigante: "Foge até apanhares uma estrela ⭐ para o atingires! Depois apanha 5 corações ❤️ e responde à pergunta.",
+  guardiao_sombras: "Ele teleporta-se na arena escura. Apanha uma estrela ⭐ para o atingires, depois 5 medalhas 🏅 e responde.",
+  poluidor_mecanico: "Ele patrulha depressa numa arena com plataformas móveis. Apanha a estrela ⭐, depois 5 brinquedos 🧸 e responde."
 };
 
 // Diálogo de boss, agora por boss (em vez de frases genéricas sorteadas ao acaso).
@@ -87,24 +87,24 @@ export const BOSS_HP_TAUNTS = {
 
 // Um "letreiro"/NPC por nível — alinhado por artIdx (0-19), tal como HISTORY[].
 export const NPC_SIGNS = [
-  { emoji:"🎈", text:"Sabias que há dois grandes 'Dias da Criança'? O de 1 de junho e o Dia Universal da Criança, a 20 de novembro!" },
-  { emoji:"📜", text:"Sabias que já existia uma declaração ainda mais antiga, de 1924? A de 1959 tornou-a muito mais forte!" },
+  { emoji:"🎈", text:"Sabias que há dois 'Dias da Criança'? Um a 1 de junho, outro a 20 de novembro!" },
+  { emoji:"📜", text:"Sabias que já existia uma declaração de 1924? A de 1959 tornou-a muito mais forte!" },
   { emoji:"🌍", text:"Sabias que Portugal ratificou a Convenção a 21 de setembro de 1990?" },
-  { emoji:"⚽", text:"Sabias que o direito a brincar é tão oficial como o direito à educação? Está mesmo escrito na Convenção!" },
+  { emoji:"⚽", text:"Sabias que brincar é um direito tão oficial como estudar? Está escrito na Convenção!" },
   { emoji:"📚", text:"A educação é uma chave que abre todas as portas do futuro!" },
   { emoji:"💊", text:"Uma alimentação saudável e check-ups regulares ajudam-te a crescer forte!" },
   { emoji:"🛡️", text:"Se alguma vez te sentires em perigo, fala sempre com um adulto de confiança." },
   { emoji:"🗣️", text:"Sabias que este direito obriga os adultos a OUVIR-te, não só a deixar-te falar?" },
-  { emoji:"🌱", text:"Pequenas ações — poupar água, reciclar — ajudam a construir um futuro melhor." },
+  { emoji:"🌱", text:"Poupar água e reciclar são pequenas ações que constroem um futuro melhor." },
   { emoji:"🌟", text:"Sabias que UNICEF significa 'Fundo das Nações Unidas para a Infância'?" },
-  { emoji:"🪪", text:"O teu nome e a tua identidade são só teus — ninguém tos pode tirar." },
+  { emoji:"🪪", text:"O teu nome e a tua identidade são só teus. Ninguém tos pode tirar." },
   { emoji:"🏠", text:"Todas as crianças têm direito a crescer rodeadas de carinho e cuidado." },
-  { emoji:"✈️", text:"Sabias que uma criança refugiada tem sempre direito à escola, tal como qualquer outra criança?" },
-  { emoji:"🚫", text:"Sabias que em Portugal a idade mínima para trabalhar é 16 anos? Antes disso, o teu trabalho é aprender e brincar!" },
-  { emoji:"🗽", text:"Sabias que também tens o direito de não concordar com um adulto, desde que o digas com respeito?" },
-  { emoji:"🔒", text:"As tuas mensagens e segredos são teus — a privacidade também é um direito." },
-  { emoji:"🎭", text:"Sabias que em Portugal o mirandês é uma língua oficialmente reconhecida, além do português?" },
+  { emoji:"✈️", text:"Sabias que uma criança refugiada tem sempre direito à escola?" },
+  { emoji:"🚫", text:"Sabias que em Portugal só se pode trabalhar a partir dos 16 anos?" },
+  { emoji:"🗽", text:"Sabias que podes discordar de um adulto, desde que o digas com respeito?" },
+  { emoji:"🔒", text:"As tuas mensagens e segredos são teus. A privacidade também é um direito." },
+  { emoji:"🎭", text:"Sabias que o mirandês também é uma língua oficial em Portugal?" },
   { emoji:"♿", text:"Um mundo inclusivo é um mundo onde ninguém fica para trás." },
-  { emoji:"🌿", text:"Sabias que plantar uma árvore ou reduzir o plástico ajuda o teu direito a um ambiente saudável?" },
+  { emoji:"🌿", text:"Sabias que plantar uma árvore ajuda o teu direito a um ambiente saudável?" },
   { emoji:"💻", text:"Sabias que nunca deves partilhar dados pessoais ou fotos com desconhecidos online?" }
 ];
