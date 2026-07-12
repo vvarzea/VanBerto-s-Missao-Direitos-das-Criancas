@@ -787,6 +787,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // Coyote time + buffer de salto — torna o salto mais "justo" para as crianças
   let coyoteUntil=0, jumpBufferedUntil=0;
   const COYOTE_MS=110, JUMP_BUFFER_MS=130;
+  let wasDucking=false; // agachar (seta para baixo) — só no chão; usado para animar a transição só na mudança de estado
   let currentLevelTip = "⭐ Apanha estrelas e chega ao Portal ✨!";
   const GRAVITY=1100;
 
@@ -1268,15 +1269,46 @@ window.addEventListener("DOMContentLoaded", () => {
       sceneRef.physics.resume();
     }
     const speed=powered?320:280;
+    const onGround=player.body.blocked.down;
     let leftDown=cursors.left.isDown||touch.left;
     let rightDown=cursors.right.isDown||touch.right;
     if (sceneRef.time.now < controlsInvertedUntil) { const _t=leftDown; leftDown=rightDown; rightDown=_t; }
 
-    if (leftDown&&!rightDown) { player.setVelocityX(-speed); player.setFlipX(true);  player.setAngle(-2); }
-    else if (rightDown&&!leftDown) { player.setVelocityX(speed); player.setFlipX(false); player.setAngle(2); }
+    // ── AGACHAR (seta ⬇️) — só no chão; reduz a hitbox e a velocidade ──────
+    // O visual (squash) é tratado em applyVanBertoTexture(), que corre todos os
+    // frames — aqui só mexemos na hitbox física, para não haver dois sítios a
+    // competir pelo tamanho do sprite no mesmo frame.
+    const ducking = (cursors.down.isDown) && onGround && !invuln;
+    if (ducking && !wasDucking) {
+      // Entrar em agachado — baixa a hitbox, para (no futuro) poder passar por
+      // baixo de obstáculos baixos e ser mais fácil esquivar a livros atirados.
+      if (player.getData("usingPng")) {
+        player.body.setSize(48, 26);
+        player.body.setOffset((player.width-48)/2, (player.height-26)/2 + 22);
+      } else {
+        player.body.setSize(48, 26);
+        player.body.setOffset(24, 68);
+      }
+      ensureAudio(); beep({freq:220,dur:0.06,type:"square",vol:0.045,slideTo:140});
+    } else if (!ducking && wasDucking) {
+      // Levantar — repõe o tamanho normal (mesmos valores usados em snapPlayerToGround)
+      if (player.getData("usingPng")) {
+        player.body.setSize(44,52);
+        player.body.setOffset((player.width-44)/2,(player.height-52)/2+4);
+      } else {
+        player.body.setSize(44,48);
+        player.body.setOffset(26,46);
+      }
+    }
+    wasDucking = ducking;
+
+    const moveSpeed = ducking ? speed*0.4 : speed; // mais lento agachado, tal como em qualquer plataforma
+    if (leftDown&&!rightDown) { player.setVelocityX(-moveSpeed); player.setFlipX(true);  player.setAngle(ducking?0:-2); }
+    else if (rightDown&&!leftDown) { player.setVelocityX(moveSpeed); player.setFlipX(false); player.setAngle(ducking?0:2); }
     else { player.setVelocityX(0); player.setAngle(0); }
-    // Só aplica escala se não estiver a piscar (invuln) para não interromper o tween de alpha
-    if(!invuln){
+    // Só aplica escala normal se não estiver a piscar (invuln) NEM agachado —
+    // enquanto agachado, o squash aplicado acima é que manda.
+    if(!invuln && !ducking){
       if(player.getData("usingPng")){
         const ps = powered ? 72*1.18 : 72;
         player.setDisplaySize(ps, ps);
@@ -1287,7 +1319,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // ── COYOTE TIME + BUFFER DE SALTO ────────────────────────────
     const now=sceneRef.time.now;
-    const onGround=player.body.blocked.down;
     if(onGround){ coyoteUntil=now+COYOTE_MS; doubleJumpUsed=false; }
 
     // Deteção de "carregar saltar" (flanco, não "premido") — guarda o pedido por uns ms
@@ -1301,7 +1332,10 @@ window.addEventListener("DOMContentLoaded", () => {
     const jumpHeld  = cursors.up.isDown||keySpace.isDown;      // tecla mantida (saltar segurando no chão)
     const canGround = now<=coyoteUntil;                        // ainda dá para saltar do "chão" (inclui coyote)
 
-    if ((wantJump||jumpHeld) && canGround) {
+    // Não deixa saltar enquanto agachado — tal como nos jogos "a sério", é
+    // preciso soltar a seta para baixo primeiro (evita saltos estranhos a
+    // meio da animação de agachar).
+    if ((wantJump||jumpHeld) && canGround && !ducking) {
       // Salto normal — chão, coyote time (acabou de sair da plataforma) ou tecla mantida
       player.setVelocityY(powered?-680:-650); ensureAudio(); SFX.jump();
       jumpBufferedUntil=0; coyoteUntil=0; doubleJumpUsed=false;
@@ -4610,7 +4644,12 @@ window.addEventListener("DOMContentLoaded", () => {
       const baseScale = powered ? 1.18 : 1.0;
       const displayW = 72 * baseScale;
       const displayH = 72 * baseScale;
-      if(onGround && moving){
+      if(wasDucking){
+        // Agachado — prioridade sobre bob/respiração/ar: mais largo e mais
+        // baixo, com uma respiração muito ligeira para não parecer estático.
+        const breathe = 0.5 + Math.sin(scene.time.now * 0.0025) * 0.5;
+        if(!invuln) player.setDisplaySize(displayW * (1.14 + breathe*0.01), displayH * (0.6 - breathe*0.01));
+      } else if(onGround && moving){
         // Bob de andar — passo alternado a cada 140ms com squash/stretch suave
         const step = Math.floor(scene.time.now / 140) % 4;
         // 4 fases: 0=neutro, 1=comprime (foot down), 2=neutro, 3=estica (push off)
@@ -4638,11 +4677,15 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     } else {
       // Canvas mode — comportamento original
-      if(onGround&&moving){
+      if(wasDucking){
+        if(player.texture.key!=="vanberto_open") player.setTexture("vanberto_open");
+        if(!invuln) player.setScale(1.14, 0.6);
+      } else if(onGround&&moving){
         const step=Math.floor(scene.time.now/140)%2;
         const tex=step===0?"vanberto_walk1":"vanberto_walk2";
         if(player.texture.key!==tex) player.setTexture(tex);
-      } else { if(player.texture.key!=="vanberto_open") player.setTexture("vanberto_open"); }
+        if(!invuln) player.setScale(1,1);
+      } else { if(player.texture.key!=="vanberto_open") player.setTexture("vanberto_open"); if(!invuln) player.setScale(1,1); }
     }
   }
 
