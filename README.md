@@ -275,24 +275,27 @@
 
 
 
-# ## Bosses — fases de raiva, falas dinâmicas e ataque especial (nova)
+## Nova funcionalidade — Agachar (nova)
 
-Todos os bosses ganharam **3 fases de raiva** ligadas ao HP (3/2/1): a cada
-vida perdida ficam mais rápidos (timers de movimento/ataque acelerados 35% e
-depois 70%), mostram um ícone de emoção (😊→😠→😡) e dizem uma fala curta e
-flutuante — sem pausar o jogo. O ecrã de vitória de boss também ficou mais
-festivo (pose de salto do VanBerto's, segunda onda de confetti, pequeno
-acorde final).
+O VanBerto's já se pode agachar: tecla `↓` ou `S` no teclado, ou o botão
+"Baixar" nos controlos touch (ao lado de Esq/Dir). Serve para duas coisas,
+tanto em níveis normais como em combates de boss:
 
-O **Monstro da Ignorância** deixou de usar a estrela ⭐ genérica para lhe
-fazer dano: agora tem um ataque especial próprio, o **Raio do Conhecimento**
-(`specialAttack` em `data-bosses.js`). Apanhando 5 livros de conhecimento
-(tom azulado, reaproveita `item_livro`) o raio dispara sozinho — precisa de
-3 cargas completas para esvaziar o hp:3 do boss. Cada item mostra uma frase
-muito curta ("Ler ajuda-nos a pensar.") quase invisível, sem interromper o
-ritmo. Tocar neste boss dói SEMPRE (já não há Star Power a "desbloquear" o
-toque) — o único caminho é o ataque nomeado.
+- **Esquivar ataques altos** — a hitbox encolhe (de 48px para 24px de altura,
+  pés sempre no mesmo sítio), o que permite passar por baixo de projéteis
+  lançados à altura da cabeça, como os livros do Monstro da Ignorância ou o
+  ataque "Fake News" (❌ a voar na horizontal).
+- **Passar por baixo de obstáculos baixos** — no Nível 1, logo a seguir ao
+  ponto de partida, há agora um pequeno túnel (vão de 34px) que só se
+  consegue atravessar agachado — serve de tutorial rápido ao mecanismo.
 
-Estrutura pensada para se repetir noutros bosses no futuro: basta acrescentar
-`specialAttack` (nome, chargeCount, chargeFacts) à definição do boss em
-`data-bosses.js` — o motor do jogo já trata do resto automaticamente.
+Contrapartidas propositadas (para não ser "grátis"): agachado, o VanBerto's
+anda mais devagar (55% da velocidade normal) e não pode saltar — é preciso
+soltar `↓`/`S` primeiro. O estado repõe-se sempre sozinho ao início de um
+nível, ao abrir a porta, ou sempre que o jogo pausa por um quiz/cinemática,
+para nunca ficar "preso" com a hitbox pequena por engano.
+
+Ficheiros tocados: `dia-crianca.js` (mecânica, input, hitbox), `index.html`
+(botão touch + atalhos de teclado documentados), `dia-crianca.css` (estilo
+do botão), `data-levels.js` (túnel de demonstração no Nível 1) e
+`data-flavor.js` (nova dica no ecrã de pausa).

@@ -766,7 +766,8 @@ window.addEventListener("DOMContentLoaded", () => {
   // visível ENQUANTO a física está pausada (nesse período nada corrige a
   // posição automaticamente, ao contrário do que acontece já em jogo).
   let _pendingEntranceReveal = false;
-  let cursors, keySpace;
+  let cursors, keySpace, keyS;
+  let isCrouching = false; // ===== Agachar — nova funcionalidade =====
   let hudText, scoreText, heartsGfx, tipText, itemCountText;
   let progressBg, progressFill, powerIndicator, playerNameHUD;
   let pauseOverlayGfx, pauseVanImg, pauseLabel;
@@ -777,7 +778,7 @@ window.addEventListener("DOMContentLoaded", () => {
   let extraShieldCounted=false; // garante que o escudo extra (spawnShields) só entra no total UMA vez por nível
   let collectedItemIndices=new Set(); // índices dos itens já apanhados neste nível
   let _hudDirty=true; // flag: só redesenha HUD quando algo mudou
-  let touch={left:false,right:false,jump:false};
+  let touch={left:false,right:false,jump:false,crouch:false};
   let awaitingQuiz=false, awaitingStory=false;
   let _doorWatchdogTimer=null, _landingCheckTimer=null, _levelAtDoorTrigger=-1;
   let powered=false, poweredTimer=null, powerCountdown=null, invuln=false;
@@ -822,9 +823,10 @@ window.addEventListener("DOMContentLoaded", () => {
     sceneRef = this;
     cursors  = this.input.keyboard.createCursorKeys();
     keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    // Impede o browser de fazer scroll da página com as setas (principalmente
-    // ↓, que não tem nenhuma função no jogo) — sem isto, carregar em ↓ tentava
-    // deslocar a página por baixo do jogo, o que dava a sensação de "tremor".
+    keyS     = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S); // tecla alternativa para agachar
+    // Impede o browser de fazer scroll da página com as setas — ↓ agora tem
+    // função no jogo (agachar), por isso a captura evita "tremor" da página
+    // tal como já acontecia com as outras setas.
     this.input.keyboard.addCapture([
       Phaser.Input.Keyboard.KeyCodes.UP, Phaser.Input.Keyboard.KeyCodes.DOWN,
       Phaser.Input.Keyboard.KeyCodes.LEFT, Phaser.Input.Keyboard.KeyCodes.RIGHT,
@@ -944,7 +946,7 @@ window.addEventListener("DOMContentLoaded", () => {
         // disparem showQuiz no nível novo se o botão for pressionado durante a animação da porta
         try { sceneRef.tweens.killAll(); } catch {}
         _doorAnimRunning = false;
-        touch.left=touch.right=touch.jump=false;
+        touch.left=touch.right=touch.jump=touch.crouch=false;
         loadLevel(sceneRef,currentLevel);
         showHistory(currentLevel, () => { awaitingQuiz=false; if(!pausedByTeacher) sceneRef.physics.resume(); });
         saveGame();
@@ -960,7 +962,7 @@ window.addEventListener("DOMContentLoaded", () => {
         // Matar todos os tweens pendentes antes de reiniciar
         try { sceneRef.tweens.killAll(); } catch {}
         _doorAnimRunning = false;
-        touch.left=touch.right=touch.jump=false;
+        touch.left=touch.right=touch.jump=touch.crouch=false;
         score=0; lives=3; livesLostThisLevel=0;
         resetQuizStats(); Object.keys(usedQuizByLevel).forEach(k=>usedQuizByLevel[k].clear()); Object.keys(usedQuizByTheme).forEach(k=>usedQuizByTheme[k].clear());
         scoreText.setText(`🌟 Pontos: ${score}`); updateHearts();
@@ -997,7 +999,7 @@ window.addEventListener("DOMContentLoaded", () => {
         if(_landingCheckTimer){ try{_landingCheckTimer.remove(false);}catch{} _landingCheckTimer=null; }
         // Remover overlap da porta antiga antes da transição para evitar disparo acidental
         if(doorOverlap){ try{ sceneRef.physics.world.removeCollider(doorOverlap); }catch{} doorOverlap=null; }
-        touch.left=touch.right=touch.jump=false;
+        touch.left=touch.right=touch.jump=touch.crouch=false;
         livesLostThisLevel=0;
         sceneRef.physics.resume();
         playLevelTransition(sceneRef, idx,
@@ -1039,7 +1041,7 @@ window.addEventListener("DOMContentLoaded", () => {
           // Pausar a física enquanto o menu está aberto
           _overlayPaused = true;
           if (sceneRef && startOverlay.classList.contains("hidden")) sceneRef.physics.pause();
-          touch.left = touch.right = touch.jump = false;
+          touch.left = touch.right = touch.jump = touch.crouch = false;
 
           // Injectar badges de progresso em tempo real
           const _badge = (id, text) => {
@@ -1266,6 +1268,7 @@ window.addEventListener("DOMContentLoaded", () => {
         sceneRef._wdStart = 0;
       }
       // ───────────────────────────────────────────────────────────────────────
+      exitCrouch();
       player.setVelocityX(0); applyVanBertoTexture(sceneRef); updateShadow(); return;
     }
     sceneRef._wdStart = 0;
@@ -1274,10 +1277,22 @@ window.addEventListener("DOMContentLoaded", () => {
         && sceneRef.physics.world.isPaused) {
       sceneRef.physics.resume();
     }
-    const speed=powered?320:280;
     let leftDown=cursors.left.isDown||touch.left;
     let rightDown=cursors.right.isDown||touch.right;
     if (sceneRef.time.now < controlsInvertedUntil) { const _t=leftDown; leftDown=rightDown; rightDown=_t; }
+
+    // ===== Agachar — nova funcionalidade =====
+    // ↓ / S / botão touch. Reduz a hitbox (esquiva ataques altos como os
+    // livros do boss ou o "Fake News" na horizontal, e permite passar por
+    // baixo de plataformas baixas), mas trava o salto e anda mais devagar —
+    // não dá para atravessar um nível todo agachado sem custo nenhum.
+    const downHeld = cursors.down.isDown || (keyS && keyS.isDown) || touch.crouch;
+    const wasCrouching = isCrouching;
+    isCrouching = !!downHeld && !awaitingQuiz && !awaitingStory;
+    if (isCrouching !== wasCrouching) setCrouchHitbox(player, isCrouching);
+
+    let speed=powered?320:280;
+    if (isCrouching) speed *= 0.55;
 
     if (leftDown&&!rightDown) { player.setVelocityX(-speed); player.setFlipX(true);  player.setAngle(-2); }
     else if (rightDown&&!leftDown) { player.setVelocityX(speed); player.setFlipX(false); player.setAngle(2); }
@@ -1286,9 +1301,12 @@ window.addEventListener("DOMContentLoaded", () => {
     if(!invuln){
       if(player.getData("usingPng")){
         const ps = powered ? 72*1.18 : 72;
-        player.setDisplaySize(ps, ps);
+        if (isCrouching) player.setDisplaySize(ps*1.08, ps*0.6);
+        else player.setDisplaySize(ps, ps);
       } else {
-        player.setScale(powered?1.18:1.0);
+        const baseScale = powered?1.18:1.0;
+        if (isCrouching) player.setScale(baseScale*1.08, baseScale*0.6);
+        else player.setScale(baseScale);
       }
     }
 
@@ -1308,12 +1326,12 @@ window.addEventListener("DOMContentLoaded", () => {
     const jumpHeld  = cursors.up.isDown||keySpace.isDown;      // tecla mantida (saltar segurando no chão)
     const canGround = now<=coyoteUntil;                        // ainda dá para saltar do "chão" (inclui coyote)
 
-    if ((wantJump||jumpHeld) && canGround) {
+    if ((wantJump||jumpHeld) && canGround && !isCrouching) {
       // Salto normal — chão, coyote time (acabou de sair da plataforma) ou tecla mantida
       player.setVelocityY(powered?-680:-650); ensureAudio(); SFX.jump();
       jumpBufferedUntil=0; coyoteUntil=0; doubleJumpUsed=false;
       sceneRef.tweens.add({targets:player,scaleY:powered?1.26:1.11,scaleX:powered?1.11:0.95,duration:120,yoyo:true});
-    } else if (wantJump&&!onGround&&doubleJumpActive&&!doubleJumpUsed) {
+    } else if (wantJump&&!onGround&&doubleJumpActive&&!doubleJumpUsed&&!isCrouching) {
       // DUPLO SALTO — só com toque/tecla NOVO no ar (flanco), nunca por manter premido
       doubleJumpUsed=true; jumpBufferedUntil=0;
       player.setVelocityY(-920); // muito mais alto que o salto normal (-650)
@@ -1991,7 +2009,7 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.time.delayedCall(420, () => {
       if (!player) return;
       const L = LEVELS[currentLevel];
-      touch.left = touch.right = touch.jump = false;
+      touch.left = touch.right = touch.jump = touch.crouch = false;
       player.setVelocity(0, 0);
       player.setPosition(L.spawn.x, L.spawn.y);
       snapPlayerToGround();
@@ -2292,6 +2310,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if(_doorWatchdogTimer){ try{_doorWatchdogTimer.remove(false);}catch{} _doorWatchdogTimer=null; }
     if(_landingCheckTimer){ try{_landingCheckTimer.remove(false);}catch{} _landingCheckTimer=null; }
     awaitingQuiz=true; invuln=false; clearPower(scene); clearDoubleJump(scene); clearStarPower(scene); livesLostThisLevel=0; _doorAnimRunning=false; resetLevelStarTracking();
+    isCrouching=false; setCrouchHitbox(player, false);
     scene.physics.pause();
     // Garantir que halo e sombra estão visíveis no início do nível
     if(powerHaloGfx) powerHaloGfx.setVisible(true);
@@ -2417,7 +2436,7 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.cameras.main.startFollow(player, true, 1.0, 1.0);
     scene.cameras.main.centerOn(L.spawn.x, L.spawn.y);
     scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
-    touch.left=touch.right=touch.jump=false;
+    touch.left=touch.right=touch.jump=touch.crouch=false;
     // Alinhar já o VanBerto's ao chão (mesmo cálculo que antes corria 80ms
     // depois) — mas sem o revelar. Enquanto o cartão de transição/"Sabias
     // que...?" estiver a decorrer, a física continua pausada, por isso
@@ -2673,6 +2692,29 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // ===== Agachar — hitbox e reposição =====
+  // Ajusta o corpo físico (não só o visual) quando o estado de agachado muda,
+  // seguindo o mesmo padrão de valores fixos que snapPlayerToGround() já usa
+  // — os pés ficam sempre no mesmo sítio, só a altura do corpo encolhe.
+  function setCrouchHitbox(playerObj, crouching){
+    if (!playerObj || !playerObj.body) return;
+    if (playerObj.getData("usingPng")) {
+      if (crouching) { playerObj.body.setSize(44,28); playerObj.body.setOffset(14,38); }
+      else            { playerObj.body.setSize(44,52); playerObj.body.setOffset(14,14); }
+    } else {
+      if (crouching) { playerObj.body.setSize(44,24); playerObj.body.setOffset(26,70); }
+      else            { playerObj.body.setSize(44,48); playerObj.body.setOffset(26,46); }
+    }
+  }
+  // Força a saída do estado agachado (chamado sempre que o jogo pausa a física
+  // por outras razões — quiz, porta, transição — para nunca ficar "preso"
+  // visualmente encolhido nem com a hitbox pequena por engano).
+  function exitCrouch(){
+    if (!isCrouching) return;
+    isCrouching = false;
+    if (player) { setCrouchHitbox(player, false); player.setScale(1); }
+  }
+
   function snapPlayerToGround(){
     if(!player?.body||!platforms) return;
     // Nota: NÃO usar updateFromGameObject() aqui — esta função corre 80ms
@@ -2727,7 +2769,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if(shadowGfx)    { shadowGfx.clear();    shadowGfx.setVisible(false); }
     player.setVelocityX(0);
     player.setFlipX(false);
-    touch.left=touch.right=touch.jump=false;
+    touch.left=touch.right=touch.jump=touch.crouch=false;
     const doorOrigX = door.x;
     // Garantir que a física está ativa para o body.blocked atualizar corretamente
     scene.physics.resume();
@@ -4100,7 +4142,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function showGameOver(){
     try{sceneRef.physics.pause();}catch{}
-    awaitingQuiz=true; touch.left=touch.right=touch.jump=false;
+    awaitingQuiz=true; touch.left=touch.right=touch.jump=touch.crouch=false;
     try{player.setVelocity(0,0);}catch{}
     _hideBossHUD();
     document.getElementById("artefactRevealOverlay")?.classList.remove("show");
@@ -4135,7 +4177,7 @@ window.addEventListener("DOMContentLoaded", () => {
   function showVictoryScreen(scene){
     try{scene.physics.pause();}catch{}
     awaitingQuiz=true;
-    touch.left=touch.right=touch.jump=false;
+    touch.left=touch.right=touch.jump=touch.crouch=false;
     try{clearPower(scene);}catch{}
     try{clearStarPower(scene);}catch{}
     try{clearDoubleJump(scene);}catch{}
@@ -4530,7 +4572,7 @@ window.addEventListener("DOMContentLoaded", () => {
     sceneRef.time.delayedCall(400, () => {
       if(!player) return;
       const L=LEVELS[currentLevel];
-      touch.left=touch.right=touch.jump=false;
+      touch.left=touch.right=touch.jump=touch.crouch=false;
       player.setVelocity(0,0); player.setPosition(L.spawn.x,L.spawn.y); snapPlayerToGround();
       if(lives<=0){showGameOver();return;}
       // Iniciar invulnerabilidade de 2s a partir do spawn (não do hit)
@@ -4725,7 +4767,7 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.input.on("pointerdown",(p)=>{ensureAudio();if(anyTouchBtnActive||_isTeacherMenuOpen())return;if(!_canvasTouchAllowed())return;downAt=scene.time.now;touch.left=p.x<scene.scale.width/2;touch.right=!touch.left;});
     scene.input.on("pointerup",()=>{if(anyTouchBtnActive||_isTeacherMenuOpen())return;if(!_canvasTouchAllowed()){touch.left=false;touch.right=false;return;}const held=scene.time.now-downAt;touch.left=false;touch.right=false;if(held<=TAP_MS)touch.jump=true;});
     scene.input.on("pointerout",()=>{touch.left=false;touch.right=false;touch.jump=false;});
-    const btnL=document.getElementById("btnLeft"),btnR=document.getElementById("btnRight"),btnJ=document.getElementById("btnJump");
+    const btnL=document.getElementById("btnLeft"),btnR=document.getElementById("btnRight"),btnJ=document.getElementById("btnJump"),btnC=document.getElementById("btnCrouch");
     if(btnL&&btnR&&btnJ){
       const activeBtns=new Set(), updateActive=()=>{anyTouchBtnActive=activeBtns.size>0;};
       const press=(btn,action,val)=>{
@@ -4735,6 +4777,7 @@ window.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("mousedown",start);btn.addEventListener("mouseup",end);btn.addEventListener("mouseleave",end);
       };
       press(btnL,"left",true); press(btnR,"right",true);
+      if(btnC) press(btnC,"crouch",true);
       const jumpStart=(e)=>{e.preventDefault();ensureAudio();touch.jump=true;btnJ.classList.add("pressed");activeBtns.add(btnJ.id);updateActive();};
       const jumpEnd=(e)=>{e.preventDefault();touch.jump=false;btnJ.classList.remove("pressed");activeBtns.delete(btnJ.id);updateActive()};
       btnJ.addEventListener("touchstart",jumpStart,{passive:false});btnJ.addEventListener("touchend",jumpEnd,{passive:false});btnJ.addEventListener("touchcancel",jumpEnd,{passive:false});

@@ -884,6 +884,20 @@ body.overlay-open #touchControls { opacity: 0 !important; pointer-events: none !
     rgba(255,107,53,0.52);
 }
 
+.touch-crouch {
+  background:
+    radial-gradient(circle at 38% 32%, rgba(120,220,255,0.28), transparent 55%),
+    rgba(26,8,50,0.84);
+  border-color: rgba(120,220,255,0.65);
+  color:#baffef;
+}
+.touch-crouch.pressed {
+  background:
+    radial-gradient(circle at 38% 32%, rgba(120,220,255,0.5), transparent 55%),
+    rgba(64,144,208,0.45);
+  border-color: rgba(120,220,255,0.95);
+}
+
 /* =====================================================
    RESPONSIVIDADE EXTRA — ecrãs pequenos / landscape
    ===================================================== */

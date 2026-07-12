@@ -50,7 +50,7 @@
         <button id="btnFullscreen" class="btn">⛶ Ecrã todo</button>
       </div>
       <p class="tiny">
-        PC: ← → para andar e ↑/Espaço para saltar.<br>
+        PC: ← → para andar, ↑/Espaço para saltar e ↓/S para agachar.<br>
         Tablet/telemóvel: mantém o dedo no lado esquerdo/direito para andar e faz um toque rápido para saltar.
       </p>
     </div>
@@ -192,6 +192,7 @@
         <div class="options-keys-grid">
           <span><kbd>← →</kbd></span><span>Mover o VanBerto's</span>
           <span><kbd>↑</kbd> / <kbd>Espaço</kbd></span><span>Saltar</span>
+          <span><kbd>↓</kbd> / <kbd>S</kbd></span><span>Agachar</span>
           <span><kbd>H</kbd></span><span>Alto Contraste</span>
           <span><kbd>F</kbd></span><span>Ecrã completo</span>
         </div>
@@ -337,7 +338,7 @@
 
       <!-- CONTROLOS -->
       <p style="font-weight:700;font-size:13px;color:#ff6b35;margin:8px 0 4px;">🖥️ Controlos — PC / Teclado</p>
-      <p style="margin:2px 0 8px;font-size:12px;color:#ffe0d0;">← → para andar &nbsp;|&nbsp; ↑ ou Espaço para saltar &nbsp;|&nbsp; <strong style="color:#ffd700;">H</strong> — alto contraste &nbsp;|&nbsp; <strong style="color:#ffd700;">F</strong> — ecrã todo</p>
+      <p style="margin:2px 0 8px;font-size:12px;color:#ffe0d0;">← → para andar &nbsp;|&nbsp; ↑ ou Espaço para saltar &nbsp;|&nbsp; ↓ ou S para agachar &nbsp;|&nbsp; <strong style="color:#ffd700;">H</strong> — alto contraste &nbsp;|&nbsp; <strong style="color:#ffd700;">F</strong> — ecrã todo</p>
       <p style="font-weight:700;font-size:13px;color:#ff6b35;margin:4px 0 4px;">📱 Tablet / Telemóvel</p>
       <p style="margin:2px 0 14px;font-size:12px;color:#ffe0d0;">Mantém o dedo no lado esquerdo/direito para andar · Toque rápido para saltar</p>
 
@@ -523,7 +524,7 @@
       <div class="pause-tip" id="pauseTip">
         💡 <b>Dica:</b> Apanha a estrela ⭐ para ativar o <b>Star Power</b> e atropelar vilões durante 8 segundos!
       </div>
-      <p class="pause-controls-hint">← → andar &nbsp;|&nbsp; ↑ / Espaço saltar &nbsp;|&nbsp; Prima ▶ Continuar para retomar</p>
+      <p class="pause-controls-hint">← → andar &nbsp;|&nbsp; ↑ / Espaço saltar &nbsp;|&nbsp; ↓ / S agachar &nbsp;|&nbsp; Prima ▶ Continuar para retomar</p>
     </div>
   </div>
 
@@ -615,6 +616,7 @@
     <div class="tc-left">
       <div class="tc-btn-wrap"><button id="btnLeft"  class="touch-btn" aria-label="Mover esquerda">◀</button><span class="tc-label">Esq</span></div>
       <div class="tc-btn-wrap"><button id="btnRight" class="touch-btn" aria-label="Mover direita">▶</button><span class="tc-label">Dir</span></div>
+      <div class="tc-btn-wrap"><button id="btnCrouch" class="touch-btn touch-crouch" aria-label="Agachar">▼</button><span class="tc-label">Baixar</span></div>
     </div>
     <div class="tc-right">
       <div class="tc-btn-wrap"><button id="btnJump" class="touch-btn touch-jump" aria-label="Saltar">↑</button><span class="tc-label">Saltar</span></div>

@@ -31,7 +31,14 @@ export const LEVELS = [
     artIdx:0, theme:0, quizTheme:"historia", worldW:2600,
     spawn:{x:480,y:460}, doorX:2100,
     platforms:[
-      {x:450,y:520,w:900,h:28},{x:1040,y:450,w:300,h:22},{x:1380,y:380,w:270,h:22},
+      {x:450,y:520,w:900,h:28},
+      // Túnel baixo — demonstração da nova funcionalidade de agachar (↓/S).
+      // Vão de 34px entre o chão (topo em y=506) e este teto (fundo em y=472):
+      // alto demais para passar de pé (corpo normal ~48px), mas cabe agachado
+      // (corpo ~24px). Colocado logo a seguir ao spawn (x:550-750) para ser a
+      // primeira coisa que a criança encontra e aprenda o mecanismo cedo.
+      {x:650,y:461,w:200,h:22},
+      {x:1040,y:450,w:300,h:22},{x:1380,y:380,w:270,h:22},
       {x:1700,y:310,w:240,h:22},{x:2050,y:520,w:900,h:28}
     ],
     items:[{x:1040,y:400,kind:"estrela"},{x:1380,y:330,kind:"medalha"},{x:1700,y:260,kind:"brinquedo"}],
