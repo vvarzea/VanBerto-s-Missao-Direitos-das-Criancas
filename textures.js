@@ -28,6 +28,7 @@ export function makeTextures(scene){
   makeItemTextures(scene);
   makeVanBertoTexture(scene,"vanberto_open",false,-1);
   makeVanBertoTexture(scene,"vanberto_blink",true,-1);
+  makeVanBertoTexture(scene,"vanberto_wink","wink",-1);
   makeVanBertoTexture(scene,"vanberto_walk1",false,0);
   makeVanBertoTexture(scene,"vanberto_walk2",false,1);
 }
@@ -1529,17 +1530,30 @@ function makeVanBertoTexture(scene,key,blink,step){
     ctx.beginPath(); ctx.ellipse(55,30,3.3,4,0,0,Math.PI*2); ctx.fill();
     cfVan(ctx,42.3,28.4,1.5,"#fff"); cfVan(ctx,39.9,31,0.8,"#fff");
     cfVan(ctx,56.3,28.4,1.5,"#fff"); cfVan(ctx,53.9,31,0.8,"#fff");
+  } else if(blink==="wink"){
+    // pisca-olho brincalhão — olho esquerdo aberto normal, direito fechado num arco
+    ctx.fillStyle="#0a0f1c";
+    ctx.beginPath(); ctx.ellipse(41,30,3.3,4,0,0,Math.PI*2); ctx.fill();
+    cfVan(ctx,42.3,28.4,1.5,"#fff"); cfVan(ctx,39.9,31,0.8,"#fff");
+    ctx.lineWidth=3; ctx.strokeStyle="#0a0f1c"; ctx.lineCap="round";
+    ctx.beginPath(); ctx.arc(55,31,3.5,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
   } else {
     // piscar feliz — arcos ^_^
     ctx.lineWidth=3; ctx.strokeStyle="#0a0f1c";
     ctx.beginPath(); ctx.arc(41,31,3.5,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
     ctx.beginPath(); ctx.arc(55,31,3.5,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
   }
-  // ===== BOCA — sorriso aberto e contente =====
+  // ===== BOCA — sorriso aberto e contente (mais largo durante o pisca-olho) =====
   ctx.fillStyle="#0a0f1c";
-  ctx.beginPath(); ctx.ellipse(48,36,4.6,3.2,0,0,Math.PI); ctx.fill();   // metade de baixo = sorriso
-  ctx.fillStyle="#ff7a7a";
-  ctx.beginPath(); ctx.ellipse(48,37.4,2.4,1.5,0,0,Math.PI); ctx.fill(); // línguinha
+  if(blink==="wink"){
+    ctx.beginPath(); ctx.ellipse(48,36,5.6,3.6,0,0,Math.PI); ctx.fill();   // sorriso maroto, um pouco mais largo
+    ctx.fillStyle="#ff7a7a";
+    ctx.beginPath(); ctx.ellipse(48,37.6,2.9,1.7,0,0,Math.PI); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.ellipse(48,36,4.6,3.2,0,0,Math.PI); ctx.fill();   // metade de baixo = sorriso
+    ctx.fillStyle="#ff7a7a";
+    ctx.beginPath(); ctx.ellipse(48,37.4,2.4,1.5,0,0,Math.PI); ctx.fill(); // línguinha
+  }
 
   ctx.restore();
   tex.refresh();

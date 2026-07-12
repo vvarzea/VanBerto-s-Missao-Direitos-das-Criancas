@@ -758,6 +758,10 @@ window.addEventListener("DOMContentLoaded", () => {
   let movingPlatforms=[], trampolines=[], secretDoors=[], hazards=[];
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
+  // Janela (timestamp de scene.time.now) durante a qual applyVanBertoTexture() não deve
+  // substituir a textura — usada pelo piscar de olhos idle e pelo pisca-olho ao toque,
+  // para não serem imediatamente sobrepostos pela animação normal no frame seguinte.
+  let _eyeOverrideUntil = 0;
   // Fase "entrada visível só quando o jogo arranca": loadLevel() já posiciona
   // e alinha o VanBerto's ao chão, mas mantém-no invisível (alpha 0). A
   // animação de "pop" (fade-in + estica-encolhe) só corre quando o "Sabias
@@ -898,6 +902,11 @@ window.addEventListener("DOMContentLoaded", () => {
     // Guardar se está a usar a PNG para ajustar animações
     player.setData("usingPng", vanKey === "vanberto_png");
 
+    // Tocar/clicar no VanBerto's faz-lhe um pisca-olho — pequena interação
+    // divertida, sem qualquer efeito na jogabilidade (score, vidas, etc.).
+    player.setInteractive({ useHandCursor: true });
+    player.on("pointerdown", () => triggerVanBertoWink(this));
+
     this.physics.add.collider(player, platforms);
     this.physics.add.overlap(player, itemsGroup, onCollectItem, null, this);
     this.physics.add.collider(malwareGroup, platforms);
@@ -919,6 +928,7 @@ window.addEventListener("DOMContentLoaded", () => {
     this.physics.pause();
 
     createTouchInput(this);
+    scheduleBlink(this);
     loadGame();
     btnMute.textContent = isMuted() ? "🔇 Som: OFF" : "🔊 Som: ON";
     // Level loaded by btnStart
@@ -4825,7 +4835,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const tc = document.getElementById("touchControls");
       return !(tc && getComputedStyle(tc).display !== "none");
     };
-    scene.input.on("pointerdown",(p)=>{ensureAudio();if(anyTouchBtnActive||_isTeacherMenuOpen())return;if(!_canvasTouchAllowed())return;downAt=scene.time.now;touch.left=p.x<scene.scale.width/2;touch.right=!touch.left;});
+    scene.input.on("pointerdown",(p)=>{ensureAudio();if(anyTouchBtnActive||_isTeacherMenuOpen())return;if(!_canvasTouchAllowed())return;if(player&&player.getBounds&&player.getBounds().contains(p.worldX,p.worldY))return;downAt=scene.time.now;touch.left=p.x<scene.scale.width/2;touch.right=!touch.left;});
     scene.input.on("pointerup",()=>{if(anyTouchBtnActive||_isTeacherMenuOpen())return;if(!_canvasTouchAllowed()){touch.left=false;touch.right=false;return;}const held=scene.time.now-downAt;touch.left=false;touch.right=false;if(held<=TAP_MS)touch.jump=true;});
     scene.input.on("pointerout",()=>{touch.left=false;touch.right=false;touch.jump=false;});
     const btnL=document.getElementById("btnLeft"),btnR=document.getElementById("btnRight"),btnJ=document.getElementById("btnJump"),btnC=document.getElementById("btnCrouch");
@@ -4861,16 +4871,40 @@ window.addEventListener("DOMContentLoaded", () => {
           onComplete: () => { if(player) player.setAlpha(origAlpha); }
         });
       } else {
-        player.setTexture("vanberto_blink");
-        scene.time.delayedCall(120,()=>{if(player)applyVanBertoTexture(scene);});
+        // De vez em quando (≈35%) o piscar idle é antes um pisca-olho brincalhão —
+        // reaproveita exatamente o mesmo mecanismo, só troca a textura usada.
+        const isWink = Math.random() < 0.35;
+        const dur = isWink ? 220 : 120;
+        _eyeOverrideUntil = scene.time.now + dur;
+        player.setTexture(isWink ? "vanberto_wink" : "vanberto_blink");
+        scene.time.delayedCall(dur,()=>{if(player)applyVanBertoTexture(scene);});
       }
       scene.time.delayedCall(2200+Math.floor(Math.random()*2600),blinkOnce);
     };
     scene.time.delayedCall(1800,blinkOnce);
   }
 
+  // Pisca-olho ao tocar/clicar no VanBerto's — interação direta, independente do
+  // ciclo idle acima. Ignorado durante overlays/quiz/pausa e em modo PNG (sem textura própria).
+  let _vbWinkBusy = false;
+  function triggerVanBertoWink(scene){
+    if(!player || player.getData("usingPng") || _vbWinkBusy) return;
+    if(awaitingQuiz || awaitingStory || pausedByTeacher || _overlayPaused) return;
+    if(!startOverlay.classList.contains("hidden") || !historyOverlay.classList.contains("hidden")) return;
+    _vbWinkBusy = true;
+    ensureAudio(); beep({freq:1000,dur:0.05,type:"triangle",vol:0.045,slideTo:1300});
+    _eyeOverrideUntil = scene.time.now + 320;
+    player.setTexture("vanberto_wink");
+    showFloat(scene, player.x, player.y-46, "😉", "#ffd700");
+    scene.time.delayedCall(320, () => {
+      _vbWinkBusy = false;
+      if(player) applyVanBertoTexture(scene);
+    });
+  }
+
   function applyVanBertoTexture(scene){
     if(!player||!player.body) return;
+    if(scene.time.now < _eyeOverrideUntil) return; // não interromper um piscar/pisca-olho em curso
     if(awaitingQuiz||!startOverlay.classList.contains("hidden")||!historyOverlay.classList.contains("hidden")){
       if(player.getData("usingPng")){
         // PNG: estado parado — mostrar sem inclinação
