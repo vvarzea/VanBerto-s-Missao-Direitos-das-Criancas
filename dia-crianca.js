@@ -21,7 +21,7 @@ import { unlockedAchievements, checkAchievements, onSecretFoundForAchievements,
          onHistoryReadForAchievements, onCorrectAnswerForAchievements, renderAchievements,
          resetAchievements, showAchievementToast } from "./achievements.js";
 import { BOSS_BY_LEVEL } from "./data-bosses.js";
-import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS } from "./data-story.js";
+import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS, BOSS_HP_TAUNTS } from "./data-story.js";
 import { playTitleCard, playCinematic } from "./cinematics.js";
 import { loadNamespace, saveNamespace } from "./storage.js";
 import { makeTextures, makePlatformTextureThemed } from "./textures.js";
@@ -3018,6 +3018,7 @@ window.addEventListener("DOMContentLoaded", () => {
                            // sem depender de o jogador ler o texto do objetivo
   let bossRageIcon = null; // 😠/😡 flutuante por cima do boss — mostra a fase de raiva atual
   let controlsInvertedUntil = 0; // usado pelo "livro mau" do Monstro da Ignorância
+  let bossVignette = null; // moldura escura nos cantos — usada pela fase final de def.phases (ex.: "Preconceito")
 
   // Cartão que desliza rapidamente do topo do ecrã e desaparece sozinho —
   // usado na chegada do boss ("⚠️ NOME DO BOSS") e na vitória ("✅ VITÓRIA!").
@@ -3075,6 +3076,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
     if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
     if(bossRageIcon){ try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
+    if(bossVignette){ try{bossVignette.destroy();}catch{} bossVignette=null; } // vinheta de fase (ex.: Preconceito)
     clearToxicZones();
     clearMiniViruses();
     if(door){ door.destroy(); door=null; }
@@ -3180,6 +3182,7 @@ window.addEventListener("DOMContentLoaded", () => {
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
+      if (def.phases) enterBossPhase(scene, def, def.hp); // fase 1 (vida cheia)
       const objEmoji = def.specialAttack ? (def.specialAttack.emoji || "⚡") : "⭐";
       tipText.setText(objEmoji + " " + objective);
       awaitingQuiz = false; awaitingStory = false;
@@ -3202,6 +3205,99 @@ window.addEventListener("DOMContentLoaded", () => {
         itemCountText.setText(`⚡ Carga: 0/${def.specialAttack.chargeCount}`);
       }
     });
+  }
+
+  // ===== Fases de combate por HP — Fase "Batalhas Épicas" =====
+  // Genérico e opt-in: só bosses com def.phases (por agora, só o Monstro da
+  // Ignorância) passam por aqui. Bosses sem def.phases continuam a usar
+  // bossEnterRage() como antes — zero impacto nos outros 3 combates.
+  // Cada fase pode redefinir a cadência de ataques (bookThrowDelay/blinkDelay/
+  // badBookChance), ligar o ataque de "fake news" (a partir da fase 2) e a
+  // vinheta escura da fase final — tudo lido de data-bosses.js, sem valores
+  // mágicos aqui dentro.
+  function enterBossPhase(scene, def, hp) {
+    if (!bossState || !def.phases) return;
+    const phase = def.phases.find(p => p.atHp === hp) || def.phases[def.phases.length - 1];
+    if (!phase || bossState.currentPhaseId === phase.id) return; // já estamos nesta fase
+    bossState.currentPhaseId = phase.id;
+    bossState.badBookChance = phase.badBookChance;
+
+    // Cadência dos ataques já existentes — cada fase tem os seus próprios valores
+    // (mais rápido a cada fase), em vez do multiplicador genérico de bossEnterRage.
+    if (bossState.bookTimer) bossState.bookTimer.delay = phase.bookThrowDelay;
+    if (bossState.blinkTimer) bossState.blinkTimer.delay = phase.blinkDelay;
+
+    // Ataque de "fake news" — só liga a partir da fase que o pedir, e só uma vez
+    // (fica ativo até ao fim do combate, não se desliga entre fases 2→3).
+    if (phase.fakeNewsAttack && !bossState.fakeNewsTimer) {
+      const fnTimer = scene.time.addEvent({ delay: 2100, loop: true, callback: () => doBossThrowFakeNews(scene) });
+      bossTimers.push(fnTimer); bossState.fakeNewsTimer = fnTimer;
+    }
+
+    // Vinheta escura — representa o boss a "não querer ver" que está a perder.
+    // Bordas do ecrã escurecem com um leve pulsar, sem nunca esconder o centro
+    // (onde o jogador e os itens continuam bem visíveis).
+    if (phase.vignette && !bossVignette) {
+      // Vinheta real fixa ao ecrã (scrollFactor 0) — molduras escuras nos 4
+      // lados, deixando uma "janela" iluminada ao centro, onde jogador e itens
+      // continuam sempre bem visíveis. Acompanha o ecrã, não o mundo, para
+      // funcionar em qualquer ponto da arena, não só perto do centro.
+      const W = 960, H = 540, margin = 170;
+      const g = scene.add.graphics().setScrollFactor(0).setDepth(40).setAlpha(0);
+      g.fillStyle(0x050014, 0.62);
+      g.fillRect(0, 0, W, margin);              // topo
+      g.fillRect(0, H - (margin - 60), W, margin - 60); // fundo (janela mais alta que larga)
+      g.fillRect(0, 0, margin, H);               // esquerda
+      g.fillRect(W - margin, 0, margin, H);      // direita
+      bossVignette = g;
+      scene.tweens.add({ targets: g, alpha: 1, duration: 900, ease: "Sine.easeOut" });
+      scene.tweens.add({ targets: g, alpha: { from: 0.8, to: 1 }, duration: 1400, delay: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    }
+
+    // Sprite do boss reage visualmente à mudança de fase — um "glitch" rápido
+    // de transparência (fase 2, "sinal a falhar") ou um tingir avermelhado
+    // pulsante (fase 3, "corrupção"), sem precisar de nenhuma arte nova.
+    const b = bossState.sprite;
+    if (b && b.active) {
+      scene.tweens.killTweensOf(b);
+      if (phase.id === "fakenews") {
+        scene.tweens.add({ targets:b, alpha:{from:1,to:0.25}, duration:70, yoyo:true, repeat:5 });
+      } else if (phase.id === "preconceito") {
+        b.setTint(0xff5050);
+        scene.tweens.add({ targets:b, alpha:{from:1,to:0.4}, duration:120, yoyo:true, repeat:5,
+          onComplete: () => { if (b.active) { b.setAlpha(1); b.setTint(def.color); } } });
+      }
+      const pulseScale = (def.movementType === "wave") ? b.scaleX : (b.scaleX * 1.22);
+      scene.tweens.add({ targets:b, scaleX:pulseScale, scaleY:pulseScale, duration:160, yoyo:true, repeat:1, ease:"Sine.easeOut" });
+    }
+
+    // Fala curta e própria da fase — reaproveita BOSS_HP_TAUNTS (data-story.js),
+    // já escrito mas nunca antes ligado ao motor.
+    const tauntKey = phase.atHp === 3 ? "atStart" : (phase.atHp === 2 ? "hp2" : "hp1");
+    const taunts = BOSS_HP_TAUNTS[def.id] || {};
+    if (taunts[tauntKey]) showFloat(scene, b ? b.x : bossState.baseX, (b ? b.y : bossState.baseY) - 74, taunts[tauntKey], "#ff9090");
+
+    // Aviso curto de fase no HUD (não bloqueia nada, só um flourish rápido)
+    if (phase.label) showBossBanner(scene, phase.label, "#ffd280");
+    scene.cameras.main.shake(phase.id === "preconceito" ? 220 : 150, phase.id === "preconceito" ? 0.012 : 0.008);
+  }
+
+  // ---- Ataque "Fake News" (fases 2-3 do Monstro da Ignorância): um ❌ voa na
+  // horizontal de um lado ao outro da arena — evitar, nunca apanhar. Reaproveita
+  // a textura escura do livro mau (já pensada para parecer "informação errada"),
+  // só que agora em voo reto em vez de arco lançado pelo boss — para se sentir
+  // como um ataque novo, não um livro mau a mais. ----
+  function doBossThrowFakeNews(scene) {
+    if (!inBossFight || !bossState || bossState.phase !== "platform") return;
+    const fromLeft = Math.random() < 0.5;
+    const y = 340 + Math.random() * 90;
+    const x = fromLeft ? -20 : 1620;
+    const news = itemsGroup.create(x, y, "boss_proj_badbook");
+    news.setDepth(2).setData("bossProjBad", true).setAngle(fromLeft ? -12 : 12);
+    news.body.setAllowGravity(false);
+    news.setVelocityX(fromLeft ? 340 : -340);
+    news.setAngularVelocity(fromLeft ? -200 : 200);
+    scene.time.delayedCall(2600, () => { if (news.active) news.destroy(); });
   }
 
   function spawnBossSprite(scene, def, x) {
@@ -3398,7 +3494,8 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!inBossFight || !bossState || bossState.phase !== "platform") return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
-    const isBad = Math.random() < 0.25;
+    const badChance = (bossState.badBookChance != null) ? bossState.badBookChance : 0.25;
+    const isBad = Math.random() < badChance;
     const key = isBad ? "boss_proj_badbook" : "boss_proj_book";
     const book = itemsGroup.create(b.x, b.y, key);
     book.setDepth(2).setData(isBad ? "bossProjBad" : "bossProjGood", true);
@@ -3493,7 +3590,13 @@ window.addEventListener("DOMContentLoaded", () => {
     score += 20; scoreText.setText(`🌟 Pontos: ${score}`);
     showFloat(scene, x, y, label, "#ff6b35");
     const hitsTaken = bossState.def.hp - bossState.hp;
-    if (hitsTaken > 0 && bossState.hp > 0) bossEnterRage(scene, Math.min(2, hitsTaken));
+    if (bossState.def.phases) {
+      // Bosses com fases próprias (ex.: Monstro da Ignorância) não usam a
+      // escalada genérica — cada acerto muda de fase com comportamento próprio.
+      if (bossState.hp > 0) enterBossPhase(scene, bossState.def, bossState.hp);
+    } else if (hitsTaken > 0 && bossState.hp > 0) {
+      bossEnterRage(scene, Math.min(2, hitsTaken));
+    }
     if (bossState.hp <= 0) startBossCollectPhase();
   }
 
@@ -3738,6 +3841,30 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ===== Flourish de vitória próprio de cada boss — Fase "Batalhas Épicas" =====
+  // Substitui/complementa o confetti genérico por algo ligado ao tema do boss
+  // vencido. Zero assets novos: só emoji + tweens, reaproveitando o padrão já
+  // usado em showFloat/showBossBanner. Só o Monstro tem flourish próprio por
+  // agora — os outros 3 bosses continuam só com o confetti genérico até
+  // chegarmos à vez deles.
+  function playBossVictoryFlourish(scene, def) {
+    if (def.id === "monstro_ignorancia") {
+      // "A luz do conhecimento": clarão quente + livros a subir e a dissipar-se,
+      // como a névoa da ignorância a desfazer-se.
+      scene.cameras.main.flash(420, 255, 246, 214);
+      const cx = scene.cameras.main.worldView.centerX;
+      for (let i = 0; i < 6; i++) {
+        scene.time.delayedCall(i * 90, () => {
+          if (!scene || !scene.add) return;
+          const bx = cx - 150 + Math.random() * 300;
+          const t = scene.add.text(bx, 420, "📚", { fontSize: "30px" }).setOrigin(0.5).setDepth(30).setAlpha(0);
+          scene.tweens.add({ targets: t, y: 180, alpha: { from: 0, to: 1 }, duration: 900, ease: "Sine.easeOut" });
+          scene.tweens.add({ targets: t, alpha: 0, duration: 300, delay: 700, onComplete: () => { try { t.destroy(); } catch {} } });
+        });
+      }
+    }
+  }
+
   function startBossQuizPhase() {
     bossState.phase = "quiz";
     if(bossState.sprite) bossState.sprite.destroy();
@@ -3759,6 +3886,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
       if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }
       if(bossRageIcon){ try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
+      if(bossVignette){ try{bossVignette.destroy();}catch{} bossVignette=null; }
       clearToxicZones(); clearMiniViruses();
       destroyBossHpBar();
       inBossFight = false; bossState = null;
@@ -3772,6 +3900,7 @@ window.addEventListener("DOMContentLoaded", () => {
       // boss não tinha nenhum "clímax" visual, ao contrário do ecrã de vitória
       // final do jogo (que já tem confetti).
       sceneRef.cameras.main.flash(280, 255, 215, 60);
+      playBossVictoryFlourish(sceneRef, def);
       const bossConfetti = sceneRef.add.particles(0, 0, "spark_item", {
         x: player.x, y: player.y - 40,
         speed: { min: 90, max: 260 }, lifespan: 900, quantity: 30,

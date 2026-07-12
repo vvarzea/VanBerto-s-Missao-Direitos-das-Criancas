@@ -42,7 +42,46 @@ export const BOSSES = [
       name: "Raio do Conhecimento",
       visual: "beam",
       visualColor: 0xfff066
-    }
+    },
+    // ===== 3 fases do combate — Fase "Batalhas Épicas" =====
+    // Cada fase liga-se a um HP concreto do boss (def.hp continua a ser 3 —
+    // 3 acertos do Raio do Conhecimento). Em vez da escalada genérica de
+    // "só fica mais rápido", cada fase muda o próprio padrão de ataque:
+    // chuva de livros mais intensa, um ataque novo a partir da fase 2
+    // (fake news a voar na horizontal — evitar, não apanhar) e vinheta
+    // escura na fase final (o Monstro "não quer ver" que está a perder).
+    phases: [
+      {
+        id: "nevoa",
+        atHp: 3,               // vida cheia — comportamento inicial
+        label: "🌫️ Névoa da Ignorância",
+        bookThrowDelay: 1700,
+        badBookChance: 0.25,
+        blinkDelay: 2600,
+        fakeNewsAttack: false,
+        vignette: false
+      },
+      {
+        id: "fakenews",
+        atHp: 2,               // depois do 1º Raio do Conhecimento
+        label: "📵 Fake News",
+        bookThrowDelay: 1250,
+        badBookChance: 0.42,
+        blinkDelay: 1950,
+        fakeNewsAttack: true,
+        vignette: false
+      },
+      {
+        id: "preconceito",
+        atHp: 1,                // última vida do boss — fase final
+        label: "🙈 Preconceito",
+        bookThrowDelay: 900,
+        badBookChance: 0.55,
+        blinkDelay: 1450,
+        fakeNewsAttack: true,
+        vignette: true
+      }
+    ]
   },
   {
     id: "virus_gigante",
