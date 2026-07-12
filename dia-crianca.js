@@ -4992,6 +4992,13 @@ window.addEventListener("DOMContentLoaded", () => {
   if(btnFsGame) btnFsGame.onclick=toggleFullscreen;
   window.addEventListener("keydown",e=>{ if(e.key?.toLowerCase()==="f"&&!e.target.matches("input")) toggleFullscreen(); });
 
+  // ===== Pausa — tecla P =====
+  // Reaproveita o mesmo botão/lógica de sempre (btnPause.onclick já trata de
+  // tudo: física, texto do botão, ecrã de pausa) — a tecla só simula o clique.
+  window.addEventListener("keydown", e => {
+    if (e.key?.toLowerCase() === "p" && !e.target.matches("input") && btnPause) btnPause.click();
+  });
+
   // ===== Alto Contraste — tecla H =====
   (()=>{
     let hcOn = false;
