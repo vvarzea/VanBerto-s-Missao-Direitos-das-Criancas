@@ -28,29 +28,30 @@ export const THEMES = [
 export const LEVELS = [
   {
     name: "Nível 1 — O Dia da Criança",
-    artIdx:0, theme:0, quizTheme:"historia", worldW:2600,
-    spawn:{x:480,y:460}, doorX:2100,
-    // signX: por defeito o letreiro ficaria em spawn.x+240 (=720), dentro do
-    // túnel de agachar (x:550-750) e sobreposto ao teto dele. Colocado ANTES
-    // do túnel em vez de depois — a criança lê a dica de "agachar" primeiro,
-    // só depois encontra o obstáculo que a obriga a usá-la.
-    signX: 500,
+    artIdx:0, theme:0, quizTheme:"historia", worldW:2900,
+    spawn:{x:480,y:460}, doorX:2400,
+    // signX: por defeito o letreiro ficaria em spawn.x+240 (=720). Colocado
+    // bem antes do túnel (que agora só começa em x=850) — a criança lê a
+    // dica de "agachar" com tempo de sobra antes de encontrar o obstáculo.
+    signX: 800,
     platforms:[
-      {x:450,y:520,w:900,h:28},
+      // Chão inicial alargado (era w:900) — dá muito mais espaço livre a
+      // seguir ao spawn (480) antes de qualquer obstáculo ou vilão aparecer.
+      {x:600,y:520,w:1200,h:28},
       // Túnel baixo — demonstração da nova funcionalidade de agachar (↓/S).
       // Vão de 34px entre o chão (topo em y=506) e este teto (fundo em y=472):
       // alto demais para passar de pé (corpo normal ~48px), mas cabe agachado
-      // (corpo ~24px). Colocado logo a seguir ao spawn (x:550-750) para ser a
-      // primeira coisa que a criança encontra e aprenda o mecanismo cedo.
-      {x:650,y:461,w:200,h:22},
-      {x:1040,y:450,w:300,h:22},{x:1380,y:380,w:270,h:22},
-      {x:1700,y:310,w:240,h:22},{x:2050,y:520,w:900,h:28}
+      // (corpo ~24px). Empurrado para x:850-1050 (era 550-750), dando à
+      // criança uma boa distância de corrida livre antes do 1º obstáculo.
+      {x:950,y:461,w:200,h:22},
+      {x:1340,y:450,w:300,h:22},{x:1680,y:380,w:270,h:22},
+      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28}
     ],
-    items:[{x:1040,y:400,kind:"estrela"},{x:1380,y:330,kind:"medalha"},{x:1700,y:260,kind:"brinquedo"}],
-    // 1º vilão afastado do início (era x:1240, logo a seguir ao túnel) — agora
-    // só aparece depois do 2º item, dando à criança um troço calmo para
-    // aprender a agachar sem já ter de fugir de nada.
-    malwares:[{x:1500,y:480,vx:0,pattern:"mini"},{x:1960,y:480,vx:-150,pattern:"patrol"}]
+    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"}],
+    // Vilões empurrados para a direita, na mesma proporção do resto do nível
+    // (era x:1500/1960) — o 1º só aparece bem depois do túnel e do 2º item,
+    // dando à criança um troço inicial bem mais longo e calmo.
+    malwares:[{x:1800,y:480,vx:0,pattern:"mini"},{x:2260,y:480,vx:-150,pattern:"patrol"}]
   },
   {
     name: "Nível 2 — A Declaração de 1959",
