@@ -2297,6 +2297,8 @@ window.addEventListener("DOMContentLoaded", () => {
     bossTimers.forEach(t=>{try{t.remove(false);}catch{}}); bossTimers=[];
     platforms.clear(true,true);itemsGroup.clear(true,true);
     malwareGroup.clear(true,true);
+    clearBossArenaDecor(); // segurança: sem isto, os "livros flutuantes" do Monstro
+                            // ficavam órfãos no ecrã depois de se vencer o boss
     if(door){door.destroy();door=null;}
     spawnLevelSign(scene, L, idx);
 
@@ -3061,6 +3063,7 @@ window.addEventListener("DOMContentLoaded", () => {
   let bossRageIcon = null; // 😠/😡 flutuante por cima do boss — mostra a fase de raiva atual
   let controlsInvertedUntil = 0; // usado pelo "livro mau" do Monstro da Ignorância
   let bossVignette = null; // moldura escura nos cantos — usada pela fase final de def.phases (ex.: "Preconceito")
+  let bossArenaDecor = []; // elementos ambiente (emoji+tween) da arena temática — ver def.arena.decor
 
   // Cartão que desliza rapidamente do topo do ecrã e desaparece sozinho —
   // usado na chegada do boss ("⚠️ NOME DO BOSS") e na vitória ("✅ VITÓRIA!").
@@ -3121,9 +3124,15 @@ window.addEventListener("DOMContentLoaded", () => {
     if(bossVignette){ try{bossVignette.destroy();}catch{} bossVignette=null; } // vinheta de fase (ex.: Preconceito)
     clearToxicZones();
     clearMiniViruses();
+    clearBossArenaDecor(); // decoração ambiente temática (ver def.arena.decor)
     if(door){ door.destroy(); door=null; }
 
-    const worldW = 1600;
+    // ===== Arena — Fase "Bosses de Verdade" =====
+    // def.arena (opt-in, data-bosses.js) permite a cada boss ter o seu próprio
+    // tamanho de mundo e layout de plataformas, em vez da arena genérica
+    // partilhada por todos. Bosses sem def.arena (ainda) caem exactamente no
+    // layout de sempre — zero impacto nos combates que ainda não foram lá.
+    const worldW = def.arena?.worldW || 1600;
     scene.physics.world.setBounds(0,0,worldW,514);
     scene.cameras.main.setBounds(0,0,worldW,540);
 
@@ -3134,11 +3143,17 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const platKey = "platform_t"+themeIdx;
     if(!scene.textures.exists(platKey)) makePlatformTextureThemed(scene, platKey, themeIdx);
-    [[800,520,1600,28],[300,380,220,24],[1300,380,220,24]].forEach(([x,y,w,h])=>{
+    const arenaPlatforms = def.arena?.platforms || [[800,520,1600,28],[300,380,220,24],[1300,380,220,24]];
+    arenaPlatforms.forEach(([x,y,w,h])=>{
       const plat = platforms.create(x,y,platKey);
       plat.displayWidth=w; plat.displayHeight=h; plat.refreshBody();
       if(plat.body){plat.body.checkCollision.left=false;plat.body.checkCollision.right=false;}
     });
+
+    // Decoração ambiente da arena (ex.: livros flutuantes na biblioteca do
+    // Monstro) — puramente visual, sem colisão, criada DEPOIS das plataformas
+    // para ficar por cima do fundo mas atrás do jogador/boss (depth 1).
+    if (def.arena?.decor) spawnBossArenaDecor(scene, def.arena.decor);
 
     player.setAlpha(1); player.setAngle(0);
     player.setPosition(120,460); player.setVelocity(0,0);
@@ -3269,11 +3284,18 @@ window.addEventListener("DOMContentLoaded", () => {
     if (bossState.bookTimer) bossState.bookTimer.delay = phase.bookThrowDelay;
     if (bossState.blinkTimer) bossState.blinkTimer.delay = phase.blinkDelay;
 
-    // Ataque de "fake news" — só liga a partir da fase que o pedir, e só uma vez
-    // (fica ativo até ao fim do combate, não se desliga entre fases 2→3).
-    if (phase.fakeNewsAttack && !bossState.fakeNewsTimer) {
-      const fnTimer = scene.time.addEvent({ delay: 2100, loop: true, callback: () => doBossThrowFakeNews(scene) });
-      bossTimers.push(fnTimer); bossState.fakeNewsTimer = fnTimer;
+    // Ataque de "fake news" — liga na fase que o pedir e fica ativo até ao fim
+    // do combate (não se desliga entre fases 2→3), mas agora a CADÊNCIA
+    // atualiza-se a cada fase (fase.fakeNewsDelay) tal como já acontecia com
+    // os livros e o blink — antes ficava sempre fixo em 2100ms, mesmo na
+    // fase final, que era suposto ser a mais intensa.
+    if (phase.fakeNewsAttack) {
+      if (!bossState.fakeNewsTimer) {
+        const fnTimer = scene.time.addEvent({ delay: phase.fakeNewsDelay || 2100, loop: true, callback: () => doBossThrowFakeNews(scene) });
+        bossTimers.push(fnTimer); bossState.fakeNewsTimer = fnTimer;
+      } else if (phase.fakeNewsDelay) {
+        bossState.fakeNewsTimer.delay = phase.fakeNewsDelay;
+      }
     }
 
     // Vinheta escura — representa o boss a "não querer ver" que está a perder.
@@ -3317,7 +3339,11 @@ window.addEventListener("DOMContentLoaded", () => {
     // já escrito mas nunca antes ligado ao motor.
     const tauntKey = phase.atHp === 3 ? "atStart" : (phase.atHp === 2 ? "hp2" : "hp1");
     const taunts = BOSS_HP_TAUNTS[def.id] || {};
-    if (taunts[tauntKey]) showFloat(scene, b ? b.x : bossState.baseX, (b ? b.y : bossState.baseY) - 74, taunts[tauntKey], "#ff9090");
+    const tauntEntry = taunts[tauntKey];
+    if (tauntEntry) {
+      const tauntText = Array.isArray(tauntEntry) ? tauntEntry[Math.floor(Math.random()*tauntEntry.length)] : tauntEntry;
+      showFloat(scene, b ? b.x : bossState.baseX, (b ? b.y : bossState.baseY) - 74, tauntText, "#ff9090");
+    }
 
     // Aviso curto de fase no HUD (não bloqueia nada, só um flourish rápido)
     if (phase.label) showBossBanner(scene, phase.label, "#ffd280");
@@ -3363,6 +3389,27 @@ window.addEventListener("DOMContentLoaded", () => {
     } else {
       boss.setVelocityX(-(def.patrolSpeed || 110));
     }
+  }
+
+  // ===== Decoração ambiente da arena de boss — Fase "Bosses de Verdade" =====
+  // Puramente visual (sem colisão, sem grupo de física): emoji + tween, tal
+  // como bossLockIcon/showFloat já fazem. Reaproveitável por qualquer boss via
+  // def.arena.decor = [{emoji,x,y,size?}], sem precisar de nenhum asset novo.
+  function spawnBossArenaDecor(scene, defs) {
+    clearBossArenaDecor();
+    (defs || []).forEach(d => {
+      const t = scene.add.text(d.x, d.y, d.emoji, { fontSize: (d.size||26)+"px" })
+        .setOrigin(0.5).setDepth(1).setAlpha(0.85);
+      // Flutuação lenta + leve balanço — cada elemento com timing próprio para
+      // não parecerem todos sincronizados (sensação mais orgânica).
+      scene.tweens.add({ targets:t, y:d.y-14, duration:1400+Math.random()*600, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      scene.tweens.add({ targets:t, angle:{from:-6,to:6}, duration:1800+Math.random()*500, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      bossArenaDecor.push(t);
+    });
+  }
+  function clearBossArenaDecor() {
+    bossArenaDecor.forEach(t => { try{ if(t.active) t.destroy(); }catch{} });
+    bossArenaDecor = [];
   }
 
   // Barra de vida do boss — flutua por cima do sprite, cor muda conforme a vida
@@ -3412,7 +3459,11 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!inBossFight || !bossState || bossState.phase !== "platform") return;
     const hasStar = itemsGroup.getChildren().some(o => o.active && o.getData("kind")==="estrela" && !o.getData("bossCollect"));
     if (hasStar) return;
-    const spots = [280, 1320];
+    // arena.spawnSpots (opt-in, ver data-bosses.js) permite a cada boss definir
+    // os seus próprios pontos, alinhados com a sua arena temática — sem isso,
+    // cai no comportamento genérico de sempre.
+    const arenaSpots = bossState.def.arena?.spawnSpots;
+    const spots = arenaSpots && arenaSpots.length ? arenaSpots : [280, 1320];
     const x = spots[Math.floor(Math.random()*spots.length)];
     const it = itemsGroup.create(x, 340, "item_estrela");
     it.setDepth(2).setData("kind","estrela").setData("itemIdx",-1);
@@ -3430,7 +3481,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const sa = bossState.def.specialAttack;
     const already = itemsGroup.getChildren().filter(o => o.active && o.getData("bossCharge")).length;
     if (already >= 2) return;
-    const spots = [280, 800, 1320];
+    const arenaSpots = bossState.def.arena?.spawnSpots;
+    const spots = arenaSpots && arenaSpots.length ? arenaSpots : [280, 800, 1320];
     const x = spots[Math.floor(Math.random()*spots.length)];
     const tex = sa.chargeTexture || "item_livro";
     const tint = sa.chargeTint != null ? sa.chargeTint : 0x80d8ff;
@@ -3507,7 +3559,8 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!b || !b.active) return;
     scene.tweens.add({ targets:b, alpha:0, duration:220, onComplete: () => {
       if (!bossState || !bossState.sprite || !bossState.sprite.active) return;
-      const spots = [350, 800, 1250];
+      const arenaSpots = bossState.def.arena?.spawnSpots;
+      const spots = arenaSpots && arenaSpots.length ? arenaSpots : [350, 800, 1250];
       const nx = spots[Math.floor(Math.random()*spots.length)];
       b.x = nx; b.y = 380;
       if (b.body) b.body.reset(nx, 380);
@@ -3521,7 +3574,8 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!inBossFight || !bossState || bossState.phase !== "platform") return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
-    const spots = [300, 800, 1300];
+    const arenaSpots = bossState.def.arena?.spawnSpots;
+    const spots = arenaSpots && arenaSpots.length ? arenaSpots : [300, 800, 1300];
     const nx = spots[Math.floor(Math.random()*spots.length)];
     scene.cameras.main.flash(120, 20, 20, 50);
     b.x = nx; b.y = 380;
@@ -3746,7 +3800,8 @@ window.addEventListener("DOMContentLoaded", () => {
                      brinquedo:"item_brinquedo", balao:"item_chupachupa", livro:"item_livro" };
     const key = keyMap[bossState.def.collectKind] || "item_estrela";
     for (let i=0;i<bossState.def.collectCount;i++){
-      const x = 250 + i*((1600-500)/bossState.def.collectCount);
+      const collectWorldW = bossState.def.arena?.worldW || 1600;
+      const x = 250 + i*((collectWorldW-500)/bossState.def.collectCount);
       const it = itemsGroup.create(x, 300+Math.random()*80, key);
       it.setDepth(2).setData("kind", bossState.def.collectKind).setData("bossCollect", true);
       sceneRef.tweens.add({targets:it,y:it.y-8,duration:940,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
@@ -3770,7 +3825,10 @@ window.addEventListener("DOMContentLoaded", () => {
       itemObj.destroy();
       if (invuln) return true; // já protegido — livro mau não conta durante i-frames
       ensureAudio(); beep({freq:180,dur:0.16,type:"sawtooth",vol:0.06,slideTo:80});
-      controlsInvertedUntil = sceneRef.time.now + 1500;
+      // 1200ms (era 1500) — o livro mau já custa 1 vida + i-frames de 1400ms;
+      // uma inversão mais curta reduz o risco de a criança ainda estar
+      // confusa com os controlos quando os i-frames acabam.
+      controlsInvertedUntil = sceneRef.time.now + 1200;
       bossHitPlayer(sceneRef, null, "😵 Informação errada!");
       return true;
     }
@@ -3932,6 +3990,9 @@ window.addEventListener("DOMContentLoaded", () => {
       clearToxicZones(); clearMiniViruses();
       destroyBossHpBar();
       inBossFight = false; bossState = null;
+      // NOTA: bossArenaDecor (livros flutuantes) fica de propósito durante a
+      // celebração/confetti — sai já a seguir, em loadLevel() do próximo nível
+      // (ou defensivamente lá, caso o fluxo mude no futuro).
       // Limpar o HUD do combate ANTES da cinemática — sem isto ficavam valores
       // congelados (ex.: "Itens: 5/5", a dica do quiz) visíveis por trás do diálogo.
       hudText.setText("🏆 Vitória!");

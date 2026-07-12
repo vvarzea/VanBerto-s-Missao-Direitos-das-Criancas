@@ -23,6 +23,35 @@ export const BOSSES = [
     themeIdx: 16,              // índigo cósmico noturno
     throwsBooks: true,         // atira livros (bons e maus) enquanto foges dele
     rightRecovered: { emoji: "📚", name: "Direito à Educação" },
+    // ===== Arena temática — Fase "Bosses de Verdade" =====
+    // Antes, TODOS os bosses partilhavam a mesma arena genérica (3 plataformas
+    // hardcoded em dia-crianca.js). Este campo "arena" é opt-in: se existir,
+    // o motor usa-o; senão, cai no layout genérico de sempre — por isso os
+    // outros 3 bosses continuam exactamente iguais até lhes chegar a vez.
+    // Tema: "biblioteca flutuante em ruínas" — chão principal + 2 estantes
+    // flutuantes laterais (à altura de voo do ataque Fake News, para o
+    // agachar continuar a ser útil ali) + 1 estante central mais alta.
+    arena: {
+      worldW: 1700,
+      platforms: [
+        [850,520,1700,28],   // chão principal
+        [260,400,220,22],    // estante flutuante esquerda
+        [1440,400,220,22],   // estante flutuante direita
+        [850,300,260,22]     // estante central, mais alta
+      ],
+      // Reaproveitado pelas estrelas, cargas do Raio do Conhecimento e pelo
+      // "blink" do boss — 3 pontos alinhados com as 3 plataformas elevadas.
+      spawnSpots: [260, 850, 1440],
+      // Decoração ambiente, sem colisão — só emoji + tween, tal como
+      // bossLockIcon/showFloat já fazem. Puramente visual.
+      decor: [
+        { emoji:"📖", x:120,  y:170 },
+        { emoji:"📕", x:1580, y:210 },
+        { emoji:"📗", x:850,  y:120 },
+        { emoji:"📘", x:480,  y:460 },
+        { emoji:"📙", x:1220, y:470 }
+      ]
+    },
     // Ataque especial — o motor genérico (specialAttack) já existe em
     // dia-crianca.js; só faltava esta configuração. Substitui o antigo
     // "knowledgeAttack" por um objeto mais completo, mas o comportamento é o
@@ -56,29 +85,40 @@ export const BOSSES = [
         atHp: 3,               // vida cheia — comportamento inicial
         label: "🌫️ Névoa da Ignorância",
         bookThrowDelay: 1700,
-        badBookChance: 0.25,
+        // badBookChance suavizado (era 0.25/0.42/0.55) — a versão anterior
+        // ficava punitiva demais na fase final para o público-alvo (crianças):
+        // um livro mau custa 1 vida E inverte os controlos ao mesmo tempo.
+        badBookChance: 0.22,
         blinkDelay: 2600,
         fakeNewsAttack: false,
+        // fakeNewsDelay definido em todas as fases (mesmo antes de ligar o
+        // ataque) para o timer já nascer com a cadência certa quando a fase 2
+        // o ativar — antes ficava sempre fixo em 2100ms, mesmo na fase 3.
+        fakeNewsDelay: 2100,
         vignette: false
       },
       {
         id: "fakenews",
         atHp: 2,               // depois do 1º Raio do Conhecimento
         label: "📵 Fake News",
-        bookThrowDelay: 1250,
-        badBookChance: 0.42,
-        blinkDelay: 1950,
+        bookThrowDelay: 1300,
+        badBookChance: 0.33,
+        blinkDelay: 2000,
         fakeNewsAttack: true,
+        fakeNewsDelay: 2100,
         vignette: false
       },
       {
         id: "preconceito",
         atHp: 1,                // última vida do boss — fase final
         label: "🙈 Preconceito",
-        bookThrowDelay: 900,
-        badBookChance: 0.55,
-        blinkDelay: 1450,
+        bookThrowDelay: 950,
+        badBookChance: 0.44,
+        blinkDelay: 1500,
         fakeNewsAttack: true,
+        // Só agora a fase final acelera de facto o Fake News também (era
+        // sempre 2100 fixo antes, apesar de tudo o resto ficar mais rápido).
+        fakeNewsDelay: 1500,
         vignette: true
       }
     ]

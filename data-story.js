@@ -77,11 +77,14 @@ export const KNOWLEDGE_FACTS = [
 
 // Falas curtas do boss em marcos de HP durante o combate (não só no início/fim) —
 // só o Monstro da Ignorância tem isto por agora (protótipo "vitrine").
+// Cada marco tem 2-3 variações (escolhidas ao acaso pelo motor) — antes era
+// uma frase fixa só, o que ficava repetitivo sempre que a criança tentava
+// de novo o mesmo combate.
 export const BOSS_HP_TAUNTS = {
   monstro_ignorancia: {
-    atStart: "Nunca aprenderás!",
-    hp2: "Isso foi sorte!",
-    hp1: "Não! Estou a perder!"
+    atStart: ["Nunca aprenderás!", "A ignorância é eterna!", "Achas mesmo que me vais vencer?"],
+    hp2: ["Isso foi sorte!", "Não contava com isso...", "Grrr, tenta outra vez!"],
+    hp1: ["Não! Estou a perder!", "Isto não pode ser...", "A luz... é demasiado forte!"]
   }
 };
 
