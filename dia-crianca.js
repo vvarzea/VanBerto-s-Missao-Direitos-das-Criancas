@@ -1274,31 +1274,16 @@ window.addEventListener("DOMContentLoaded", () => {
     let rightDown=cursors.right.isDown||touch.right;
     if (sceneRef.time.now < controlsInvertedUntil) { const _t=leftDown; leftDown=rightDown; rightDown=_t; }
 
-    // ── AGACHAR (seta ⬇️) — só no chão; reduz a hitbox e a velocidade ──────
-    // O visual (squash) é tratado em applyVanBertoTexture(), que corre todos os
-    // frames — aqui só mexemos na hitbox física, para não haver dois sítios a
-    // competir pelo tamanho do sprite no mesmo frame.
+    // ── AGACHAR (seta ⬇️) — só no chão; efeito visual apenas ────────────────
+    // Antes também encolhia a hitbox física ao agachar, mas isso entrava em
+    // conflito com a escala visual do squash (Arcade Physics reaplica a escala
+    // do sprite ao corpo automaticamente) — o corpo perdia o contacto com o
+    // chão por 1 frame, o que desativava o agachar, o que repunha o chão, o
+    // que reativava o agachar... e daí o "tremer". Agora a hitbox mantém-se
+    // sempre a mesma; só o visual muda (em applyVanBertoTexture).
     const ducking = (cursors.down.isDown) && onGround && !invuln;
     if (ducking && !wasDucking) {
-      // Entrar em agachado — baixa a hitbox, para (no futuro) poder passar por
-      // baixo de obstáculos baixos e ser mais fácil esquivar a livros atirados.
-      if (player.getData("usingPng")) {
-        player.body.setSize(48, 26);
-        player.body.setOffset((player.width-48)/2, (player.height-26)/2 + 22);
-      } else {
-        player.body.setSize(48, 26);
-        player.body.setOffset(24, 68);
-      }
       ensureAudio(); beep({freq:220,dur:0.06,type:"square",vol:0.045,slideTo:140});
-    } else if (!ducking && wasDucking) {
-      // Levantar — repõe o tamanho normal (mesmos valores usados em snapPlayerToGround)
-      if (player.getData("usingPng")) {
-        player.body.setSize(44,52);
-        player.body.setOffset((player.width-44)/2,(player.height-52)/2+4);
-      } else {
-        player.body.setSize(44,48);
-        player.body.setOffset(26,46);
-      }
     }
     wasDucking = ducking;
 
