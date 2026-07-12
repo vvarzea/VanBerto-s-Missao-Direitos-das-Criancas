@@ -2012,6 +2012,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     lives -= 1; updateHearts(); livesLostThisLevel++; _hudDirty = true;
     invuln = true;
+    triggerVanBertoSad(scene);
 
     const hazardNames = { lava: "🔥 Lava!", acid: "☠️ Ácido!", void: "🌑 Abismo!" };
     showFloat(scene, player.x, player.y - 60, hazardNames[h.kind] || "⚠️ Perigo!", "#ff4400");
@@ -3782,6 +3783,7 @@ window.addEventListener("DOMContentLoaded", () => {
       onComplete: () => { if(player) player.setAngle(0); }
     });
     lives -= 1; updateHearts(); livesLostThisLevel++; _hudDirty = true;
+    triggerVanBertoSad(scene);
     if (heartsGfx) scene.tweens.add({targets:heartsGfx,x:{from:-4,to:4},duration:60,yoyo:true,repeat:3,ease:"Sine.easeInOut",onComplete:()=>{if(heartsGfx)heartsGfx.x=0;}});
     invuln = true; // bloqueia novos toques já durante o voo de knockback
     if (warnMsg) showFloat(scene, player.x, player.y-60, warnMsg, "#ffd700");
@@ -4565,6 +4567,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if(lives<MAX_LIVES){
         lives+=1; updateHearts(); ensureAudio(); SFX.life();
         tipText.setText("❤️ Ganhaste uma vida extra!");
+        triggerVanBertoHappy(sceneRef);
         if(heartsGfx&&sceneRef) sceneRef.tweens.add({targets:heartsGfx,scaleX:{from:1,to:1.25},scaleY:{from:1,to:1.25},duration:140,yoyo:true,repeat:1,ease:"Back.easeOut"});
       } else { showFloat(sceneRef,playerObj.x,playerObj.y-100,"❤️ MÁXIMO!","#e84d10"); }
     }
@@ -4636,6 +4639,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     if(powered){clearPower(sceneRef);setInvuln(sceneRef,800);tipText.setText("🛡️ Escudo usado! Cuidado.");return;}
     lives-=1; updateHearts(); livesLostThisLevel++; _hudDirty=true;
+    triggerVanBertoSad(sceneRef);
     if(heartsGfx&&sceneRef) sceneRef.tweens.add({targets:heartsGfx,x:{from:-4,to:4},duration:60,yoyo:true,repeat:3,ease:"Sine.easeInOut",onComplete:()=>{if(heartsGfx)heartsGfx.x=0;}});
     // Marca invuln imediatamente para bloquear hits durante o voo de knockback
     invuln=true;
@@ -4900,6 +4904,25 @@ window.addEventListener("DOMContentLoaded", () => {
       _vbWinkBusy = false;
       if(player) applyVanBertoTexture(scene);
     });
+  }
+
+  // Sorriso grande ao acontecer algo bom (ex: apanhar um coração) — reação breve,
+  // não interativa, só reforça positivamente o momento.
+  function triggerVanBertoHappy(scene, duration=650){
+    if(!player || player.getData("usingPng")) return;
+    if(!startOverlay.classList.contains("hidden") || !historyOverlay.classList.contains("hidden")) return;
+    _eyeOverrideUntil = scene.time.now + duration;
+    player.setTexture("vanberto_happy");
+    scene.time.delayedCall(duration, () => { if(player) applyVanBertoTexture(scene); });
+  }
+
+  // Cara triste ao perder uma vida — dura o suficiente para se ver durante o
+  // knockback e o teletransporte de volta ao spawn, sem se prolongar depois disso.
+  function triggerVanBertoSad(scene, duration=900){
+    if(!player || player.getData("usingPng")) return;
+    _eyeOverrideUntil = scene.time.now + duration;
+    player.setTexture("vanberto_sad");
+    scene.time.delayedCall(duration, () => { if(player) applyVanBertoTexture(scene); });
   }
 
   function applyVanBertoTexture(scene){

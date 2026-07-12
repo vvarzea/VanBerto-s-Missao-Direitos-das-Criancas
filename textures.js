@@ -29,6 +29,8 @@ export function makeTextures(scene){
   makeVanBertoTexture(scene,"vanberto_open",false,-1);
   makeVanBertoTexture(scene,"vanberto_blink",true,-1);
   makeVanBertoTexture(scene,"vanberto_wink","wink",-1);
+  makeVanBertoTexture(scene,"vanberto_happy","happy",-1);
+  makeVanBertoTexture(scene,"vanberto_sad","sad",-1);
   makeVanBertoTexture(scene,"vanberto_walk1",false,0);
   makeVanBertoTexture(scene,"vanberto_walk2",false,1);
 }
@@ -1547,18 +1549,48 @@ function makeVanBertoTexture(scene,key,blink,step){
     cfVan(ctx,42.3,28.4,1.5,"#fff"); cfVan(ctx,39.9,31,0.8,"#fff");
     ctx.lineWidth=3; ctx.strokeStyle="#0a0f1c"; ctx.lineCap="round";
     ctx.beginPath(); ctx.arc(55,31,3.5,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
+  } else if(blink==="happy"){
+    // sorriso grande e feliz — olhos fechados em arco (mais generosos que o piscar normal)
+    // + bochechas coradas, para se distinguir claramente do sorriso base neutro.
+    ctx.lineWidth=3.2; ctx.strokeStyle="#0a0f1c"; ctx.lineCap="round";
+    ctx.beginPath(); ctx.arc(41,31,3.9,0.10*Math.PI,0.90*Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(55,31,3.9,0.10*Math.PI,0.90*Math.PI); ctx.stroke();
+    cfVan(ctx,33.5,35.5,3,"rgba(255,120,120,0.55)");
+    cfVan(ctx,62.5,35.5,3,"rgba(255,120,120,0.55)");
+  } else if(blink==="sad"){
+    // sobrancelhas preocupadas (inclinadas para cima no centro) + olhos tristes + lágrima
+    ctx.strokeStyle="#0a0f1c"; ctx.lineWidth=2.3; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(37,24); ctx.lineTo(44.5,27); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(59,24); ctx.lineTo(51.5,27); ctx.stroke();
+    ctx.fillStyle="#0a0f1c";
+    ctx.beginPath(); ctx.ellipse(41,32,2.8,3.1,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(55,32,2.8,3.1,0,0,Math.PI*2); ctx.fill();
+    cfVan(ctx,42,30.7,1.1,"#fff"); cfVan(ctx,56,30.7,1.1,"#fff");
+    // lagrimazinha a escorrer do olho direito
+    ctx.fillStyle="#6fd0ff";
+    ctx.beginPath();
+    ctx.moveTo(56,35); ctx.quadraticCurveTo(59,40,56,43.5); ctx.quadraticCurveTo(53,40,56,35);
+    ctx.closePath(); ctx.fill();
   } else {
     // piscar feliz — arcos ^_^
     ctx.lineWidth=3; ctx.strokeStyle="#0a0f1c";
     ctx.beginPath(); ctx.arc(41,31,3.5,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
     ctx.beginPath(); ctx.arc(55,31,3.5,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
   }
-  // ===== BOCA — sorriso aberto e contente (mais largo durante o pisca-olho) =====
+  // ===== BOCA — sorriso aberto e contente (variantes: maior no pisca-olho/feliz, invertida na tristeza) =====
   ctx.fillStyle="#0a0f1c";
   if(blink==="wink"){
     ctx.beginPath(); ctx.ellipse(48,36,5.6,3.6,0,0,Math.PI); ctx.fill();   // sorriso maroto, um pouco mais largo
     ctx.fillStyle="#ff7a7a";
     ctx.beginPath(); ctx.ellipse(48,37.6,2.9,1.7,0,0,Math.PI); ctx.fill();
+  } else if(blink==="happy"){
+    ctx.beginPath(); ctx.ellipse(48,36,6.2,4.2,0,0,Math.PI); ctx.fill();   // sorriso grande, o maior de todos
+    ctx.fillStyle="#ff7a7a";
+    ctx.beginPath(); ctx.ellipse(48,38,3.2,1.9,0,0,Math.PI); ctx.fill();
+  } else if(blink==="sad"){
+    // boca triste — arco invertido, cantos para baixo (sem preenchimento, só o traço)
+    ctx.strokeStyle="#0a0f1c"; ctx.lineWidth=2.4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.arc(48,40,4.2,Math.PI,Math.PI*2); ctx.stroke();
   } else {
     ctx.beginPath(); ctx.ellipse(48,36,4.6,3.2,0,0,Math.PI); ctx.fill();   // metade de baixo = sorriso
     ctx.fillStyle="#ff7a7a";
