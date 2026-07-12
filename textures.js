@@ -1465,16 +1465,26 @@ function makeVanBertoTexture(scene,key,blink,step){
   }
   leg(41+lDX,lTop); leg(55+rDX,rTop);
 
-  // ===== BRAÇOS (curtos e encostados) =====
-  function arm(sx){
+  // ===== BRAÇOS (curtos e encostados; balançam ao contrário da perna do
+  // mesmo lado — braço esquerdo para trás quando a perna esquerda avança,
+  // tal como um passo natural — só nos frames de caminhar, step 0/1) =====
+  const ARM_SWING = 0.24; // radianos
+  let lArmSwing = 0, rArmSwing = 0;
+  if(step===0){ lArmSwing=-ARM_SWING; rArmSwing=ARM_SWING; }
+  else if(step===1){ lArmSwing=ARM_SWING; rArmSwing=-ARM_SWING; }
+  function arm(sx,swing){
+    ctx.save();
+    const px=sx+4.5, py=52; // pivô no ombro
+    ctx.translate(px,py); ctx.rotate(swing); ctx.translate(-px,-py);
     rrVan(ctx,sx,52,9,13,4.5); ctx.fillStyle=white(sx,52,sx+9,52); ctx.fill();
     ctx.lineWidth=2.6; ctx.strokeStyle=OUT; ctx.stroke();
     const hx=sx+4.5, hy=67;
     cfVan(ctx,hx,hy,5,NAVY);
     ctx.lineWidth=2.3; ctx.strokeStyle=OUT; ctx.beginPath(); ctx.arc(hx,hy,5,0,Math.PI*2); ctx.stroke();
     cfVan(ctx,hx-2,hy+1.6,1.4,NAVY2); cfVan(ctx,hx+0.5,hy+2.4,1.4,NAVY2); cfVan(ctx,hx+2.5,hy+1.6,1.4,NAVY2);
+    ctx.restore();
   }
-  arm(17); arm(70);
+  arm(17,lArmSwing); arm(70,rArmSwing);
 
   // ===== TRONCO (estreito: x26–70, igual à cabeça) =====
   rrVan(ctx,26,44,44,32,15); ctx.fillStyle=white(28,46,68,46); ctx.fill();
