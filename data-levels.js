@@ -30,6 +30,11 @@ export const LEVELS = [
     name: "Nível 1 — O Dia da Criança",
     artIdx:0, theme:0, quizTheme:"historia", worldW:2600,
     spawn:{x:480,y:460}, doorX:2100,
+    // signX: por defeito o letreiro ficaria em spawn.x+240 (=720), que cai
+    // dentro do túnel de agachar novo (x:550-750) e sobrepõe-se ao teto dele.
+    // Movido para depois do túnel, ainda no troço de chão plano antes da
+    // primeira plataforma elevada (x:1040) — mesmo padrão já usado no Nível 3.
+    signX: 850,
     platforms:[
       {x:450,y:520,w:900,h:28},
       // Túnel baixo — demonstração da nova funcionalidade de agachar (↓/S).
