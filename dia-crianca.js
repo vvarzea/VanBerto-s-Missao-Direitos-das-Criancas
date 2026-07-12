@@ -2874,6 +2874,9 @@ window.addEventListener("DOMContentLoaded", () => {
         });
         scene.time.delayedCall(400, () => portalBurst.destroy());
 
+        // FASE 1.5 — o VanBerto's faz a dança do robô antes de ser sugado
+        playVanBertoDance(scene, () => {
+
         // FASE 2 — portal gira e cresce (ativação)
         scene.tweens.add({
           targets: door,
@@ -2972,6 +2975,8 @@ window.addEventListener("DOMContentLoaded", () => {
             });
           }
         });
+
+        }); // fim playVanBertoDance (FASE 1.5)
       }
     });
   }
@@ -4123,6 +4128,9 @@ window.addEventListener("DOMContentLoaded", () => {
           });
           scene.time.delayedCall(420, () => { try{burst.destroy();}catch{} });
 
+          // FASE 1.5 — o VanBerto's faz a dança do robô antes de ser sugado
+          playVanBertoDance(scene, () => {
+
           // FASE 2 — o portal gira e cresce (efeito de antecipação), só depois é que "suga"
           scene.tweens.add({
             targets: portal,
@@ -4147,6 +4155,8 @@ window.addEventListener("DOMContentLoaded", () => {
               });
             }
           });
+
+          }); // fim playVanBertoDance (FASE 1.5)
         }
       });
     }, null, scene);
@@ -4978,6 +4988,54 @@ window.addEventListener("DOMContentLoaded", () => {
         if(player.texture.key!==tex) player.setTexture(tex);
       } else { if(player.texture.key!=="vanberto_open") player.setTexture("vanberto_open"); }
     }
+  }
+
+  // ===== Dança do robô — antes de ser sugado pelo portal =====
+  // Pequena coreografia (~4 passos, uma "dança do robô" clássica: saltinho +
+  // rotação alternada esquerda/direita) tocada logo depois do portal acordar
+  // e ANTES de começar a "sugar" o VanBerto's (fases de giro/encolher já
+  // existentes). Puramente visual e não mexe no body físico — o jogo já está
+  // em pausa nesta altura (scene.physics.pause() já foi chamado antes), tal
+  // como o resto da animação de entrada no portal.
+  function playVanBertoDance(scene, onComplete, beats = 4) {
+    if (!player) { onComplete?.(); return; }
+    const baseX = player.x, baseY = player.y;
+    const usingPng = player.getData("usingPng");
+    ensureAudio();
+    let i = 0;
+    const beatMs = 190;
+
+    function doBeat() {
+      if (!player) { onComplete?.(); return; }
+      const dir = i % 2 === 0 ? 1 : -1;
+      scene.tweens.add({
+        targets: player,
+        y: baseY - 14,
+        angle: dir * 16,
+        duration: beatMs * 0.5,
+        ease: "Sine.easeOut",
+        yoyo: true,
+        onYoyo: () => {
+          beep({ freq: 500 + i * 60, dur: 0.06, type: "square", vol: 0.05, slideTo: 700 + i * 60 });
+          if (!usingPng) player.setTexture(i % 2 === 0 ? "vanberto_happy" : "vanberto_wink");
+        }
+      });
+      if (i % 2 === 0) showFloat(scene, baseX, baseY - 46, "🎵", "#ffd700");
+      i++;
+      if (i < beats) {
+        scene.time.delayedCall(beatMs, doBeat);
+      } else {
+        scene.time.delayedCall(beatMs, () => {
+          if (player) {
+            player.setAngle(0);
+            player.y = baseY;
+            if (!usingPng) player.setTexture("vanberto_open");
+          }
+          onComplete?.();
+        });
+      }
+    }
+    doBeat();
   }
 
   // ===== Texturas — ver textures.js =====
