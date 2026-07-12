@@ -2807,11 +2807,14 @@ window.addEventListener("DOMContentLoaded", () => {
         }
       }
     });
-    // Timeout de segurança: se ao fim de 4s o quiz ainda não apareceu, desbloquear
+    // Timeout de segurança: se ao fim de 7s o quiz ainda não apareceu, desbloquear
+    // (antes eram 4s — a dança do robô antes do portal sugar acrescenta ~800ms à
+    // sequência normal, e 4s ficava demasiado apertado, disparando o watchdog a
+    // meio da animação e cortando a transição de nível)
     // Guarda snapshot do nível para evitar disparo no nível seguinte
     _levelAtDoorTrigger = currentLevel;
     if(_doorWatchdogTimer){ try{_doorWatchdogTimer.remove(false);}catch{} _doorWatchdogTimer=null; }
-    _doorWatchdogTimer = scene.time.delayedCall(4000, () => {
+    _doorWatchdogTimer = scene.time.delayedCall(7000, () => {
       _doorWatchdogTimer = null;
       if (!awaitingQuiz) return; // já resolveu normalmente
       if (currentLevel !== _levelAtDoorTrigger) return; // já avançou de nível
