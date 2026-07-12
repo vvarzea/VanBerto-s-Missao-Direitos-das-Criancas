@@ -1471,10 +1471,13 @@ function makeVanBertoTexture(scene,key,blink,step,armsUp){
   // ===== BRAÇOS (curtos e encostados; balançam ao contrário da perna do
   // mesmo lado — braço esquerdo para trás quando a perna esquerda avança,
   // tal como um passo natural — só nos frames de caminhar, step 0/1) =====
-  // Frame de salto (armsUp=true): braços erguidos para cima e para fora,
-  // tipo "hurra!" — ignora o balanço de andar, usa outro ângulo.
+  // Frame de salto (armsUp=true): braços erguidos quase direitos para cima,
+  // só com uma ligeira inclinação para fora — ignora o balanço de andar,
+  // usa outro ângulo. (Era 2.4 rad, o que punha as mãos longe do corpo,
+  // com um ar "descolado"; a 2.9 rad ficam coladas à cabeça, só saindo
+  // ligeiramente para os lados.)
   const ARM_SWING = 0.24; // radianos
-  const JUMP_RAISE = 2.4; // radianos — braço roda de "para baixo" para "para cima e para fora"
+  const JUMP_RAISE = 2.9; // radianos — braço roda de "para baixo" para "quase direito para cima"
   let lArmSwing = 0, rArmSwing = 0;
   if(armsUp){ lArmSwing = JUMP_RAISE; rArmSwing = -JUMP_RAISE; }
   else if(step===0){ lArmSwing=-ARM_SWING; rArmSwing=ARM_SWING; }
