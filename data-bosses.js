@@ -16,20 +16,33 @@ export const BOSSES = [
     movementType: "blink",   // some e reaparece noutra plataforma
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
-    collectKind: "livro",    // fallback só usado se knowledgeAttack alguma vez for desligado
+    collectKind: "livro",    // fallback só usado se specialAttack alguma vez for desligado
     collectCount: 5,
     quizTheme: "educacao",
     hp: 3,
     themeIdx: 16,              // índigo cósmico noturno
     throwsBooks: true,         // atira livros (bons e maus) enquanto foges dele
     rightRecovered: { emoji: "📚", name: "Direito à Educação" },
-    // Fase B — "vitrine": este boss não se derrota tocando-lhe. Apanha objetos
-    // de conhecimento (livro/lápis/diploma/lâmpada) para carregar o Raio do
-    // Conhecimento; cada raio completo tira 1 HP. Os outros 3 bosses continuam
-    // com a mecânica da Star Power universal — isto é deliberadamente exclusivo
-    // deste boss, como protótipo.
-    knowledgeAttack: true,
-    chargeGoal: 5
+    // Ataque especial — o motor genérico (specialAttack) já existe em
+    // dia-crianca.js; só faltava esta configuração. Substitui o antigo
+    // "knowledgeAttack" por um objeto mais completo, mas o comportamento é o
+    // mesmo: apanha 5 livros para carregar e disparar o Raio do Conhecimento.
+    specialAttack: {
+      emoji: "📚",
+      chargeCount: 5,
+      chargeTexture: "item_livro",
+      chargeTint: 0xffffff,       // sem tingir — mantém as cores douradas do livro
+      chargeFacts: [
+        "📖 Ler ajuda-nos a pensar.",
+        "🎒 A escola abre portas.",
+        "🌟 Aprender é um direito.",
+        "🧠 Cada livro é um super-poder.",
+        "✏️ Errar também é aprender."
+      ],
+      name: "Raio do Conhecimento",
+      visual: "beam",
+      visualColor: 0xfff066
+    }
   },
   {
     id: "virus_gigante",
@@ -45,7 +58,28 @@ export const BOSSES = [
     quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
     hp: 3,
     themeIdx: 13,              // teal escuro noturno — combina com o verde-água do boss
-    rightRecovered: { emoji: "💊", name: "Direito à Saúde" }
+    rightRecovered: { emoji: "💊", name: "Direito à Saúde" },
+    // NOTA: acabei de ligar isto (o motor — zonas tóxicas, vírus pequenos,
+    // onda de cura — já existia em dia-crianca.js, só faltava esta config).
+    // Nunca foi testado em jogo real ainda — vale a pena confirmar o combate
+    // do início ao fim antes de dares como certo.
+    contaminatedArena: true,   // zonas tóxicas + vírus pequenos a flutuar na arena
+    specialAttack: {
+      emoji: "❤️",
+      chargeCount: 5,
+      chargeTexture: "item_heart",
+      chargeTint: 0xffffff,
+      chargeFacts: [
+        "🩺 Ir ao médico regularmente ajuda-te a crescer forte.",
+        "💧 Beber água é um dos maiores segredos de saúde.",
+        "😴 Dormir bem também é cuidar do corpo.",
+        "🍎 Comer fruta e vegetais dá-te energia extra.",
+        "🧼 Lavar as mãos afasta muitos vírus!"
+      ],
+      name: "Onda da Saúde",
+      visual: "wave",
+      visualColor: 0x30e0a0
+    }
   },
   {
     id: "guardiao_sombras",

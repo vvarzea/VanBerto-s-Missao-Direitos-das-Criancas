@@ -3275,6 +3275,12 @@ window.addEventListener("DOMContentLoaded", () => {
     const hasStar = itemsGroup.getChildren().some(o => o.active && o.getData("kind")==="estrela" && !o.getData("bossCollect"));
     if (hasStar) return;
     const spots = [280, 1320];
+    const x = spots[Math.floor(Math.random()*spots.length)];
+    const it = itemsGroup.create(x, 340, "item_estrela");
+    it.setDepth(2).setData("kind","estrela").setData("itemIdx",-1);
+    scene.tweens.add({targets:it,y:it.y-8,duration:820,yoyo:true,repeat:-1,ease:"Sine.easeInOut"});
+  }
+
   // Itens de carga do ataque especial de cada boss (📚 Monstro / ❤️ Vírus...) —
   // reaproveita texturas já existentes com um tom próprio (definido em
   // specialAttack.chargeTexture/chargeTint), para se distinguir dos itens da
