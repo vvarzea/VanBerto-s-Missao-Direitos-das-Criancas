@@ -25,18 +25,20 @@ export const BOSSES = [
     patrolSpeed: 55,
     hopEvery: 2400,          // de vez em quando dá um pequeno salto (só visual)
     qmarkEvery: 2200,        // atira uma bola ❓ que salta devagar pelo chão
-    // Arena inteira levantada 70px em relação à versão anterior: o chão
-    // principal (agora em y=430, topo em y=415) ficava demasiado perto do
-    // fundo do ecrã, o que fazia o VanBerto's e o Monstro aparecerem quase
-    // escondidos atrás das barras de cinema/caixa de diálogo da introdução
-    // do boss (que cobrem uma faixa considerável a partir do fundo). Com
-    // esta folga, ambos ficam sempre bem visíveis durante a cinemática.
+    // Chão alinhado com o dos outros 3 bosses (plataforma principal perto do
+    // fundo do ecrã, ≈96% da altura da câmara de 540px), em vez da versão
+    // anterior que o levantava 70px extra. Essa versão anterior existia só
+    // para o VanBerto's e o Monstro não ficarem escondidos atrás da caixa de
+    // diálogo fixa no fundo do ecrã durante a cinemática de entrada — mas
+    // agora a fala do próprio Monstro flutua num balão por cima da cabeça
+    // dele (ver bossDialogueAnchor em dia-crianca.js), por isso essa folga
+    // deixou de ser necessária e só desperdiçava espaço no ecrã.
     //
     // bossY: centro do sprite, NÃO os pés — tem de descontar a metade do
     // corpo desenhado (canvas 116px, escala 1.5, pés ~49px abaixo do centro
     // → 49*1.5≈73px) até à superfície do chão da arena (plataforma principal
-    // agora em y=430 com 30px de altura → topo em y=415). 415-73=342.
-    bossY: 342,
+    // agora em y=500 com 30px de altura → topo em y=485). 485-73=412.
+    bossY: 412,
     bossScale: 1.5,          // ~2x a altura do VanBerto's — dá para saltar-lhe em cima sem dificuldade
     // A textura (116x116) tem bastante espaço vazio por cima da cabeça (o
     // corpo começa só a ~1/5 do canvas) — sem isto a barra de vida usava a
@@ -44,8 +46,9 @@ export const BOSSES = [
     // cabeça. 72px do centro chega perto o suficiente, com uma pequena folga.
     hpBarOffset: 72,
     // Letreiro do objetivo (ver startBossFight): fica perto do chão, junto
-    // ao ponto de partida do jogador — segue o mesmo levantamento da arena.
-    signY: 416,
+    // ao ponto de partida do jogador — 486 é o mesmo valor por omissão dos
+    // níveis normais, já alinhado com o novo chão desta arena.
+    signY: 486,
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
     quizTheme: "educacao",
@@ -59,16 +62,15 @@ export const BOSSES = [
     // principal + só 2 plataformas baixas para dar alguma variedade ao salto.
     arena: {
       worldW: 960,
-      // Chão da arena termina em y=445 (430 + metade dos 30px de altura) —
-      // 460 dá só uma margem mínima, tal como a arena original tinha (quase
-      // nenhuma folga entre o chão e o limite físico do mundo). Sem isto, o
-      // limite antigo (514) deixava ~70px de "poço" vazio por baixo do chão
-      // levantado, onde o VanBerto's podia ficar preso sem conseguir subir.
-      worldH: 460,
+      // 514 = mesmo limite físico usado por omissão pelos outros bosses
+      // (ver startBossFight em dia-crianca.js), com o chão principal (y=500,
+      // topo em y=485) bem perto do fundo, tal como nas outras arenas — sem
+      // a "almofada" extra que este boss tinha antes.
+      worldH: 514,
       platforms: [
-        [480,430,960,30],   // chão principal, de ponta a ponta
-        [230,330,150,20],   // plataforma baixa esquerda
-        [730,330,150,20]    // plataforma baixa direita
+        [480,500,960,30],   // chão principal, de ponta a ponta
+        [230,400,150,20],   // plataforma baixa esquerda
+        [730,400,150,20]    // plataforma baixa direita
       ],
       decor: [
         { emoji:"📖", x:90,  y:150 },

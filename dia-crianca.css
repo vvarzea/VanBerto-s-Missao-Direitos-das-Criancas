@@ -2317,6 +2317,22 @@ body.cine-active .cine-bar-top,body.cine-active .cine-bar-bottom{height:13vh;}
 #cineDialog.cine-show{ opacity:1; transform:translate(-50%,0); }
 #cineDialog.cine-boss{ border-color:#ff6b6b; box-shadow:0 -4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(255,107,107,0.3); }
 #cineDialog.cine-npc{ border-color:#4fd6c0; box-shadow:0 -4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(79,214,192,0.3); }
+
+/* Variante "balão flutuante": em vez de ficar fixo no fundo do ecrã, a caixa
+   ancora-se por cima de um ponto concreto (ex.: a cabeça do boss). Usada
+   quando a fala tem slide.anchor={x,y} (ver playCinematic em cinematics.js).
+   left/top vêm inline (JS), por isso aqui só se troca a base bottom:0/transform. */
+#cineDialog.cine-floating{
+  bottom:auto; border-radius:16px;
+  transform:translate(-50%,calc(-100% + 16px)) scale(0.85);
+  box-shadow:0 8px 24px rgba(0,0,0,0.5), 0 0 20px rgba(255,107,107,0.3);
+}
+#cineDialog.cine-floating.cine-show{ transform:translate(-50%,-100%) scale(1); }
+/* Seta a apontar para baixo, para o boss — só faz sentido combinada com cine-boss */
+#cineDialog.cine-floating.cine-boss::after{
+  content:""; position:absolute; left:50%; bottom:-13px; transform:translateX(-50%);
+  border-width:14px 11px 0 11px; border-style:solid; border-color:#ff6b6b transparent transparent transparent;
+}
 #cineAvatar{ font-size:38px; line-height:1; flex-shrink:0; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
 #cineBody{ flex:1; min-width:0; }
 #cineName{ margin:0 0 2px; font-size:13px; font-weight:900; color:#ffd700; letter-spacing:0.02em; }

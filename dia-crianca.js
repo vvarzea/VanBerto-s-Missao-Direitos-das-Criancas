@@ -81,6 +81,30 @@ window.addEventListener("DOMContentLoaded", () => {
     playCinematic(slides, onComplete, false);
   }
 
+  // Calcula, em pixels CSS de ecrã, o ponto por cima da cabeça do boss —
+  // usado para o balão de fala dele flutuar ali em vez de ficar fixo no
+  // fundo do ecrã (ver s.anchor em cinematics.js). Devolve null se não
+  // houver boss vivo no momento (ex.: diálogo de vitória, já destruído em
+  // startBossQuizPhase) — nesse caso a fala cai de volta na caixa normal.
+  function bossDialogueAnchor() {
+    if (!bossState || !bossState.sprite || !bossState.sprite.active) return null;
+    const b = bossState.sprite, def = bossState.def;
+    const cam = sceneRef.cameras.main;
+    const canvas = sceneRef.game.canvas;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const scaleX = rect.width / 960, scaleY = rect.height / 540;
+    // Mesma referência da barra de vida (hpBarOffset) + folga extra para o
+    // balão não colar à barra de vida.
+    const aboveHead = (def.hpBarOffset != null ? def.hpBarOffset : ((b.displayHeight/2||40)+42)) + 46;
+    let x = rect.left + (b.x - cam.scrollX) * scaleX;
+    const y = rect.top + (b.y - aboveHead - cam.scrollY) * scaleY;
+    // Não deixar o balão sair do ecrã pelas laterais.
+    x = Math.max(rect.left+130, Math.min(rect.right-130, x));
+    return { x, y };
+  }
+
   // ===== Guardar =====
   // "settings" guarda apenas preferências (som, alto contraste) — nunca
   // progresso de jogo. O progresso em curso (nível/pontos/vidas a meio de
@@ -3291,7 +3315,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const introVB = BOSS_INTRO_VB[def.id] || { reaction: "Sinto algo estranho aqui...", rally: "Vamos enfrentar isto juntos!" };
     playBossDialogue([
       { speaker:"vb",   text: introVB.reaction },
-      { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro },
+      { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro, anchor: bossDialogueAnchor() },
       { speaker:"vb",   text: introVB.rally }
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
