@@ -3180,8 +3180,14 @@ window.addEventListener("DOMContentLoaded", () => {
     if (def.arena?.decor) spawnBossArenaDecor(scene, def.arena.decor);
 
     player.setAlpha(1); player.setAngle(0);
-    player.setPosition(120,460); player.setVelocity(0,0);
-    if(player.body) player.body.reset(120,460);
+    // y=200: bem acima do chão de QUALQUER arena de boss (incluindo arenas
+    // "levantadas" como a do Monstro da Ignorância) — snapPlayerToGround(),
+    // logo a seguir, só encontra uma plataforma se ela estiver ao/abaixo dos
+    // pés do jogador; um valor fixo demasiado baixo (ex.: 460) deixava de
+    // funcionar sempre que uma arena movia o chão principal para mais acima,
+    // fazendo o VanBerto's ficar preso a meio da plataforma em vez de em cima.
+    player.setPosition(120,200); player.setVelocity(0,0);
+    if(player.body) player.body.reset(120,200);
     // Alinhar já ao chão da arena (mesmo cálculo usado no arranque de nível
     // normal, via snapPlayerToGround). Sem isto, o VanBerto's ficava com os
     // pés "enterrados" na plataforma logo à entrada — visível sobretudo
@@ -3288,7 +3294,7 @@ window.addEventListener("DOMContentLoaded", () => {
       scene.physics.resume();
       // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
       // para ser o primeiro coisa que encontra ao começar a andar.
-      spawnBossSign(scene, 280, 486, objEmoji, objective);
+      spawnBossSign(scene, 280, def.signY != null ? def.signY : 486, objEmoji, objective);
       if (def.stompBoss) {
         // Sem estrela, sem carga — o HUD mostra logo o progresso dos saltos.
         itemCountText.setText(`👣 Saltos: 0/${def.hp}`);
@@ -3481,8 +3487,15 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!bossState || !bossState.hpBarBg || !bossState.hpBarFill || !bossState.sprite || !bossState.sprite.active) return;
     const b = bossState.sprite;
     const w = bossState.hpBarW, h = bossState.hpBarH;
+    const def = bossState.def;
+    // hpBarOffset (opt-in, ver data-bosses.js): distância fixa entre o centro
+    // do sprite e a barra, para bosses cuja textura tem muito espaço vazio
+    // por cima da cabeça desenhada (ex.: o Monstro da Ignorância, baixo e
+    // rechonchudo dentro de um canvas quadrado) — sem isto, a conta genérica
+    // (displayHeight/2 + 42) media a partir do topo do canvas "vazio", não do
+    // topo real da cabeça, e a barra ficava a flutuar bem longe do boss.
     const x = b.x - w/2;
-    const y = b.y - (b.displayHeight/2 || 40) - 42;
+    const y = (def && def.hpBarOffset != null) ? (b.y - def.hpBarOffset) : (b.y - (b.displayHeight/2 || 40) - 42);
     bossState.hpBarBg.clear();
     bossState.hpBarBg.fillStyle(0x1a1a2e, 0.85);
     bossState.hpBarBg.fillRoundedRect(x, y, w, h, 5);

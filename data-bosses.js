@@ -25,27 +25,44 @@ export const BOSSES = [
     patrolSpeed: 55,
     hopEvery: 2400,          // de vez em quando dá um pequeno salto (só visual)
     qmarkEvery: 2200,        // atira uma bola ❓ que salta devagar pelo chão
+    // Arena inteira levantada 70px em relação à versão anterior: o chão
+    // principal (agora em y=430, topo em y=415) ficava demasiado perto do
+    // fundo do ecrã, o que fazia o VanBerto's e o Monstro aparecerem quase
+    // escondidos atrás das barras de cinema/caixa de diálogo da introdução
+    // do boss (que cobrem uma faixa considerável a partir do fundo). Com
+    // esta folga, ambos ficam sempre bem visíveis durante a cinemática.
+    //
     // bossY: centro do sprite, NÃO os pés — tem de descontar a metade do
     // corpo desenhado (canvas 116px, escala 1.5, pés ~49px abaixo do centro
     // → 49*1.5≈73px) até à superfície do chão da arena (plataforma principal
-    // em y=500 com 30px de altura → topo em y=485). 485-73=412. O valor
-    // antigo (430) deixava o Monstro ~18px enterrado na plataforma.
-    bossY: 412,
+    // agora em y=430 com 30px de altura → topo em y=415). 415-73=342.
+    bossY: 342,
     bossScale: 1.5,          // ~2x a altura do VanBerto's — dá para saltar-lhe em cima sem dificuldade
+    // A textura (116x116) tem bastante espaço vazio por cima da cabeça (o
+    // corpo começa só a ~1/5 do canvas) — sem isto a barra de vida usava a
+    // conta genérica (baseada no canvas inteiro) e ficava muito afastada da
+    // cabeça. 72px do centro chega perto o suficiente, com uma pequena folga.
+    hpBarOffset: 72,
+    // Letreiro do objetivo (ver startBossFight): fica perto do chão, junto
+    // ao ponto de partida do jogador — segue o mesmo levantamento da arena.
+    signY: 416,
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
     quizTheme: "educacao",
     hp: 3,
-    themeIdx: 16,              // índigo cósmico noturno
+    // Tema próprio (em vez do índigo/roxo-noturno nº16, que se confundia
+    // com o próprio Monstro — também roxo): castanho-ouro quente, para o
+    // vilão roxo se destacar claramente do fundo.
+    themeIdx: 15,
     rightRecovered: { emoji: "📚", name: "Direito à Educação" },
     // Arena simples: do tamanho da janela (960x540, sem scroll), chão
     // principal + só 2 plataformas baixas para dar alguma variedade ao salto.
     arena: {
       worldW: 960,
       platforms: [
-        [480,500,960,30],   // chão principal, de ponta a ponta
-        [230,400,150,20],   // plataforma baixa esquerda
-        [730,400,150,20]    // plataforma baixa direita
+        [480,430,960,30],   // chão principal, de ponta a ponta
+        [230,330,150,20],   // plataforma baixa esquerda
+        [730,330,150,20]    // plataforma baixa direita
       ],
       decor: [
         { emoji:"📖", x:90,  y:150 },
