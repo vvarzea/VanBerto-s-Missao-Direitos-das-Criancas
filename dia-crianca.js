@@ -3186,7 +3186,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
     spawnBossSprite(scene, def, worldW-200);
     createBossHpBar(scene, def);
-    if (def.specialAttack) {
+    if (def.stompBoss) {
+      // Boss "clássico à Mario": sem estrela, sem carga — o único jeito de
+      // lhe fazer dano é saltar-lhe em cima (ver handleBossMalwareCollision).
+    } else if (def.specialAttack) {
       // Bosses com ataque especial próprio (ex.: Monstro da Ignorância) não usam
       // a lógica genérica de "apanha a estrela para atropelar o boss" — em vez
       // disso recolhem itens temáticos que carregam um ataque nomeado.
@@ -3241,6 +3244,14 @@ window.addEventListener("DOMContentLoaded", () => {
       const bookTimer = scene.time.addEvent({ delay: 1700, loop: true, callback: () => doBossThrowBook(scene) });
       bossTimers.push(bookTimer); bossState.bookTimer = bookTimer; bossState.bookBaseDelay = 1700;
     }
+    if (def.stompBoss) {
+      // "De vez em quando faz um pequeno salto" — puramente visual (não é
+      // um ataque, só personalidade) — e uma bola ❓ lenta pelo chão.
+      const hopTimer = scene.time.addEvent({ delay: def.hopEvery || 2400, loop: true, callback: () => doBossHop(scene) });
+      bossTimers.push(hopTimer); bossState.hopTimer = hopTimer;
+      const qmarkTimer = scene.time.addEvent({ delay: def.qmarkEvery || 2200, loop: true, callback: () => doBossRollQmark(scene) });
+      bossTimers.push(qmarkTimer); bossState.qmarkTimer = qmarkTimer;
+    }
 
     hudText.setText(`${def.emoji} ${def.name}`);
     itemCountText.setText("");
@@ -3264,14 +3275,17 @@ window.addEventListener("DOMContentLoaded", () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
       if (def.phases) enterBossPhase(scene, def, def.hp); // fase 1 (vida cheia)
-      const objEmoji = def.specialAttack ? (def.specialAttack.emoji || "⚡") : "⭐";
+      const objEmoji = def.stompBoss ? "👣" : (def.specialAttack ? (def.specialAttack.emoji || "⚡") : "⭐");
       tipText.setText(objEmoji + " " + objective);
       awaitingQuiz = false; awaitingStory = false;
       scene.physics.resume();
       // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
       // para ser o primeiro coisa que encontra ao começar a andar.
       spawnBossSign(scene, 280, 486, objEmoji, objective);
-      if (!def.specialAttack) {
+      if (def.stompBoss) {
+        // Sem estrela, sem carga — o HUD mostra logo o progresso dos saltos.
+        itemCountText.setText(`👣 Saltos: 0/${def.hp}`);
+      } else if (!def.specialAttack) {
         // Lembrete visual permanente por cima do boss — 🔒 enquanto não podes
         // tocar-lhe, ⭐ assim que apanhas o poder da estrela. Substitui/completa
         // o texto do objetivo, que passa depressa e nem todos leem a tempo.
@@ -3395,14 +3409,18 @@ window.addEventListener("DOMContentLoaded", () => {
   function spawnBossSprite(scene, def, x) {
     const texKey = "boss_"+def.id;
     const hasCustomTex = scene.textures.exists(texKey);
-    const boss = malwareGroup.create(x, 380, hasCustomTex ? texKey : "vilao_bug");
-    boss.setScale(hasCustomTex ? 1.55 : 2.2);
+    // bossY (opt-in, ver data-bosses.js) permite a um boss ficar fixo à
+    // altura do chão da sua arena, em vez de flutuar sempre a meio do ecrã —
+    // usado pelo Monstro da Ignorância, que "anda" e nunca flutua.
+    const y = def.bossY != null ? def.bossY : 380;
+    const boss = malwareGroup.create(x, y, hasCustomTex ? texKey : "vilao_bug");
+    boss.setScale(hasCustomTex ? (def.bossScale || 1.55) : 2.2);
     if (!hasCustomTex) boss.setTint(def.color); // rede de segurança, caso a textura não tenha carregado
     boss.setData("isBoss", true);
     boss.body.setAllowGravity(false);
     boss.setCollideWorldBounds(true); boss.setBounce(1,0);
     bossState.sprite = boss;
-    bossState.baseX = x; bossState.baseY = 380;
+    bossState.baseX = x; bossState.baseY = y;
 
     if (def.movementType === "wave") {
       boss.setVelocity(0,0);
@@ -3627,6 +3645,107 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.time.delayedCall(3200, () => { if (book.active) book.destroy(); });
   }
 
+  // ---- Movimento do Monstro da Ignorância (redesenho): anda devagar pela
+  // arena e, de vez em quando, dá um pequeno salto — só personalidade
+  // visual, nunca desaparece nem teletransporta. ----
+  function doBossHop(scene) {
+    if (!inBossFight || !bossState || bossState.phase !== "platform") return;
+    const b = bossState.sprite;
+    if (!b || !b.active) return;
+    const baseY = bossState.def.bossY != null ? bossState.def.bossY : bossState.baseY;
+    scene.tweens.add({ targets:b, y: baseY-34, duration:180, yoyo:true, ease:"Quad.easeOut" });
+  }
+
+  // ---- Ataque do Monstro da Ignorância (redesenho): bolas ❓ que saltitam
+  // devagar pelo chão — lentas e fáceis de ver/evitar, nunca voam direto à
+  // cabeça do jogador. Substituem os livros/fake news do combate antigo. ----
+  function doBossRollQmark(scene) {
+    if (!inBossFight || !bossState || bossState.phase !== "platform") return;
+    const b = bossState.sprite;
+    if (!b || !b.active) return;
+    const towardPlayer = player.x < b.x ? -1 : 1;
+    const q = itemsGroup.create(b.x, b.y - 10, "boss_proj_qmark");
+    q.setDepth(2).setData("bossProjQmark", true);
+    q.body.setAllowGravity(true);
+    q.body.setGravityY(480);
+    q.body.setBounce(0.5, 0);
+    q.body.setCollideWorldBounds(true);
+    q.setVelocity(towardPlayer * 90, -120);
+    q.setAngularVelocity(towardPlayer * 130);
+    scene.physics.add.collider(q, platforms);
+    scene.time.delayedCall(4500, () => { if (q.active) q.destroy(); });
+  }
+
+  // Reação exagerada tipo desenho animado quando o Monstro leva um salto na
+  // cabeça: achata-se por meio segundo (textura + squash) e volta ao normal.
+  function squishMonstro(scene, b) {
+    if (!b || !b.active) return;
+    const normalTex = b.texture.key;
+    const ouchKey = "boss_" + bossState.def.id + "_ouch";
+    if (scene.textures.exists(ouchKey)) b.setTexture(ouchKey);
+    const baseScaleY = b.scaleY, baseScaleX = b.scaleX;
+    scene.tweens.add({
+      targets: b, scaleY: baseScaleY * 0.55, scaleX: baseScaleX * 1.2,
+      duration: 130, yoyo: true, ease: "Quad.easeOut",
+      onComplete: () => {
+        if (b.active && scene.textures.exists(normalTex)) b.setTexture(normalTex);
+        if (b.active) { b.scaleY = baseScaleY; b.scaleX = baseScaleX; }
+      }
+    });
+  }
+
+  // Deteta se o jogador está a saltar em cima do Monstro (queda + por cima
+  // da cabeça) ou a tocar-lhe de lado — mecânica "3 saltos na cabeça",
+  // reaproveitando damageBoss()/bossHitPlayer() já existentes para o resto.
+  function handleStompBossTouch(b) {
+    if (sceneRef.time.now < bossState.hitCooldownUntil) return true;
+    const pBody = player.body;
+    const playerBottom = player.y + (pBody.halfHeight || 24);
+    const bossTop = b.y - (b.displayHeight/2 || 60);
+    const isFalling = pBody.velocity.y > 0;
+    if (isFalling && playerBottom <= bossTop + 22) {
+      bossState.hitCooldownUntil = sceneRef.time.now + 550;
+      player.setVelocityY(-380);
+      squishMonstro(sceneRef, b);
+      ensureAudio(); beep({freq:500,dur:0.09,type:"square",vol:0.07,slideTo:900});
+      damageBoss(sceneRef, b.x, b.y-70, "👣 Salto certeiro!", 0.008);
+    } else {
+      bossHitPlayer(sceneRef, b, "🙈 Cuidado com o Monstro!");
+    }
+    return true;
+  }
+
+  // ---- Sequência de derrota do Monstro da Ignorância (redesenho): não
+  // morre, não explode — senta-se, lê um livro que aparece à sua frente e
+  // dá um polegar para cima, antes de seguir para a pergunta final. ----
+  function startBossStompDefeat() {
+    if (!bossState) return;
+    bossState.phase = "defeat";
+    const b = bossState.sprite;
+    const def = bossState.def;
+    if (b) { b.setVelocity(0,0); if (b.body) b.body.setEnable(false); }
+    destroyBossHpBar();
+    itemCountText.setText("");
+    tipText.setText("");
+    const sentadoKey = "boss_" + def.id + "_sentado";
+    sceneRef.time.delayedCall(250, () => {
+      if (!b || !b.active) return;
+      if (sceneRef.textures.exists(sentadoKey)) b.setTexture(sentadoKey);
+      showFloat(sceneRef, b.x, b.y-70, "😊", "#ffe066");
+    });
+    sceneRef.time.delayedCall(900, () => {
+      if (!b || !b.active) return;
+      const book = sceneRef.add.text(b.x, b.y-16, "📖", { fontSize:"26px" }).setOrigin(0.5).setDepth(6);
+      sceneRef.tweens.add({ targets:book, y:book.y-6, duration:520, yoyo:true, repeat:2, ease:"Sine.easeInOut",
+        onComplete: () => { try{book.destroy();}catch{} } });
+    });
+    sceneRef.time.delayedCall(2050, () => {
+      if (!b || !b.active) return;
+      showFloat(sceneRef, b.x, b.y-70, "👍", "#8fffb0");
+    });
+    sceneRef.time.delayedCall(2650, () => { if (bossState && bossState.phase === "defeat") startBossQuizPhase(); });
+  }
+
   function updateBossFight(scene) {
     if (!inBossFight || !bossState || !bossState.sprite || !bossState.sprite.active) return;
     if (bossState.phase !== "platform") return;
@@ -3647,8 +3766,13 @@ window.addEventListener("DOMContentLoaded", () => {
       if (b.body) b.body.reset(b.x, b.y);
     } else if (mt === "patrol" || !mt) {
       const speed = (bossState.def.patrolSpeed || 110) * speedMult;
-      if (b.x < 250) b.setVelocityX(speed);
-      if (b.x > 1600-250) b.setVelocityX(-speed);
+      // Margem relativa ao worldW da própria arena — antes estava fixa em
+      // 1600, o que dava um raio de patrulha errado em arenas mais pequenas
+      // (ex.: a arena "tamanho da janela" do Monstro da Ignorância, 960px).
+      const worldW = bossState.def.arena?.worldW || 1600;
+      const margin = Math.min(250, worldW * 0.26);
+      if (b.x < margin) b.setVelocityX(speed);
+      if (b.x > worldW - margin) b.setVelocityX(-speed);
     }
     // "blink" e "teleport" são geridos pelos timers próprios (doBossBlink/doBossTeleport)
 
@@ -3710,14 +3834,28 @@ window.addEventListener("DOMContentLoaded", () => {
     score += 20; scoreText.setText(`🌟 Pontos: ${score}`);
     showFloat(scene, x, y, label, "#ff6b35");
     const hitsTaken = bossState.def.hp - bossState.hp;
-    if (bossState.def.phases) {
-      // Bosses com fases próprias (ex.: Monstro da Ignorância) não usam a
-      // escalada genérica — cada acerto muda de fase com comportamento próprio.
+    if (bossState.def.stompBoss) {
+      // Boss "clássico à Mario": sem fases nem escalada de raiva — só o
+      // contador de saltos no HUD e uma fala curta reaproveitada (taunts).
+      const stomps = hitsTaken;
+      itemCountText.setText(`👣 Saltos: ${Math.max(0,stomps)}/${bossState.def.hp}`);
+      const taunts = BOSS_HP_TAUNTS[bossState.def.id];
+      if (taunts && bossState.hp > 0) {
+        const key = bossState.hp === 2 ? "hp2" : bossState.hp === 1 ? "hp1" : "atStart";
+        const pool = taunts[key];
+        if (pool && pool.length) showFloat(scene, x, y-30, pool[Math.floor(Math.random()*pool.length)], "#ff9090");
+      }
+    } else if (bossState.def.phases) {
+      // Bosses com fases próprias não usam a escalada genérica — cada
+      // acerto muda de fase com comportamento próprio.
       if (bossState.hp > 0) enterBossPhase(scene, bossState.def, bossState.hp);
     } else if (hitsTaken > 0 && bossState.hp > 0) {
       bossEnterRage(scene, Math.min(2, hitsTaken));
     }
-    if (bossState.hp <= 0) startBossCollectPhase();
+    if (bossState.hp <= 0) {
+      if (bossState.def.stompBoss) startBossStompDefeat();
+      else startBossCollectPhase();
+    }
   }
 
   // Chamado a partir do TOPO de onHitMalware — intercepta QUALQUER colisão com o boss
@@ -3753,9 +3891,14 @@ window.addEventListener("DOMContentLoaded", () => {
       return true;
     }
 
-    // Bosses com ataque especial próprio (ex.: Monstro da Ignorância) não têm um
-    // estado "desbloqueado por Star Power" — o único jeito de lhe fazer dano é o
-    // ataque nomeado, disparado ao completar a carga. Tocar-lhe dói SEMPRE.
+    // Boss "clássico à Mario" (ex.: Monstro da Ignorância, redesenho): nem
+    // Star Power nem ataque especial — o único jeito de lhe fazer dano é
+    // saltar-lhe em cima. Um toque de lado dói na mesma.
+    if (bossState.def.stompBoss) return handleStompBossTouch(malwareObj);
+
+    // Bosses com ataque especial próprio não têm um estado "desbloqueado por
+    // Star Power" — o único jeito de lhe fazer dano é o ataque nomeado,
+    // disparado ao completar a carga. Tocar-lhe dói SEMPRE.
     if (starPower && !bossState.def.specialAttack) {
       // Reaproveita a mesma sensação de "atropelar vilão" que já existe no jogo
       if(sceneRef.time.now < bossState.hitCooldownUntil) return true; // debita 1x por toque
@@ -3859,6 +4002,13 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     if (itemObj.getData("bossCharge")) {
       handleChargeItemCollect(itemObj);
+      return true;
+    }
+    if (itemObj.getData("bossProjQmark")) {
+      itemObj.destroy();
+      if (invuln) return true; // já protegido — ignora durante os i-frames
+      ensureAudio(); beep({freq:220,dur:0.12,type:"square",vol:0.06,slideTo:120});
+      bossHitPlayer(sceneRef, null, "❓ Apanhado por uma bola de dúvidas!");
       return true;
     }
     if (!itemObj.getData("bossCollect")) return false;

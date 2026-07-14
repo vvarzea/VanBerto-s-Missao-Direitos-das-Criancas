@@ -474,130 +474,133 @@ function makeBossTextures(scene){
     ctx.beginPath(); ctx.arc(x-r*0.3,y-r*0.3,r*0.32,0,Math.PI*2); ctx.fill();
   }
 
-  // ── 1) Monstro da Ignorância — trevas roxas, olho vendado, boca cosida ──
-  if(!scene.textures.exists("boss_monstro_ignorancia")){
-    const tex=scene.textures.createCanvas("boss_monstro_ignorancia",S,S), ctx=tex.getContext();
-    bossShadow(ctx);
-    // brilho exterior ácido — para se destacar de qualquer fundo escuro/roxo
-    ctx.shadowColor="rgba(200,255,60,0.55)"; ctx.shadowBlur=14;
-    ctx.strokeStyle="rgba(220,255,120,0.65)"; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(C,C,40,0,Math.PI*2); ctx.stroke();
-    ctx.shadowBlur=0;
-    // corpo irregular (blob) — vários círculos sobrepostos — magenta/carmesim quente (contraste com fundo roxo/índigo)
-    const gr=ctx.createRadialGradient(C-10,C-14,4,C,C,40);
-    gr.addColorStop(0,"#ff5cc8"); gr.addColorStop(0.45,"#c81860"); gr.addColorStop(1,"#240018");
-    ctx.fillStyle=gr;
-    [[0,0,36],[-24,10,20],[24,10,20],[-14,-24,18],[14,-24,18],[0,26,24]].forEach(([dx,dy,r])=>{
-      ctx.beginPath(); ctx.arc(C+dx,C+dy,r,0,Math.PI*2); ctx.fill();
-    });
-    // contorno
-    ctx.strokeStyle="#1a0010"; ctx.lineWidth=2.5;
-    ctx.beginPath(); ctx.arc(C,C,38,0,Math.PI*2); ctx.stroke();
-    // corninhos tortos
-    ctx.fillStyle="#5a0838";
-    ctx.beginPath(); ctx.moveTo(C-22,C-32); ctx.lineTo(C-30,C-48); ctx.lineTo(C-14,C-36); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(C+22,C-32); ctx.lineTo(C+30,C-48); ctx.lineTo(C+14,C-36); ctx.closePath(); ctx.fill();
-    // olho grande vendado (branco + venda em X)
-    ctx.fillStyle="#fff0f8";
-    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle="#3a0022"; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.stroke();
-    ctx.strokeStyle="#200014"; ctx.lineWidth=4; ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(C-15,C-13); ctx.lineTo(C+15,C+5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(C+15,C-13); ctx.lineTo(C-15,C+5); ctx.stroke();
-    // boca cosida
-    ctx.strokeStyle="#200014"; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(C,C+20,10,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
-    for(let i=0;i<4;i++){
-      const sx=C-6+i*4;
-      ctx.beginPath(); ctx.moveTo(sx,C+17); ctx.lineTo(sx,C+24); ctx.stroke();
-    }
-    // "?" flutuantes — confusão/ignorância
-    ctx.fillStyle="rgba(230,255,180,0.65)"; ctx.font="bold 13px sans-serif"; ctx.textAlign="center";
-    ctx.fillText("?", C-32, C-30); ctx.fillText("?", C+30, C+14);
-    tex.refresh();
-  }
-
-  // ── 1b/1c) Monstro da Ignorância — variantes de expressão por fase de HP ──
-  // Em vez de um emoji flutuante por cima (😊/😠/😡), o PRÓPRIO monstro muda de
-  // cara: a venda franze-se e a boca cosida vai-se rasgando à medida que perde
-  // força. Mesma silhueta/corpo da textura base — só a zona da cara muda.
+  // ── 1) Monstro da Ignorância — redesenho "boss clássico à Mario" (nova) ──
+  // Antes: silhueta abstrata, sombria, com venda e boca cosida — assustadora
+  // e difícil de "ler" à distância. Agora: uma criatura roxa, rechonchuda e
+  // divertida — mistura de Goomba (simplicidade) com Bomberman (corpo
+  // arredondado) — baixa e larga de propósito, para ser óbvio saltar-lhe em
+  // cima. Nunca assustadora: olhos grandes com pupilas em "?", sorriso
+  // malandro, braços curtos com mãos grandes, pernas pequenas e pés largos.
   function drawMonstroBody(ctx) {
     bossShadow(ctx);
-    ctx.shadowColor="rgba(200,255,60,0.55)"; ctx.shadowBlur=14;
-    ctx.strokeStyle="rgba(220,255,120,0.65)"; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(C,C,40,0,Math.PI*2); ctx.stroke();
-    ctx.shadowBlur=0;
-    const gr=ctx.createRadialGradient(C-10,C-14,4,C,C,40);
-    gr.addColorStop(0,"#ff5cc8"); gr.addColorStop(0.45,"#c81860"); gr.addColorStop(1,"#240018");
-    ctx.fillStyle=gr;
-    [[0,0,36],[-24,10,20],[24,10,20],[-14,-24,18],[14,-24,18],[0,26,24]].forEach(([dx,dy,r])=>{
-      ctx.beginPath(); ctx.arc(C+dx,C+dy,r,0,Math.PI*2); ctx.fill();
+    // Corpo — um só blob grande e macio, roxo, sólido (nada de fumo/abstrato)
+    const gr = ctx.createRadialGradient(C-12,C-16,6,C,C-2,44);
+    gr.addColorStop(0,"#ad82ff"); gr.addColorStop(0.55,"#6a3ad8"); gr.addColorStop(1,"#3a1a80");
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.ellipse(C, C-2, 40, 33, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#2a1060"; ctx.lineWidth = 3;
+    ctx.stroke();
+    // Barriga — roxo mais claro
+    ctx.fillStyle = "#cdb4ff";
+    ctx.beginPath(); ctx.ellipse(C, C+13, 19, 14, 0, 0, Math.PI*2); ctx.fill();
+    // Pernas pequenas + pés largos — anda aos pequenos saltinhos, nunca flutua
+    ctx.strokeStyle = "#2a1060"; ctx.lineWidth = 2;
+    [-17,17].forEach(dx=>{
+      ctx.fillStyle = "#6a3ad8";
+      ctx.beginPath(); ctx.ellipse(C+dx, C+35, 9, 8, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#2a1060";
+      ctx.beginPath(); ctx.ellipse(C+dx, C+43, 13, 6, 0, 0, Math.PI*2); ctx.fill();
     });
-    ctx.strokeStyle="#1a0010"; ctx.lineWidth=2.5;
-    ctx.beginPath(); ctx.arc(C,C,38,0,Math.PI*2); ctx.stroke();
-    ctx.fillStyle="#5a0838";
-    ctx.beginPath(); ctx.moveTo(C-22,C-32); ctx.lineTo(C-30,C-48); ctx.lineTo(C-14,C-36); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(C+22,C-32); ctx.lineTo(C+30,C-48); ctx.lineTo(C+14,C-36); ctx.closePath(); ctx.fill();
   }
-  // Fase HP2 — 😠: a venda franze-se em bico (tipo sobrolho zangado) e a boca
-  // aperta-se numa linha reta e tensa, em vez do arco calmo da fase inicial.
-  if(!scene.textures.exists("boss_monstro_ignorancia_hp2")){
-    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_hp2",S,S), ctx=tex.getContext();
-    drawMonstroBody(ctx);
-    ctx.fillStyle="#fff0f8";
-    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle="#3a0022"; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.stroke();
-    ctx.strokeStyle="#200014"; ctx.lineWidth=4; ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(C-15,C-13); ctx.lineTo(C+15,C+5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(C+15,C-13); ctx.lineTo(C-15,C+5); ctx.stroke();
-    // sobrolho zangado por cima da venda
-    ctx.strokeStyle="#3a0022"; ctx.lineWidth=3; ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(C-19,C-18); ctx.lineTo(C-4,C-12); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(C+19,C-18); ctx.lineTo(C+4,C-12); ctx.stroke();
-    // boca tensa, reta
-    ctx.strokeStyle="#200014"; ctx.lineWidth=2.4; ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(C-11,C+21); ctx.lineTo(C+11,C+21); ctx.stroke();
-    for(let i=0;i<4;i++){
-      const sx=C-6+i*4;
-      ctx.beginPath(); ctx.moveTo(sx,C+18); ctx.lineTo(sx,C+24); ctx.stroke();
+  // Braços curtos, mãos grandes — "wave" (a acenar/apontar, usado na pose
+  // normal e confiante) ou "rest" (junto ao corpo, usado no estado de dor).
+  function drawMonstroArms(ctx, mood) {
+    ctx.strokeStyle = "#2a1060"; ctx.lineWidth = 2;
+    if (mood === "wave") {
+      [[-1,-34,-8],[1,34,-8]].forEach(([side,dx,dy])=>{
+        ctx.fillStyle = "#6a3ad8";
+        ctx.beginPath(); ctx.ellipse(C+dx*0.7, C+dy, 9, 15, side*0.55, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(C+dx, C+dy-10, 8.5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      });
+    } else {
+      [-38,38].forEach(dx=>{
+        ctx.fillStyle = "#6a3ad8";
+        ctx.beginPath(); ctx.ellipse(C+dx, C+8, 8, 13, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(C+dx, C+21, 8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      });
     }
-    ctx.fillStyle="rgba(255,150,120,0.75)"; ctx.font="bold 13px sans-serif"; ctx.textAlign="center";
-    ctx.fillText("?", C-32, C-30); ctx.fillText("?", C+30, C+14);
+  }
+  // Estado normal — confiante, sorriso malandro, um sobrolho levantado.
+  // Pupilas em forma de "?" — reforça o tema sem precisar de mais nada.
+  if(!scene.textures.exists("boss_monstro_ignorancia")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    drawMonstroArms(ctx, "wave");
+    [-16,16].forEach(dx=>{
+      ctx.fillStyle="#fffaff";
+      ctx.beginPath(); ctx.ellipse(C+dx, C-10, 12, 13, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#2a1060"; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle="#2a1060"; ctx.font="bold 15px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText("?", C+dx, C-8);
+    });
+    ctx.textBaseline="alphabetic";
+    // Sobrolho malandro — um levantado, o outro relaxado ("está sempre
+    // convencido que vai ganhar")
+    ctx.strokeStyle="#2a1060"; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-26,C-26); ctx.lineTo(C-8,C-30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+8,C-22); ctx.lineTo(C+26,C-20); ctx.stroke();
+    // Sorriso assimétrico, malandro
+    ctx.lineWidth=2.6;
+    ctx.beginPath();
+    ctx.moveTo(C-14,C+16);
+    ctx.quadraticCurveTo(C, C+27, C+19, C+11);
+    ctx.stroke();
     tex.refresh();
   }
-  // Fase HP1 — 😡: a venda rasga-se (deixa ver um olho vermelho furioso) e a
-  // boca cosida rebenta num grito aberto — o monstro está mesmo desesperado.
-  if(!scene.textures.exists("boss_monstro_ignorancia_hp1")){
-    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_hp1",S,S), ctx=tex.getContext();
+  // Estado "ouch" — usado por meio segundo sempre que leva um salto na
+  // cabeça: achatamento exagerado tipo desenho animado, olhos esbugalhados,
+  // boca aberta. Volta ao estado normal logo a seguir (não é uma fase — é
+  // só a reação a UM golpe, reaproveitada nos 3 saltos).
+  if(!scene.textures.exists("boss_monstro_ignorancia_ouch")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_ouch",S,S), ctx=tex.getContext();
     drawMonstroBody(ctx);
-    // venda rasgada, já não cobre o olho todo
-    ctx.fillStyle="#fff0f8";
-    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.fill();
-    // olho furioso a espreitar por baixo da venda rasgada
-    glowEye(ctx, C, C-4, 8, "#ff2020");
-    ctx.strokeStyle="#3a0022"; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.ellipse(C,C-4,17,11,0,0,Math.PI*2); ctx.stroke();
-    // farrapos da venda a esvoaçar, em vez do X inteiro
-    ctx.strokeStyle="#200014"; ctx.lineWidth=3.4; ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(C-15,C-13); ctx.lineTo(C-2,C-3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(C+15,C-13); ctx.lineTo(C+3,C-4); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(C-15,C+5); ctx.lineTo(C-4,C-1); ctx.stroke();
-    // sobrolho bem franzido
-    ctx.strokeStyle="#3a0022"; ctx.lineWidth=3.4; ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(C-20,C-20); ctx.lineTo(C-3,C-11); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(C+20,C-20); ctx.lineTo(C+3,C-11); ctx.stroke();
-    // boca aberta, stitches a rebentar
-    ctx.fillStyle="#3a0022";
-    ctx.beginPath(); ctx.ellipse(C,C+22,9,7,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle="#ff5050"; ctx.lineWidth=2; ctx.lineCap="round";
-    for(let i=0;i<4;i++){
-      const sx=C-8+i*5.3, sy=C+13+((i%2)?3:0);
-      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx+3,sy-6); ctx.stroke();
-    }
-    ctx.fillStyle="rgba(255,90,90,0.85)"; ctx.font="bold 13px sans-serif"; ctx.textAlign="center";
-    ctx.fillText("!", C-32, C-30); ctx.fillText("!", C+30, C+14);
+    drawMonstroArms(ctx, "rest");
+    [-16,16].forEach(dx=>{
+      ctx.fillStyle="#fffaff";
+      ctx.beginPath(); ctx.ellipse(C+dx, C-8, 14, 15, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#2a1060"; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle="#2a1060"; ctx.font="bold 17px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText("?", C+dx, C-6);
+    });
+    ctx.textBaseline="alphabetic";
+    ctx.strokeStyle="#2a1060"; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-26,C-30); ctx.lineTo(C-8,C-22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+8,C-22); ctx.lineTo(C+26,C-30); ctx.stroke();
+    ctx.fillStyle="#2a1060";
+    ctx.beginPath(); ctx.ellipse(C, C+21, 9, 11, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle="#ff9fdc";
+    ctx.beginPath(); ctx.ellipse(C, C+25, 5, 5, 0, 0, Math.PI*2); ctx.fill();
+    tex.refresh();
+  }
+  // Estado "sentado" — usado na sequência de derrota: senta-se no chão,
+  // lê um livro que aparece à sua frente e dá um polegar para cima. Não
+  // morre, não explode — só fica contente e simpático, tal como pedido.
+  if(!scene.textures.exists("boss_monstro_ignorancia_sentado")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_sentado",S,S), ctx=tex.getContext();
+    bossShadow(ctx);
+    const gr = ctx.createRadialGradient(C-12,C-8,6,C,C+6,44);
+    gr.addColorStop(0,"#ad82ff"); gr.addColorStop(0.55,"#6a3ad8"); gr.addColorStop(1,"#3a1a80");
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.ellipse(C, C+4, 42, 28, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#2a1060"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = "#cdb4ff";
+    ctx.beginPath(); ctx.ellipse(C, C+17, 20, 12, 0, 0, Math.PI*2); ctx.fill();
+    // Pernas cruzadas à frente, sentado
+    ctx.fillStyle = "#6a3ad8"; ctx.strokeStyle="#2a1060"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(C-14, C+35, 17, 7, 0.28, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(C+14, C+35, 17, 7, -0.28, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // Braço junto ao corpo
+    ctx.beginPath(); ctx.ellipse(C-33, C+10, 8, 13, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // Braço com polegar para cima
+    ctx.beginPath(); ctx.ellipse(C+29, C-4, 8, 15, -0.32, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillRect(C+29, C-26, 6, 11);
+    ctx.beginPath(); ctx.arc(C+33, C-18, 7, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // Olhos contentes — curva feliz, em vez de ovais abertos
+    ctx.strokeStyle="#2a1060"; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath(); ctx.arc(C-16, C-6, 8, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+    ctx.beginPath(); ctx.arc(C+16, C-6, 8, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+    // Sorriso largo e satisfeito
+    ctx.beginPath(); ctx.arc(C, C+12, 14, 0.15*Math.PI, 0.85*Math.PI); ctx.stroke();
     tex.refresh();
   }
 
@@ -756,6 +759,21 @@ function makeBossTextures(scene){
     ctx.beginPath(); ctx.moveTo(w-15,7); ctx.lineTo(w-3,19); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(w-3,7); ctx.lineTo(w-15,19); ctx.stroke();
     ctx.shadowBlur=0;
+    tex.refresh();
+  }
+  // ── Bola ❓ do Monstro da Ignorância (redesenho) — rola devagar pelo chão,
+  // saltitando um pouco, em vez de voar direto à cabeça. Lenta e fácil de
+  // ver/evitar de propósito — nada de "aviso vermelho" agressivo aqui.
+  if(!scene.textures.exists("boss_proj_qmark")){
+    const w=30,h=30,tex=scene.textures.createCanvas("boss_proj_qmark",w,h), ctx=tex.getContext();
+    const gr=ctx.createRadialGradient(w/2-4,h/2-4,2,w/2,h/2,15);
+    gr.addColorStop(0,"#c8aeff"); gr.addColorStop(0.6,"#8a5cff"); gr.addColorStop(1,"#5228b0");
+    ctx.fillStyle=gr;
+    ctx.beginPath(); ctx.arc(w/2,h/2,13,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#2a1060"; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle="#fff8ff"; ctx.font="bold 15px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText("?", w/2, h/2+1);
+    ctx.textBaseline="alphabetic";
     tex.refresh();
   }
 }

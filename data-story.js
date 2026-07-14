@@ -27,7 +27,7 @@ export const REGION_INTRO = {
 };
 
 export const BOSS_OBJECTIVE = {
-  monstro_ignorancia: "Foge e apanha 5 livros 📚 para disparar o Raio do Conhecimento! Repete, depois apanha mais 5 e responde à pergunta.",
+  monstro_ignorancia: "Foge das bolas ❓ e salta-lhe em cima 3 vezes para o vencer!",
   virus_gigante: "Foge até apanhares uma estrela ⭐ para o atingires! Depois apanha 5 corações ❤️ e responde à pergunta.",
   guardiao_sombras: "Ele teleporta-se na arena escura. Apanha uma estrela ⭐ para o atingires, depois 5 medalhas 🏅 e responde.",
   poluidor_mecanico: "Ele patrulha depressa numa arena com plataformas móveis. Apanha a estrela ⭐, depois 5 brinquedos 🧸 e responde."

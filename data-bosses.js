@@ -13,115 +13,41 @@ export const BOSSES = [
     name: "Monstro da Ignorância",
     emoji: "👾",
     color: 0x8a5cff,
-    movementType: "blink",   // some e reaparece noutra plataforma
+    // ===== Redesenho "Boss clássico à Mario" (nova) =====
+    // Filosofia: arena do tamanho da janela (sem scroll), poucas plataformas,
+    // e uma mecânica só — saltar-lhe em cima 3 vezes. Nada de fases, nada de
+    // ataque especial, nada de fase de recolha à parte. Simples, rápido,
+    // divertido. stompBoss=true liga este modo dedicado no motor do jogo;
+    // os outros 3 bosses (ainda sem stompBoss) continuam exactamente iguais.
+    stompBoss: true,
+    stompsToDefeat: 3,       // 3 saltos na cabeça = derrotado (reaproveita def.hp)
+    movementType: "patrol",  // anda devagar de um lado para o outro — nunca teletransporta, nunca desaparece
+    patrolSpeed: 55,
+    hopEvery: 2400,          // de vez em quando dá um pequeno salto (só visual)
+    qmarkEvery: 2200,        // atira uma bola ❓ que salta devagar pelo chão
+    bossY: 430,              // fica em cima do chão da arena, não flutua
+    bossScale: 1.5,          // ~2x a altura do VanBerto's — dá para saltar-lhe em cima sem dificuldade
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
-    collectKind: "livro",    // fallback só usado se specialAttack alguma vez for desligado
-    collectCount: 5,
     quizTheme: "educacao",
     hp: 3,
     themeIdx: 16,              // índigo cósmico noturno
-    throwsBooks: true,         // atira livros (bons e maus) enquanto foges dele
     rightRecovered: { emoji: "📚", name: "Direito à Educação" },
-    // ===== Arena temática — Fase "Bosses de Verdade" =====
-    // Antes, TODOS os bosses partilhavam a mesma arena genérica (3 plataformas
-    // hardcoded em dia-crianca.js). Este campo "arena" é opt-in: se existir,
-    // o motor usa-o; senão, cai no layout genérico de sempre — por isso os
-    // outros 3 bosses continuam exactamente iguais até lhes chegar a vez.
-    // Tema: "biblioteca flutuante em ruínas" — chão principal + 2 estantes
-    // flutuantes laterais (à altura de voo do ataque Fake News, para o
-    // agachar continuar a ser útil ali) + 1 estante central mais alta.
+    // Arena simples: do tamanho da janela (960x540, sem scroll), chão
+    // principal + só 2 plataformas baixas para dar alguma variedade ao salto.
     arena: {
-      worldW: 1700,
+      worldW: 960,
       platforms: [
-        [850,520,1700,28],   // chão principal
-        [260,400,220,22],    // estante flutuante esquerda
-        [1440,400,220,22],   // estante flutuante direita
-        [850,300,260,22]     // estante central, mais alta
+        [480,500,960,30],   // chão principal, de ponta a ponta
+        [230,400,150,20],   // plataforma baixa esquerda
+        [730,400,150,20]    // plataforma baixa direita
       ],
-      // Reaproveitado pelas estrelas, cargas do Raio do Conhecimento e pelo
-      // "blink" do boss — 3 pontos alinhados com as 3 plataformas elevadas.
-      spawnSpots: [260, 850, 1440],
-      // Decoração ambiente, sem colisão — só emoji + tween, tal como
-      // bossLockIcon/showFloat já fazem. Puramente visual.
       decor: [
-        { emoji:"📖", x:120,  y:170 },
-        { emoji:"📕", x:1580, y:210 },
-        { emoji:"📗", x:850,  y:120 },
-        { emoji:"📘", x:480,  y:460 },
-        { emoji:"📙", x:1220, y:470 }
+        { emoji:"📖", x:90,  y:150 },
+        { emoji:"📕", x:870, y:170 },
+        { emoji:"❓", x:480, y:120 }
       ]
-    },
-    // Ataque especial — o motor genérico (specialAttack) já existe em
-    // dia-crianca.js; só faltava esta configuração. Substitui o antigo
-    // "knowledgeAttack" por um objeto mais completo, mas o comportamento é o
-    // mesmo: apanha 5 livros para carregar e disparar o Raio do Conhecimento.
-    specialAttack: {
-      emoji: "📚",
-      chargeCount: 5,
-      chargeTexture: "item_livro",
-      chargeTint: 0xffffff,       // sem tingir — mantém as cores douradas do livro
-      chargeFacts: [
-        "📖 Ler ajuda-nos a pensar.",
-        "🎒 A escola abre portas.",
-        "🌟 Aprender é um direito.",
-        "🧠 Cada livro é um super-poder.",
-        "✏️ Errar também é aprender."
-      ],
-      name: "Raio do Conhecimento",
-      visual: "beam",
-      visualColor: 0xfff066
-    },
-    // ===== 3 fases do combate — Fase "Batalhas Épicas" =====
-    // Cada fase liga-se a um HP concreto do boss (def.hp continua a ser 3 —
-    // 3 acertos do Raio do Conhecimento). Em vez da escalada genérica de
-    // "só fica mais rápido", cada fase muda o próprio padrão de ataque:
-    // chuva de livros mais intensa, um ataque novo a partir da fase 2
-    // (fake news a voar na horizontal — evitar, não apanhar) e vinheta
-    // escura na fase final (o Monstro "não quer ver" que está a perder).
-    phases: [
-      {
-        id: "nevoa",
-        atHp: 3,               // vida cheia — comportamento inicial
-        label: "🌫️ Névoa da Ignorância",
-        bookThrowDelay: 1700,
-        // badBookChance suavizado (era 0.25/0.42/0.55) — a versão anterior
-        // ficava punitiva demais na fase final para o público-alvo (crianças):
-        // um livro mau custa 1 vida E inverte os controlos ao mesmo tempo.
-        badBookChance: 0.22,
-        blinkDelay: 2600,
-        fakeNewsAttack: false,
-        // fakeNewsDelay definido em todas as fases (mesmo antes de ligar o
-        // ataque) para o timer já nascer com a cadência certa quando a fase 2
-        // o ativar — antes ficava sempre fixo em 2100ms, mesmo na fase 3.
-        fakeNewsDelay: 2100,
-        vignette: false
-      },
-      {
-        id: "fakenews",
-        atHp: 2,               // depois do 1º Raio do Conhecimento
-        label: "📵 Fake News",
-        bookThrowDelay: 1300,
-        badBookChance: 0.33,
-        blinkDelay: 2000,
-        fakeNewsAttack: true,
-        fakeNewsDelay: 2100,
-        vignette: false
-      },
-      {
-        id: "preconceito",
-        atHp: 1,                // última vida do boss — fase final
-        label: "🙈 Preconceito",
-        bookThrowDelay: 950,
-        badBookChance: 0.44,
-        blinkDelay: 1500,
-        fakeNewsAttack: true,
-        // Só agora a fase final acelera de facto o Fake News também (era
-        // sempre 2100 fixo antes, apesar de tudo o resto ficar mais rápido).
-        fakeNewsDelay: 1500,
-        vignette: true
-      }
-    ]
+    }
   },
   {
     id: "virus_gigante",
