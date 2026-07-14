@@ -4940,7 +4940,15 @@ window.addEventListener("DOMContentLoaded", () => {
     if(!player || player.getData("usingPng")) return;
     _eyeOverrideUntil = scene.time.now + duration;
     player.setTexture("vanberto_sad");
-    scene.time.delayedCall(duration, () => { if(player) applyVanBertoTexture(scene); });
+    // Ligeiro tom avermelhado enquanto a cara triste dura — reforça visualmente
+    // a dor do "ai!" além da expressão. Restaura a cor certa a seguir (sem
+    // atropelar star power/duplo salto, que têm as suas próprias cores).
+    player.setTint(0xffaaaa);
+    scene.time.delayedCall(duration, () => {
+      if(!player) return;
+      applyVanBertoTexture(scene);
+      if(!starPower && !doubleJumpActive) player.clearTint();
+    });
   }
 
   function applyVanBertoTexture(scene){
