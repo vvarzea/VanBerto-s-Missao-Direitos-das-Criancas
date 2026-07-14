@@ -63,6 +63,19 @@ export function playCinematic(slides, onComplete, bars = true) {
     dlgName.textContent = s.name || style.name;
     dlgText.textContent = s.text || "";
     dlgHint.textContent = (i === slides.length - 1) ? "Toca para continuar ▶" : "Toca para avançar ▶";
+    // s.anchor={x,y} (opcional, em pixels CSS): em vez da caixa fixa no fundo
+    // do ecrã, ancora-se por cima desse ponto — usado para o boss "falar"
+    // com um balão por cima da própria cabeça, em vez de uma caixa genérica
+    // lá em baixo. Sem anchor, mantém-se o comportamento de sempre.
+    if (s.anchor) {
+      dialogEl.classList.add("cine-floating");
+      dialogEl.style.left = s.anchor.x + "px";
+      dialogEl.style.top = s.anchor.y + "px";
+    } else {
+      dialogEl.classList.remove("cine-floating");
+      dialogEl.style.left = "";
+      dialogEl.style.top = "";
+    }
   }
 
   function advance() {
