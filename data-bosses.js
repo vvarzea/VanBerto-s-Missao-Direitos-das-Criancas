@@ -25,7 +25,12 @@ export const BOSSES = [
     patrolSpeed: 55,
     hopEvery: 2400,          // de vez em quando dá um pequeno salto (só visual)
     qmarkEvery: 2200,        // atira uma bola ❓ que salta devagar pelo chão
-    bossY: 430,              // fica em cima do chão da arena, não flutua
+    // bossY: centro do sprite, NÃO os pés — tem de descontar a metade do
+    // corpo desenhado (canvas 116px, escala 1.5, pés ~49px abaixo do centro
+    // → 49*1.5≈73px) até à superfície do chão da arena (plataforma principal
+    // em y=500 com 30px de altura → topo em y=485). 485-73=412. O valor
+    // antigo (430) deixava o Monstro ~18px enterrado na plataforma.
+    bossY: 412,
     bossScale: 1.5,          // ~2x a altura do VanBerto's — dá para saltar-lhe em cima sem dificuldade
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",

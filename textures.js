@@ -539,12 +539,18 @@ function makeBossTextures(scene){
     ctx.strokeStyle="#2a1060"; ctx.lineWidth=3; ctx.lineCap="round";
     ctx.beginPath(); ctx.moveTo(C-26,C-26); ctx.lineTo(C-8,C-30); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(C+8,C-22); ctx.lineTo(C+26,C-20); ctx.stroke();
-    // Sorriso assimétrico, malandro
-    ctx.lineWidth=2.6;
+    // Sorriso assimétrico, malandro — preenchido (não só contorno fino) para
+    // se ler bem à distância/em jogo, com um "dente" a brilhar no canto
+    // levantado, reforçando o ar convencido.
+    ctx.fillStyle="#2a1060";
     ctx.beginPath();
-    ctx.moveTo(C-14,C+16);
-    ctx.quadraticCurveTo(C, C+27, C+19, C+11);
-    ctx.stroke();
+    ctx.moveTo(C-15,C+14);
+    ctx.quadraticCurveTo(C, C+29, C+22, C+9);
+    ctx.quadraticCurveTo(C+2, C+21, C-15,C+14);
+    ctx.fill();
+    ctx.strokeStyle="#1a0a40"; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle="#fffaff";
+    ctx.beginPath(); ctx.moveTo(C+18,C+11); ctx.lineTo(C+23,C+9); ctx.lineTo(C+19,C+16); ctx.closePath(); ctx.fill();
     tex.refresh();
   }
   // Estado "ouch" — usado por meio segundo sempre que leva um salto na

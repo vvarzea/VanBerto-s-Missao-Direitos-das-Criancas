@@ -3182,6 +3182,13 @@ window.addEventListener("DOMContentLoaded", () => {
     player.setAlpha(1); player.setAngle(0);
     player.setPosition(120,460); player.setVelocity(0,0);
     if(player.body) player.body.reset(120,460);
+    // Alinhar já ao chão da arena (mesmo cálculo usado no arranque de nível
+    // normal, via snapPlayerToGround). Sem isto, o VanBerto's ficava com os
+    // pés "enterrados" na plataforma logo à entrada — visível sobretudo
+    // durante a cinemática, porque a física ainda está pausada nesse momento
+    // e nada o corrigia a tempo (só quando a física retomava é que a colisão
+    // o empurrava para cima, já a meio da cena).
+    snapPlayerToGround();
     scene.cameras.main.startFollow(player,true,0.08,0.08);
 
     spawnBossSprite(scene, def, worldW-200);
