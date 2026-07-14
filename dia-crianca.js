@@ -3157,7 +3157,16 @@ window.addEventListener("DOMContentLoaded", () => {
     // partilhada por todos. Bosses sem def.arena (ainda) caem exactamente no
     // layout de sempre — zero impacto nos combates que ainda não foram lá.
     const worldW = def.arena?.worldW || 1600;
-    scene.physics.world.setBounds(0,0,worldW,514);
+    // worldH (opt-in, ver data-bosses.js): normalmente o chão de uma arena
+    // fica quase colado ao limite físico do mundo (514) — mas ao levantar o
+    // chão do Monstro da Ignorância (ver arena.platforms) sobrou uma "zona
+    // morta" enorme por baixo da plataforma. Como o jogador tem
+    // setCollideWorldBounds(true), se alguma vez fosse ali parar (ex.: um
+    // choque/knockback a atravessar a plataforma fina), ficava preso lá
+    // embaixo, sem conseguir voltar a subir através do chão sólido por cima
+    // dele. Um worldH ajustado ao chão real da arena elimina essa zona morta.
+    const worldH = def.arena?.worldH || 514;
+    scene.physics.world.setBounds(0,0,worldW,worldH);
     scene.cameras.main.setBounds(0,0,worldW,540);
 
     // Fundo dedicado à arena do boss — antes disto o ecrã ficava com o fundo do

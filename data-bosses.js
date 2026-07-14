@@ -59,6 +59,12 @@ export const BOSSES = [
     // principal + só 2 plataformas baixas para dar alguma variedade ao salto.
     arena: {
       worldW: 960,
+      // Chão da arena termina em y=445 (430 + metade dos 30px de altura) —
+      // 460 dá só uma margem mínima, tal como a arena original tinha (quase
+      // nenhuma folga entre o chão e o limite físico do mundo). Sem isto, o
+      // limite antigo (514) deixava ~70px de "poço" vazio por baixo do chão
+      // levantado, onde o VanBerto's podia ficar preso sem conseguir subir.
+      worldH: 460,
       platforms: [
         [480,430,960,30],   // chão principal, de ponta a ponta
         [230,330,150,20],   // plataforma baixa esquerda
