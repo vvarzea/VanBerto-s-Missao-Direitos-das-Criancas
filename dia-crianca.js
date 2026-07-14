@@ -5939,33 +5939,51 @@ window.addEventListener("DOMContentLoaded", () => {
     if (el) _overlayObserver.observe(el, { attributes: true, attributeFilter: ["class"] });
   });
 
+  // =====================================================
+  // ===== Pausa automática ao mudar de separador =====
+  // =====================================================
+  // Nota: isto tem de viver AQUI DENTRO do fecho (closure) do
+  // DOMContentLoaded, não a seguir a ele — antes estava fora, e por isso
+  // `awaitingQuiz`/`pausedByTeacher`/`_doorAnimRunning` não existiam nesse
+  // âmbito (o `typeof awaitingQuiz !== "undefined"` era sempre falso, nunca
+  // detetava nada). Na prática isso significava que, ao voltar ao separador
+  // com o VanBerto's a meio de uma transição (ex.: mesmo a tocar o portal),
+  // a física ficava para sempre em pausa — nem o portal reagia, nem sequer
+  // era possível perder uma vida, porque nenhuma colisão física corre com o
+  // mundo em pausa. Corrigido: agora lê o estado real do jogo e, se não
+  // houver nenhum overlay/animação genuinamente a decorrer, desbloqueia logo.
+  document.addEventListener("visibilitychange", () => {
+    try {
+      if (!sceneRef) return;
+      if (document.hidden) {
+        sceneRef.physics.pause();
+        if (_starMelodyInterval) { clearInterval(_starMelodyInterval); _starMelodyInterval = null; window._dc_starMelodyInterval = null; }
+        if (typeof updatePlayTime === "function") updatePlayTime();
+      } else {
+        const overlays = ["startOverlay","quizOverlay","historyOverlay","gameOverOverlay","winOverlay",
+          "achievementsOverlay","albumOverlay","statsOverlay","optionsOverlay","certificateOverlay",
+          "artefactGalleryOverlay","reviewOverlay"];
+        const anyOpen = overlays.some(id => { const el = document.getElementById(id); return el && !el.classList.contains("hidden"); });
+        // Cinemáticas (cinematics.js) criam o seu próprio DOM fora dos overlays
+        // acima — sem isto, voltar ao separador a meio de um diálogo de boss
+        // ou de um cartão de título de região também retomava a física demasiado
+        // cedo, antes de o jogador ter tocado para avançar.
+        const cineShowing = !!document.getElementById("cineDialog")?.classList.contains("cine-show")
+          || document.body.classList.contains("cine-active")
+          || !!document.getElementById("cineTitleCard")?.classList.contains("show");
+        const isPaused = !!pausedByTeacher;
+        if (anyOpen || isPaused || cineShowing || _doorAnimRunning) return; // razão legítima para continuar em pausa
+        // Nada visível a bloquear — se ainda assim awaitingQuiz/awaitingStory
+        // tiverem ficado presos a true (por termos saído mesmo a meio de uma
+        // transição breve), desbloqueia já em vez de esperar até 6s pelo
+        // watchdog do update().
+        if (awaitingQuiz || awaitingStory) { awaitingQuiz = false; awaitingStory = false; }
+        sceneRef.physics.resume();
+      }
+    } catch {}
+  });
+
 });
 
 // Resize
 window.addEventListener("resize",()=>{try{if(window.__dc_game?.scale)window.__dc_game.scale.refresh();}catch{}});
-
-// Pausa automática ao mudar de separador
-document.addEventListener("visibilitychange",()=>{
-  try{
-    const game=window.__dc_game; if(!game) return;
-    const scene=game.scene.scenes[0]; if(!scene) return;
-    if(document.hidden){
-      scene.physics.pause();
-      // Parar melodia da estrela para não continuar em background
-      if(window._dc_starMelodyInterval){
-        clearInterval(window._dc_starMelodyInterval); window._dc_starMelodyInterval=null;
-      }
-      // Guardar tempo de jogo quando o tab fica escondido
-      if(typeof updatePlayTime === "function") updatePlayTime();
-    } else{
-      const overlays=["startOverlay","quizOverlay","historyOverlay","gameOverOverlay","winOverlay",
-        "achievementsOverlay","albumOverlay","statsOverlay","optionsOverlay","certificateOverlay",
-        "artefactGalleryOverlay"];
-      const anyOpen=overlays.some(id=>{const el=document.getElementById(id);return el&&!el.classList.contains("hidden");});
-      const isPaused=!!(document.getElementById("btnPause")?.textContent?.includes("Continuar"));
-      // Não retomar durante animação da porta ou quiz (awaitingQuiz cobre ambos)
-      const isAwaitingQuiz = typeof awaitingQuiz !== "undefined" && awaitingQuiz;
-      if(!anyOpen&&!isPaused&&!isAwaitingQuiz) scene.physics.resume();
-    }
-  }catch{}
-});
