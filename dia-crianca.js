@@ -4068,10 +4068,22 @@ window.addEventListener("DOMContentLoaded", () => {
   // normal correr (evita usar LEVELS[currentLevel] com dados do nível já terminado,
   // e evita teleportar o jogador de volta ao spawn do nível a meio de um combate).
   function handleBossMalwareCollision(malwareObj) {
-    if (!inBossFight || !malwareObj || bossState.phase !== "platform") return false;
+    if (!inBossFight || !malwareObj) return false;
     const isBoss = malwareObj.getData("isBoss");
     const isMini = malwareObj.getData("isMiniHazard");
     if (!isBoss && !isMini) return false;
+    // Fora da fase "platform" (intro/defeat/collect/quiz), absorve o toque em
+    // silêncio em vez de devolver false — devolver false aqui fazia a colisão
+    // cair na lógica NORMAL de onHitMalware, que reposiciona o VanBerto's em
+    // LEVELS[currentLevel].spawn. Durante um combate de boss, currentLevel
+    // ainda aponta para o nível ANTERIOR (só é incrementado depois do boss
+    // vencido), por isso esse spawn pertence a um mundo com outro tamanho —
+    // nada a ver com a arena do boss onde o jogador está fisicamente. Era isto
+    // que podia fazer o VanBerto's aparecer numa posição errada a meio ou no
+    // fim de um combate (ex.: o corpo do boss ainda por desativar no instante
+    // exacto em que passa a "defeat", ou um vírus pequeno da arena contaminada
+    // que ainda não foi limpo).
+    if (bossState.phase !== "platform") { try{malwareObj.body?.setEnable(false);}catch{} return true; }
     if (invuln) return true; // já protegido — ignora este toque, sem reprocessar dano
 
     if (isMini) {
@@ -4187,6 +4199,23 @@ window.addEventListener("DOMContentLoaded", () => {
   // Chamado a partir do TOPO de onCollectItem
   function handleBossItemCollect(itemObj) {
     if (!inBossFight) return false;
+    // Fora da fase "platform" (intro/defeat/collect/quiz) qualquer projétil ou
+    // item de boss ainda "vivo" (ex.: uma bola ❓ lançada mesmo antes do golpe
+    // final, ainda a saltar pelo chão quando a cinemática de derrota começa)
+    // tem de ser absorvido em silêncio — sem dano, sem inverter controlos, sem
+    // pontos. Sem esta guarda (as outras funções do boss já a têm — ver
+    // handleBossMalwareCollision/doBossRollQmark/updateBossFight), o VanBerto's
+    // podia levar um empurrão/inversão de controlos "fantasma" mesmo ao
+    // aparecer no início do combate ou logo a seguir a vencer o boss.
+    if (!bossState || bossState.phase !== "platform") {
+      if (itemObj.getData("bossProjGood") || itemObj.getData("bossProjBad") ||
+          itemObj.getData("bossProjQmark") || itemObj.getData("bossCharge") ||
+          itemObj.getData("bossCollect")) {
+        itemObj.destroy();
+        return true;
+      }
+      return false;
+    }
     if (itemObj.getData("bossProjGood")) {
       itemObj.destroy();
       score += 10; scoreText.setText(`🌟 Pontos: ${score}`);
@@ -4433,7 +4462,7 @@ window.addEventListener("DOMContentLoaded", () => {
         awaitingQuiz = false;
         scene_resumeAfterBoss();
         tipText.setText("🌀 Caminha até ao portal para continuares a aventura!");
-        spawnBossPortal(sceneRef, finished, def.color);
+        spawnBossPortal(sceneRef, finished, def);
       });
     });
   }
@@ -4448,8 +4477,27 @@ window.addEventListener("DOMContentLoaded", () => {
   // exato da porta normal, para não parecer um objeto diferente. "color" só é
   // usado agora no brilho das partículas à volta, para manter alguma
   // identidade do boss sem alterar o próprio portal.
-  function spawnBossPortal(scene, onEnter, color = 0x9060ff) {
-    const px = 800, py = 380;
+  function spawnBossPortal(scene, onEnter, def) {
+    const color = (def && def.color != null) ? def.color : 0x9060ff;
+    // Antes: px/py fixos em (800,380) — só calhavam bem nas arenas "grandes"
+    // (1600px) dos 3 bosses originais, porque 800 é exactamente o centro
+    // dessas arenas. Na arena "do tamanho da janela" do Monstro da Ignorância
+    // (960px), 800 fica perto do bordo direito, sem garantia de chão por
+    // baixo — o portal podia ficar difícil ou impossível de alcançar.
+    // Agora: centrado na LARGURA REAL da arena de cada boss (worldW/2) e
+    // encostado ao chão principal dessa mesma arena (a plataforma mais larga
+    // em def.arena.platforms), em vez de flutuar a meio-ar — garante que dá
+    // sempre para lá chegar a pé, seja qual for o tamanho/layout da arena.
+    const worldW = (def && def.arena && def.arena.worldW) || 1600;
+    const plats = def && def.arena && def.arena.platforms;
+    let floorTopY = 485; // por omissão: chão a y=500 (topo em 485), igual ao usado por todos os bosses
+    if (plats && plats.length) {
+      let floor = plats[0];
+      for (const p of plats) if (p[2] > floor[2]) floor = p; // mais larga = chão principal
+      floorTopY = floor[1] - floor[3] / 2;
+    }
+    const px = (def && def.arena && def.arena.portalX != null) ? def.arena.portalX : Math.round(worldW / 2);
+    const py = floorTopY - 56; // ~metade da altura do portal (104px) — encostado ao chão, não a flutuar
     const portal = scene.physics.add.staticSprite(px, py, "door_party").setDisplaySize(88,104);
     portal.clearTint();
     portal.refreshBody();
