@@ -3255,7 +3255,14 @@ window.addEventListener("DOMContentLoaded", () => {
     // e nada o corrigia a tempo (só quando a física retomava é que a colisão
     // o empurrava para cima, já a meio da cena).
     snapPlayerToGround();
-    scene.cameras.main.startFollow(player,true,0.08,0.08);
+    // Snap instantâneo da câmara para o spawn (tal como loadLevel já faz),
+    // antes de mudar para o seguimento suave — sem isto, a câmara ainda
+    // estava a meio da posição do nível anterior (normalmente bem mais larga
+    // que a arena do boss) e demorava um instante a apanhar o VanBerto's,
+    // dando a sensação de ele estar "enterrado" no chão até a câmara chegar lá.
+    scene.cameras.main.startFollow(player, true, 1.0, 1.0);
+    scene.cameras.main.centerOn(player.x, player.y);
+    scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
 
     spawnBossSprite(scene, def, worldW-200);
     createBossHpBar(scene, def);

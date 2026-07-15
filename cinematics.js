@@ -36,7 +36,7 @@ function ensureDialogDOM() {
 }
 
 const SPEAKER_STYLE = {
-  vb:   { name: "VanBerto's", emoji: "🤖", cls: "cine-vb" },
+  vb:   { name: "VanBerto's", emoji: "", cls: "cine-vb" },
   boss: { name: "???",        emoji: "👾", cls: "cine-boss" },
   npc:  { name: "",           emoji: "🪧", cls: "cine-npc" }
 };
@@ -59,7 +59,9 @@ export function playCinematic(slides, onComplete, bars = true) {
     const s = slides[i];
     const style = SPEAKER_STYLE[s.speaker] || SPEAKER_STYLE.vb;
     dialogEl.className = "cine-show " + style.cls;
-    dlgAvatar.textContent = s.emoji || style.emoji;
+    const avatarEmoji = s.emoji || style.emoji;
+    dlgAvatar.textContent = avatarEmoji;
+    dlgAvatar.style.display = avatarEmoji ? "" : "none";
     dlgName.textContent = s.name || style.name;
     dlgText.textContent = s.text || "";
     dlgHint.textContent = (i === slides.length - 1) ? "Toca para continuar ▶" : "Toca para avançar ▶";
