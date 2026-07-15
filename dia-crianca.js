@@ -3302,11 +3302,17 @@ window.addEventListener("DOMContentLoaded", () => {
       bossTimers.push(starTimer);
     }
     if (def.contaminatedArena) {
-      // Vírus Gigante: a arena fica contaminada — zonas tóxicas fixas no chão
-      // + vírus pequenos a flutuar, ambos independentes do boss principal.
-      spawnToxicZones(scene);
-      spawnMiniViruses(scene, 3);
-      const virusTimer = scene.time.addEvent({ delay: 3000, loop: true, callback: () => maintainMiniViruses(scene, 3) });
+      // Vírus Gigante / Poluidor Mecânico: a arena fica contaminada — zonas de
+      // perigo fixas no chão (ácido ou lava, ver hazardType) + opcionalmente
+      // vírus pequenos a flutuar, ambos independentes do boss principal.
+      // def.contaminatedArena pode ser só "true" (comportamento antigo, 2 zonas
+      // fixas + 3 vírus) ou um objeto de configuração — 100% retrocompatível.
+      const ca = (typeof def.contaminatedArena === "object") ? def.contaminatedArena : {};
+      const baseVirus = ca.virusBase != null ? ca.virusBase : 3;
+      bossState.desiredVirusCount = baseVirus;
+      spawnToxicZones(scene, ca.zonesBase, ca.hazardType);
+      if (baseVirus > 0) spawnMiniViruses(scene, baseVirus);
+      const virusTimer = scene.time.addEvent({ delay: 3000, loop: true, callback: () => maintainMiniViruses(scene, bossState.desiredVirusCount) });
       bossTimers.push(virusTimer);
     }
 
@@ -3336,8 +3342,21 @@ window.addEventListener("DOMContentLoaded", () => {
       // Véu de sombra suave, ligado à cor do próprio boss (não um bloco opaco fixo)
       bossOverlay = scene.add.rectangle(worldW/2, 257, worldW, 514, def.color, 0.16).setDepth(1);
       scene.tweens.add({ targets: bossOverlay, alpha:{from:0.75,to:1}, duration:1900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-      const teleTimer = scene.time.addEvent({ delay: 2400, loop: true, callback: () => doBossTeleport(scene) });
-      bossTimers.push(teleTimer); bossState.teleTimer = teleTimer; bossState.teleBaseDelay = 2400;
+      // teleportDelay (opt-in): permite a cada boss teleportar-se mais rápido
+      // que o valor por omissão — sem isto, todos os bosses "teleport" ficavam
+      // presos ao mesmo ritmo do Guardião das Sombras original.
+      const teleDelay = def.teleportDelay || 2400;
+      const teleTimer = scene.time.addEvent({ delay: teleDelay, loop: true, callback: () => doBossTeleport(scene) });
+      bossTimers.push(teleTimer); bossState.teleTimer = teleTimer; bossState.teleBaseDelay = teleDelay;
+    }
+    if (def.throwsOrbs) {
+      // Orbe genérico (reaproveita o projétil ❓ do Monstro, retintado via
+      // def.orbTint/def.orbTexture) — antes só disponível dentro do bloco
+      // def.stompBoss; agora qualquer boss pode ligar este ataque sozinho,
+      // sem precisar de ser um boss "clássico à Mario".
+      const orbDelay = def.orbEvery || 2200;
+      const orbTimer = scene.time.addEvent({ delay: orbDelay, loop: true, callback: () => doBossRollQmark(scene) });
+      bossTimers.push(orbTimer); bossState.orbTimer = orbTimer; bossState.orbBaseDelay = orbDelay;
     }
     if (def.throwsBooks) {
       const bookTimer = scene.time.addEvent({ delay: 1700, loop: true, callback: () => doBossThrowBook(scene) });
@@ -3655,17 +3674,30 @@ window.addEventListener("DOMContentLoaded", () => {
   let bossToxicZones = [];
   let bossMiniViruses = [];
 
-  function spawnToxicZones(scene) {
+  // Devolve a configuração de zonas de contaminação/poluição correspondente
+  // ao nível de fúria ATUAL do boss — usado para voltar a semear as zonas
+  // corretamente depois da Onda (cura/limpa), em vez de cair sempre no
+  // layout genérico de 2 zonas fixas independentemente do boss/fúria.
+  function currentContaminationZones() {
+    if (!bossState) return null;
+    const def = bossState.def;
+    const ca = (typeof def.contaminatedArena === "object") ? def.contaminatedArena : {};
+    const esc = ca.escalations && ca.escalations[bossState.rageLevel];
+    return { zones: (esc && esc.zones) ? esc.zones : ca.zonesBase, hazardType: ca.hazardType };
+  }
+
+  function spawnToxicZones(scene, customSpots, hazardType) {
     clearToxicZones();
-    const spots = [ {x:520, w:200}, {x:1080, w:200} ];
+    const spots = (customSpots && customSpots.length) ? customSpots : [ {x:520, w:200}, {x:1080, w:200} ];
+    const kind = hazardType || "acid";
     spots.forEach(s => {
       const gfx = scene.add.graphics().setDepth(2);
-      _drawHazard(gfx, s.x, 496, s.w, "acid", scene.time.now);
+      _drawHazard(gfx, s.x, 496, s.w, kind, scene.time.now);
       const timer = scene.time.addEvent({
         delay: 120, loop: true,
-        callback: () => { if (gfx.active) _drawHazard(gfx, s.x, 496, s.w, "acid", scene.time.now); }
+        callback: () => { if (gfx.active) _drawHazard(gfx, s.x, 496, s.w, kind, scene.time.now); }
       });
-      bossToxicZones.push({ x:s.x, y:496, w:s.w, gfx, timer });
+      bossToxicZones.push({ x:s.x, y:496, w:s.w, gfx, timer, kind });
     });
   }
   function clearToxicZones() {
@@ -3682,7 +3714,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const half = z.w/2;
       const inX = pb.right > z.x - half + 4 && pb.left < z.x + half - 4;
       const inY = pb.bottom >= z.y - 2 && pb.top < z.y + 24;
-      if (inX && inY) { bossHitPlayer(sceneRef, null, "☠️ Zona tóxica!"); return true; }
+      if (inX && inY) { bossHitPlayer(sceneRef, null, z.kind === "lava" ? "🏭 Zona poluída!" : "☠️ Zona tóxica!"); return true; }
       return false;
     });
   }
@@ -3779,8 +3811,10 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!inBossFight || !bossState || bossState.phase !== "platform") return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
+    const def = bossState.def;
     const towardPlayer = player.x < b.x ? -1 : 1;
-    const q = itemsGroup.create(b.x, b.y - 10, "boss_proj_qmark");
+    const q = itemsGroup.create(b.x, b.y - 10, def.orbTexture || "boss_proj_qmark");
+    if (def.orbTint != null) q.setTint(def.orbTint);
     q.setDepth(2).setData("bossProjQmark", true);
     q.body.setAllowGravity(true);
     q.body.setGravityY(480);
@@ -3958,6 +3992,20 @@ window.addEventListener("DOMContentLoaded", () => {
     if (bossState.blinkTimer) bossState.blinkTimer.delay = bossState.blinkBaseDelay / bossState.speedMult;
     if (bossState.teleTimer)  bossState.teleTimer.delay  = bossState.teleBaseDelay  / bossState.speedMult;
     if (bossState.bookTimer)  bossState.bookTimer.delay  = bossState.bookBaseDelay  / bossState.speedMult;
+    if (bossState.orbTimer)   bossState.orbTimer.delay   = bossState.orbBaseDelay   / bossState.speedMult;
+
+    // Escalada da arena contaminada/poluída (Vírus Gigante, Poluidor Mecânico) —
+    // 100% opt-in via def.contaminatedArena.escalations[level]; bosses sem esse
+    // campo (Monstro, Guardião) ficam exatamente iguais a antes. Cada boss
+    // decide em que nível de fúria quer escalar (Vírus na 1ª fúria, Poluidor
+    // só na fúria final) — não é um valor fixo do motor.
+    if (def.contaminatedArena && typeof def.contaminatedArena === "object") {
+      const esc = def.contaminatedArena.escalations && def.contaminatedArena.escalations[level];
+      if (esc) {
+        if (esc.zones) spawnToxicZones(scene, esc.zones, def.contaminatedArena.hazardType);
+        if (esc.virus != null) bossState.desiredVirusCount = esc.virus;
+      }
+    }
 
     // Ícone de emoção por cima do boss — 😠 zangado, 😡 desesperado — substitui
     // o 🔒/⭐ só por um instante (bossLockIcon continua a atualizar-se por cima).
@@ -4237,7 +4285,10 @@ window.addEventListener("DOMContentLoaded", () => {
       if (bossState.def.contaminatedArena) {
         clearToxicZones();
         scene.time.delayedCall(4000, () => {
-          if (inBossFight && bossState && bossState.phase === "platform" && bossState.def.contaminatedArena) spawnToxicZones(scene);
+          if (inBossFight && bossState && bossState.phase === "platform" && bossState.def.contaminatedArena) {
+            const zc = currentContaminationZones();
+            spawnToxicZones(scene, zc && zc.zones, zc && zc.hazardType);
+          }
         });
       }
     } else {

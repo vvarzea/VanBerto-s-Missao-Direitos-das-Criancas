@@ -91,14 +91,39 @@ export const BOSSES = [
     collectKind: "heart",
     collectCount: 5,
     quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
-    hp: 3,
+    hp: 4,                     // 3→4: mais um ciclo de carga/ataque especial até o vencer
     themeIdx: 13,              // teal escuro noturno — combina com o verde-água do boss
     rightRecovered: { emoji: "💊", name: "Direito à Saúde" },
-    // NOTA: acabei de ligar isto (o motor — zonas tóxicas, vírus pequenos,
-    // onda de cura — já existia em dia-crianca.js, só faltava esta config).
-    // Nunca foi testado em jogo real ainda — vale a pena confirmar o combate
-    // do início ao fim antes de dares como certo.
-    contaminatedArena: true,   // zonas tóxicas + vírus pequenos a flutuar na arena
+    // Arena própria — em vez de cair na genérica partilhada, com decoração
+    // temática (gotas de água + ADN, ligado ao tema "vírus/saúde").
+    arena: {
+      worldW: 1600,
+      platforms: [
+        [800,500,1600,30],   // chão principal
+        [280,380,200,22],
+        [800,340,200,22],
+        [1320,380,200,22]
+      ],
+      spawnSpots: [280, 800, 1320],
+      decor: [
+        { emoji:"💧", x:120,  y:140 },
+        { emoji:"🧬", x:800,  y:100 },
+        { emoji:"💧", x:1480, y:160 },
+        { emoji:"🧬", x:420,  y:220 },
+        { emoji:"💧", x:1180, y:230 }
+      ]
+    },
+    // Arena contaminada: começa com 2 zonas tóxicas + 2 vírus pequenos; à
+    // primeira fúria (perde a 1ª vida do boss) sobe para 3 zonas + 4 vírus —
+    // o combate fica visivelmente mais perigoso a meio, não só mais rápido.
+    contaminatedArena: {
+      zonesBase: [ {x:520, w:200}, {x:1080, w:200} ],
+      virusBase: 2,
+      hazardType: "acid",
+      escalations: {
+        1: { zones: [ {x:420,w:180}, {x:900,w:180}, {x:1380,w:180} ], virus: 4 }
+      }
+    },
     specialAttack: {
       emoji: "❤️",
       chargeCount: 5,
@@ -114,6 +139,10 @@ export const BOSSES = [
       name: "Onda da Saúde",
       visual: "wave",
       visualColor: 0x30e0a0
+    },
+    rageLines: {
+      angry: "Vou multiplicar-me ainda mais!",
+      desperate: "Não... os anticorpos são fortes demais!"
     }
   },
   {
@@ -123,14 +152,56 @@ export const BOSSES = [
     emoji: "🌑",
     color: 0x3a3a5c,
     movementType: "teleport", // arena escura, teleporta-se entre 3 pontos
+    teleportDelay: 1700,       // mais rápido que o valor por omissão (2400) — mais difícil de prever
+    throwsOrbs: true,          // orbes sombrios — reaproveita o projétil ❓ do motor, retintado (ver orbTexture/orbTint)
+    orbTexture: "boss_proj_qmark",
+    orbTint: 0x6a3fb5,
+    orbEvery: 2000,
     intro: "Nas sombras, ninguém te protege!",
     defeatLine: "A luz da proteção venceu! 🛡️✨",
     collectKind: "medalha",
     collectCount: 5,
     quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
-    hp: 3,
+    hp: 4,                     // 3→4
     themeIdx: 11,              // azul oceano noturno — fortaleza escura, sem exagerar no preto
-    rightRecovered: { emoji: "🛡️", name: "Direito à Proteção" }
+    rightRecovered: { emoji: "🛡️", name: "Direito à Proteção" },
+    // Arena escura própria — plataformas mais altas e mais estreitas que o
+    // normal (110px vs 150-220 nas outras arenas), exigindo mais precisão a
+    // saltar, coerente com ser o 3º boss (mais difícil que o Vírus Gigante).
+    arena: {
+      worldW: 1600,
+      platforms: [
+        [800,500,1600,30],   // chão principal
+        [350,360,110,20],
+        [800,300,110,20],
+        [1250,360,110,20]
+      ],
+      spawnSpots: [350, 800, 1250]
+    },
+    // Ataque especial próprio: apanhar 5 escudos para o Raio da Proteção — mais
+    // temático que o genérico "Star Power" e mais difícil, porque os escudos
+    // têm de ser apanhados enquanto se foge do Guardião (teleporte rápido) e
+    // dos orbes sombrios.
+    specialAttack: {
+      emoji: "🛡️",
+      chargeCount: 5,
+      chargeTexture: "item_medalha", // textura de escudo (ver spawnShields em dia-crianca.js)
+      chargeTint: 0x60d0ff,
+      chargeFacts: [
+        "🛡️ Pedir ajuda a um adulto de confiança é um sinal de coragem.",
+        "🏠 Toda a criança tem direito a sentir-se segura em casa.",
+        "🗣️ Contar o que te incomoda a alguém de confiança protege-te.",
+        "🚸 Saber a quem pedir ajuda é uma proteção poderosa.",
+        "💙 Ninguém tem o direito de te fazer sentir mal ou com medo."
+      ],
+      name: "Raio da Proteção",
+      visual: "beam",
+      visualColor: 0x60d0ff
+    },
+    rageLines: {
+      angry: "As sombras vão engolir-te!",
+      desperate: "Não... a luz está a chegar a todo o lado!"
+    }
   },
   {
     id: "poluidor_mecanico",
@@ -147,9 +218,62 @@ export const BOSSES = [
     collectKind: "brinquedo",
     collectCount: 5,
     quizTheme: "ambiente",
-    hp: 3,
+    hp: 5,                     // o mais resistente dos 4 bosses (era 3, alvo final é 5)
     themeIdx: 9,                // âmbar dourado enevoado — céu poluído, ainda de dia
-    rightRecovered: { emoji: "🌿", name: "Ambiente Saudável" }
+    rightRecovered: { emoji: "🌿", name: "Ambiente Saudável" },
+    // Arena industrial própria (soma-se às plataformas móveis já ligadas por
+    // movingArena) + decoração temática de fábrica/poluição.
+    arena: {
+      worldW: 1600,
+      platforms: [
+        [800,500,1600,30],   // chão principal
+        [300,400,180,22],
+        [1300,400,180,22]
+      ],
+      spawnSpots: [300, 800, 1300],
+      decor: [
+        { emoji:"🏭", x:120,  y:130 },
+        { emoji:"⚙️", x:800,  y:100 },
+        { emoji:"🏭", x:1480, y:150 },
+        { emoji:"☁️", x:500,  y:190 },
+        { emoji:"☁️", x:1100, y:200 }
+      ]
+    },
+    // Zonas de poluição no chão — reaproveita o hazard "lava" já existente
+    // (só retintado/reaproveitado como tal, não é lava a sério temática) via
+    // o mesmo sistema de arena contaminada do Vírus Gigante, mas SEM vírus
+    // pequenos (virusBase/virusEnraged a 0) — só o perigo no chão importa aqui.
+    // Fúria final (perde a 2ª vida, o boss já "desesperado"): mais uma zona
+    // de poluição — a patrulha já fica mais rápida automaticamente (speedMult
+    // genérico do motor), tal como pedido.
+    contaminatedArena: {
+      zonesBase: [ {x:800, w:220} ],
+      virusBase: 0,
+      hazardType: "lava",
+      escalations: {
+        2: { zones: [ {x:800,w:220}, {x:1350,w:200} ], virus: 0 }
+      }
+    },
+    specialAttack: {
+      emoji: "🌱",
+      chargeCount: 5,
+      chargeTexture: "item_heart", // reaproveitado/retintado — sem asset novo (ver comentário do Vírus)
+      chargeTint: 0x30c060,
+      chargeFacts: [
+        "🌱 Plantar árvores ajuda a limpar o ar que respiramos.",
+        "♻️ Reciclar lixo evita que a poluição chegue à natureza.",
+        "🚲 Andar de bicicleta polui muito menos do que um carro.",
+        "💧 Poupar água protege rios e oceanos.",
+        "🌍 Cada pequena ação ajuda a cuidar do planeta inteiro."
+      ],
+      name: "Onda Verde",
+      visual: "wave",
+      visualColor: 0x30c060
+    },
+    rageLines: {
+      angry: "Vou poluir tudo ainda mais depressa!",
+      desperate: "Não... a natureza está a resistir!"
+    }
   }
 ];
 

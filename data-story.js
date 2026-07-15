@@ -28,9 +28,9 @@ export const REGION_INTRO = {
 
 export const BOSS_OBJECTIVE = {
   monstro_ignorancia: "Foge das bolas ❓ e salta-lhe em cima 3 vezes para o vencer!",
-  virus_gigante: "Foge até apanhares uma estrela ⭐ para o atingires! Depois apanha 5 corações ❤️ e responde à pergunta.",
-  guardiao_sombras: "Ele teleporta-se na arena escura. Apanha uma estrela ⭐ para o atingires, depois 5 medalhas 🏅 e responde.",
-  poluidor_mecanico: "Ele patrulha depressa numa arena com plataformas móveis. Apanha a estrela ⭐, depois 5 brinquedos 🧸 e responde."
+  virus_gigante: "Foge das zonas tóxicas e dos vírus pequenos! Apanha 5 corações ❤️ para disparar a Onda da Saúde — depois apanha mais 5 e responde à pergunta.",
+  guardiao_sombras: "Ele teleporta-se e atira orbes sombrios 🔮! Apanha 5 escudos 🛡️ para disparar o Raio da Proteção — depois apanha mais 5 medalhas e responde.",
+  poluidor_mecanico: "Ele patrulha depressa em plataformas móveis e há poluição no chão! Apanha 5 rebentos 🌱 para disparar a Onda Verde — depois apanha mais 5 brinquedos e responde."
 };
 
 // Diálogo de boss, agora por boss (em vez de frases genéricas sorteadas ao acaso).
