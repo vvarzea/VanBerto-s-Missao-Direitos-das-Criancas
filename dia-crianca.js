@@ -3158,6 +3158,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
     inBossFight = true;
     controlsInvertedUntil = 0;
+    // Defesa extra: se uma tentativa anterior tiver ficado presa a meio da
+    // animação do portal (ex.: o jogador mudou de separador exatamente ao
+    // tocar-lhe), _doorAnimRunning podia ficar "true" para sempre, bloqueando
+    // qualquer porta/portal futuro (ver visibilitychange mais abaixo). Repetir
+    // o combate do boss é sempre um recomeço limpo, por isso reinicia-se aqui
+    // tal como loadLevel() já faz para os níveis normais.
+    _doorAnimRunning = false;
     // Se houver uma barra de vida de uma tentativa anterior (ex.: repetir o
     // combate depois de perder todas as vidas), destruir ANTES de substituir
     // bossState — senão a referência perde-se e a barra antiga fica órfã no ecrã.
@@ -4388,6 +4395,14 @@ window.addEventListener("DOMContentLoaded", () => {
       scene.tweens.add({ targets:lbl, alpha:0, duration:200, onComplete:()=>lbl.destroy() });
       ensureAudio(); SFX.doorOpen();
       scene.physics.pause();
+      // Este portal (fim de boss) tinha a sua própria variável local "triggered"
+      // como única proteção, sem nunca marcar _doorAnimRunning — o watchdog de
+      // visibilitychange (ver mais abaixo no ficheiro) não tinha como saber que
+      // esta animação estava a decorrer, e podia retomar a física a meio da
+      // sequência (ou, pior, deixar tudo preso) se o jogador mudasse de separador
+      // exatamente ao tocar no portal. Marcar _doorAnimRunning aqui também dá a
+      // este portal a mesma proteção que a porta normal já tinha.
+      _doorAnimRunning = true;
 
       // FASE 1 — aviso: o portal pulsa depressa antes de "acordar"
       scene.tweens.killTweensOf(portal);
@@ -4432,6 +4447,7 @@ window.addEventListener("DOMContentLoaded", () => {
                   player.setAlpha(0); player.setAngle(0); player.setScale(1);
                   try{ ring.destroy(); }catch{}
                   try{ portal.destroy(); }catch{}
+                  _doorAnimRunning = false; // reset — sequência do portal genuinamente terminada
                   onEnter();
                 }
               });
