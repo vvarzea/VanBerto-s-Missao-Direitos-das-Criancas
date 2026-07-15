@@ -100,8 +100,13 @@ window.addEventListener("DOMContentLoaded", () => {
     const aboveHead = (def.hpBarOffset != null ? def.hpBarOffset : ((b.displayHeight/2||40)+42)) + 46;
     let x = rect.left + (b.x - cam.scrollX) * scaleX;
     const y = rect.top + (b.y - aboveHead - cam.scrollY) * scaleY;
-    // Não deixar o balão sair do ecrã pelas laterais.
-    x = Math.max(rect.left+130, Math.min(rect.right-130, x));
+    // Não deixar o balão sair do ecrã pelas laterais. A margem tem de
+    // acompanhar a largura REAL da caixa (#cineDialog usa width:min(640px,92vw)
+    // — até 320px de meia-largura); um valor fixo de 130px (sobrado de uma
+    // caixa mais pequena) deixava a caixa sair do ecrã sempre que o ponto de
+    // ancoragem ficava perto da borda, cortando o início do texto/nome.
+    const halfDialogW = Math.min(640, window.innerWidth*0.92)/2 + 12;
+    x = Math.max(rect.left+halfDialogW, Math.min(rect.right-halfDialogW, x));
     return { x, y };
   }
 
@@ -121,7 +126,9 @@ window.addEventListener("DOMContentLoaded", () => {
     const aboveHead = (player.displayHeight/2 || 36) + 40;
     let x = rect.left + (player.x - cam.scrollX) * scaleX;
     const y = rect.top + (player.y - aboveHead - cam.scrollY) * scaleY;
-    x = Math.max(rect.left+130, Math.min(rect.right-130, x));
+    // Mesma margem dinâmica que bossDialogueAnchor() — ver comentário lá.
+    const halfDialogW = Math.min(640, window.innerWidth*0.92)/2 + 12;
+    x = Math.max(rect.left+halfDialogW, Math.min(rect.right-halfDialogW, x));
     return { x, y };
   }
 
@@ -3240,6 +3247,18 @@ window.addEventListener("DOMContentLoaded", () => {
     if (def.arena?.decor) spawnBossArenaDecor(scene, def.arena.decor);
 
     player.setAlpha(1); player.setAngle(0);
+    // Repor a escala tal como loadLevel() já faz — sem isto, uma animação em
+    // curso no instante exato em que o nível termina (respirar parado, o
+    // squash/stretch do salto/aterragem, o achatamento do duplo salto) pode
+    // deixar scaleX/scaleY "presos" fora de 1 ao entrar na cinemática do
+    // boss. snapPlayerToGround(), logo a seguir, mede o corpo físico para
+    // calcular onde ficam os "pés" — com a escala errada, o cálculo fica
+    // errado e o VanBerto's aparece enterrado na plataforma da arena.
+    if(player.getData("usingPng")){
+      player.setDisplaySize(72, 72);
+    } else {
+      player.setScale(1);
+    }
     // y=200: bem acima do chão de QUALQUER arena de boss (incluindo arenas
     // "levantadas" como a do Monstro da Ignorância) — snapPlayerToGround(),
     // logo a seguir, só encontra uma plataforma se ela estiver ao/abaixo dos
