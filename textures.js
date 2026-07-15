@@ -522,18 +522,27 @@ function makeBossTextures(scene){
   }
   // Estado normal — confiante, sorriso malandro, um sobrolho levantado.
   // Pupilas em forma de "?" — reforça o tema sem precisar de mais nada.
-  if(!scene.textures.exists("boss_monstro_ignorancia")){
-    const tex=scene.textures.createCanvas("boss_monstro_ignorancia",S,S), ctx=tex.getContext();
-    drawMonstroBody(ctx);
-    drawMonstroArms(ctx, "wave");
-    [-16,16].forEach(dx=>{
-      ctx.fillStyle="#fffaff";
-      ctx.beginPath(); ctx.ellipse(C+dx, C-10, 12, 13, 0, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle="#2a1060"; ctx.lineWidth=1.5; ctx.stroke();
-      ctx.fillStyle="#2a1060"; ctx.font="bold 15px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.fillText("?", C+dx, C-8);
-    });
-    ctx.textBaseline="alphabetic";
+  // Olhos + sobrolho + sorriso do estado normal, separados num helper para
+  // poderem ser reutilizados nas novas variantes de animação "idle" (piscar
+  // e braços em repouso) sem duplicar o desenho todo. eyesOpen=false desenha
+  // os olhos fechados (piscar), mantendo a mesma zona ocular para o "?" não
+  // saltar de posição quando volta a abrir.
+  function drawMonstroFace(ctx, eyesOpen) {
+    if (eyesOpen) {
+      [-16,16].forEach(dx=>{
+        ctx.fillStyle="#fffaff";
+        ctx.beginPath(); ctx.ellipse(C+dx, C-10, 12, 13, 0, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle="#2a1060"; ctx.lineWidth=1.5; ctx.stroke();
+        ctx.fillStyle="#2a1060"; ctx.font="bold 15px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+        ctx.fillText("?", C+dx, C-8);
+      });
+      ctx.textBaseline="alphabetic";
+    } else {
+      ctx.strokeStyle="#2a1060"; ctx.lineWidth=2.5; ctx.lineCap="round";
+      [-16,16].forEach(dx=>{
+        ctx.beginPath(); ctx.moveTo(C+dx-9, C-9); ctx.quadraticCurveTo(C+dx, C-4, C+dx+9, C-9); ctx.stroke();
+      });
+    }
     // Sobrolho malandro — um levantado, o outro relaxado ("está sempre
     // convencido que vai ganhar")
     ctx.strokeStyle="#2a1060"; ctx.lineWidth=3; ctx.lineCap="round";
@@ -551,6 +560,30 @@ function makeBossTextures(scene){
     ctx.strokeStyle="#1a0a40"; ctx.lineWidth=1.5; ctx.stroke();
     ctx.fillStyle="#fffaff";
     ctx.beginPath(); ctx.moveTo(C+18,C+11); ctx.lineTo(C+23,C+9); ctx.lineTo(C+19,C+16); ctx.closePath(); ctx.fill();
+  }
+  if(!scene.textures.exists("boss_monstro_ignorancia")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    drawMonstroArms(ctx, "wave");
+    drawMonstroFace(ctx, true);
+    tex.refresh();
+  }
+  // Duas variantes novas, só para a animação "idle" (ver doBossIdleArms/
+  // doBossIdleBlink em dia-crianca.js) — o Monstro deixa de ficar
+  // completamente parado fora dos golpes: alterna braços "wave"/"rest" a
+  // espaços regulares e pisca os olhos de vez em quando.
+  if(!scene.textures.exists("boss_monstro_ignorancia_armsdown")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_armsdown",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    drawMonstroArms(ctx, "rest");
+    drawMonstroFace(ctx, true);
+    tex.refresh();
+  }
+  if(!scene.textures.exists("boss_monstro_ignorancia_blink")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_blink",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    drawMonstroArms(ctx, "wave");
+    drawMonstroFace(ctx, false);
     tex.refresh();
   }
   // Estado "ouch" — usado por meio segundo sempre que leva um salto na

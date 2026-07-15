@@ -105,6 +105,26 @@ window.addEventListener("DOMContentLoaded", () => {
     return { x, y };
   }
 
+  // Mesma ideia, mas para o VanBerto's — assim as falas dele (reação/grito de
+  // guerra na entrada, e a linha de vitória) também flutuam por cima da sua
+  // própria cabeça, em vez de ficarem só a caixa fixa no fundo do ecrã. Só faz
+  // sentido durante um combate de boss (fora disso o VanBerto's usa vbSay,
+  // não esta caixa de diálogo) — devolve null se não houver player ativo.
+  function vbDialogueAnchor() {
+    if (!player || !player.active) return null;
+    const cam = sceneRef.cameras.main;
+    const canvas = sceneRef.game.canvas;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const scaleX = rect.width / 960, scaleY = rect.height / 540;
+    const aboveHead = (player.displayHeight/2 || 36) + 40;
+    let x = rect.left + (player.x - cam.scrollX) * scaleX;
+    const y = rect.top + (player.y - aboveHead - cam.scrollY) * scaleY;
+    x = Math.max(rect.left+130, Math.min(rect.right-130, x));
+    return { x, y };
+  }
+
   // ===== Guardar =====
   // "settings" guarda apenas preferências (som, alto contraste) — nunca
   // progresso de jogo. O progresso em curso (nível/pontos/vidas a meio de
@@ -3297,6 +3317,16 @@ window.addEventListener("DOMContentLoaded", () => {
       bossTimers.push(hopTimer); bossState.hopTimer = hopTimer;
       const qmarkTimer = scene.time.addEvent({ delay: def.qmarkEvery || 2200, loop: true, callback: () => doBossRollQmark(scene) });
       bossTimers.push(qmarkTimer); bossState.qmarkTimer = qmarkTimer;
+      // Animação "idle" — antes o Monstro ficava completamente estático fora
+      // dos golpes (só a andar de um lado para o outro). Agora alterna braços
+      // "wave"/"rest" a espaços regulares e pisca os olhos de vez em quando,
+      // como qualquer personagem viva. Ambas guardadas por bossState.squishing
+      // (ver squishMonstro) para não trocarem a textura por baixo da reação
+      // de dor a meio de um golpe.
+      const armsTimer = scene.time.addEvent({ delay: 1100, loop: true, callback: () => doBossIdleArms(scene) });
+      bossTimers.push(armsTimer); bossState.armsTimer = armsTimer;
+      const idleBlinkTimer = scene.time.addEvent({ delay: 2600 + Math.random()*1600, loop: true, callback: () => doBossIdleBlink(scene) });
+      bossTimers.push(idleBlinkTimer); bossState.idleBlinkTimer = idleBlinkTimer;
     }
 
     hudText.setText(`${def.emoji} ${def.name}`);
@@ -3314,9 +3344,9 @@ window.addEventListener("DOMContentLoaded", () => {
     // com um "grito de guerra" DEPOIS — dá a sensação de cena, não de anúncio a passar depressa.
     const introVB = BOSS_INTRO_VB[def.id] || { reaction: "Sinto algo estranho aqui...", rally: "Vamos enfrentar isto juntos!" };
     playBossDialogue([
-      { speaker:"vb",   text: introVB.reaction },
+      { speaker:"vb",   text: introVB.reaction, anchor: vbDialogueAnchor() },
       { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro, anchor: bossDialogueAnchor() },
-      { speaker:"vb",   text: introVB.rally }
+      { speaker:"vb",   text: introVB.rally, anchor: vbDialogueAnchor() }
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
@@ -3729,20 +3759,61 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.time.delayedCall(4500, () => { if (q.active) q.destroy(); });
   }
 
+  // ---- Animação "idle" do Monstro da Ignorância: braços e piscar de olhos,
+  // para deixar de parecer estático entre golpes. Ambas ignoradas durante o
+  // "ouch" (bossState.squishing) para não interromperem a reação de dor, e
+  // durante qualquer fase que não seja "platform" (ex.: intro, derrota). ----
+  function doBossIdleArms(scene) {
+    if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing) return;
+    const b = bossState.sprite;
+    if (!b || !b.active) return;
+    const id = bossState.def.id;
+    const wavingKey = "boss_" + id, restKey = "boss_" + id + "_armsdown";
+    if (!scene.textures.exists(restKey)) return; // só o Monstro tem esta variante por agora
+    bossState.armsWaving = !bossState.armsWaving;
+    const nextKey = bossState.armsWaving ? wavingKey : restKey;
+    if (scene.textures.exists(nextKey)) b.setTexture(nextKey);
+  }
+  function doBossIdleBlink(scene) {
+    if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing) return;
+    const b = bossState.sprite;
+    if (!b || !b.active) return;
+    const id = bossState.def.id;
+    const blinkKey = "boss_" + id + "_blink";
+    if (!scene.textures.exists(blinkKey)) return;
+    const restoreKey = b.texture.key; // volta ao estado (braços) em que estava antes de piscar
+    b.setTexture(blinkKey);
+    scene.time.delayedCall(140, () => {
+      if (b.active && bossState && !bossState.squishing && scene.textures.exists(restoreKey)) b.setTexture(restoreKey);
+    });
+  }
   // Reação exagerada tipo desenho animado quando o Monstro leva um salto na
-  // cabeça: achata-se por meio segundo (textura + squash) e volta ao normal.
+  // cabeça: achata-se por meio segundo (textura + squash) e volta ao normal,
+  // com um tremor (pequeno abanão lateral) por cima, para se sentir mesmo
+  // "atingido" e não só espremido. bossState.squishing impede a animação
+  // idle (braços/piscar) de trocar a textura por baixo desta reação.
   function squishMonstro(scene, b) {
     if (!b || !b.active) return;
     const normalTex = b.texture.key;
     const ouchKey = "boss_" + bossState.def.id + "_ouch";
+    if (bossState) bossState.squishing = true;
     if (scene.textures.exists(ouchKey)) b.setTexture(ouchKey);
     const baseScaleY = b.scaleY, baseScaleX = b.scaleX;
+    const baseX = b.x, baseAngle = b.angle;
+    // Tremor: 4 abanões rápidos e decrescentes de lado a lado, em paralelo
+    // com o squash — dá a sensação de choque/dor, não só de ser espremido.
+    scene.tweens.add({
+      targets: b, x: baseX - 6, angle: baseAngle - 5,
+      duration: 45, yoyo: true, repeat: 3, ease: "Sine.easeInOut",
+      onComplete: () => { if (b.active) { b.x = baseX; b.angle = baseAngle; } }
+    });
     scene.tweens.add({
       targets: b, scaleY: baseScaleY * 0.55, scaleX: baseScaleX * 1.2,
       duration: 130, yoyo: true, ease: "Quad.easeOut",
       onComplete: () => {
         if (b.active && scene.textures.exists(normalTex)) b.setTexture(normalTex);
         if (b.active) { b.scaleY = baseScaleY; b.scaleX = baseScaleX; }
+        if (bossState) bossState.squishing = false;
       }
     });
   }
@@ -4272,8 +4343,8 @@ window.addEventListener("DOMContentLoaded", () => {
       // awaitingQuiz continua true durante a cinemática de vitória — só liberta
       // o jogador quando o portal for criado, a seguir ao diálogo.
       playBossDialogue([
-        { speaker:"boss", name:def.name, emoji:def.emoji, text: def.defeatLine },
-        { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!" }
+        { speaker:"boss", name:def.name, emoji:def.emoji, text: def.defeatLine, anchor: bossDialogueAnchor() },
+        { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!", anchor: vbDialogueAnchor() }
       ], () => {
         awaitingQuiz = false;
         scene_resumeAfterBoss();

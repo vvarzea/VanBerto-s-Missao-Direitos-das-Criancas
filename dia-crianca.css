@@ -2333,6 +2333,12 @@ body.cine-active .cine-bar-top,body.cine-active .cine-bar-bottom{height:13vh;}
   content:""; position:absolute; left:50%; bottom:-13px; transform:translateX(-50%);
   border-width:14px 11px 0 11px; border-style:solid; border-color:#ff6b6b transparent transparent transparent;
 }
+/* Mesma seta, agora para o próprio VanBerto's (balão flutuante por cima da
+   cabeça dele) — cor a condizer com a borda azul por omissão da caixa. */
+#cineDialog.cine-floating.cine-vb::after{
+  content:""; position:absolute; left:50%; bottom:-13px; transform:translateX(-50%);
+  border-width:14px 11px 0 11px; border-style:solid; border-color:#80c8ff transparent transparent transparent;
+}
 #cineAvatar{ font-size:38px; line-height:1; flex-shrink:0; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
 #cineBody{ flex:1; min-width:0; }
 #cineName{ margin:0 0 2px; font-size:13px; font-weight:900; color:#ffd700; letter-spacing:0.02em; }
