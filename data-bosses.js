@@ -25,20 +25,17 @@ export const BOSSES = [
     patrolSpeed: 55,
     hopEvery: 2400,          // de vez em quando dá um pequeno salto (só visual)
     qmarkEvery: 2200,        // atira uma bola ❓ que salta devagar pelo chão
-    // Chão alinhado com o dos outros 3 bosses (plataforma principal perto do
-    // fundo do ecrã, ≈96% da altura da câmara de 540px), em vez da versão
-    // anterior que o levantava 70px extra. Essa versão anterior existia só
-    // para o VanBerto's e o Monstro não ficarem escondidos atrás da caixa de
-    // diálogo fixa no fundo do ecrã durante a cinemática de entrada — mas
-    // agora a fala do próprio Monstro flutua num balão por cima da cabeça
-    // dele (ver bossDialogueAnchor em dia-crianca.js), por isso essa folga
-    // deixou de ser necessária e só desperdiçava espaço no ecrã.
+    // Chão ao mesmo nível dos níveis normais (plataforma principal com topo
+    // em y=506, tal como o chão de qualquer nível — ver data-levels.js) —
+    // antes desta arena tinha o chão 21px mais alto (topo em y=485, igual
+    // aos outros 2 bosses), o que o destacava visualmente dos níveis normais
+    // que vêm mesmo antes/depois do combate.
     //
     // bossY: centro do sprite, NÃO os pés — tem de descontar a metade do
     // corpo desenhado (canvas 116px, escala 1.5, pés ~49px abaixo do centro
     // → 49*1.5≈73px) até à superfície do chão da arena (plataforma principal
-    // agora em y=500 com 30px de altura → topo em y=485). 485-73=412.
-    bossY: 412,
+    // agora em y=521 com 30px de altura → topo em y=506). 506-73=433.
+    bossY: 433,
     bossScale: 1.5,          // ~2x a altura do VanBerto's — dá para saltar-lhe em cima sem dificuldade
     // A textura (116x116) tem bastante espaço vazio por cima da cabeça (o
     // corpo começa só a ~1/5 do canvas) — sem isto a barra de vida usava a
@@ -47,7 +44,7 @@ export const BOSSES = [
     hpBarOffset: 72,
     // Letreiro do objetivo (ver startBossFight): fica perto do chão, junto
     // ao ponto de partida do jogador — 486 é o mesmo valor por omissão dos
-    // níveis normais, já alinhado com o novo chão desta arena.
+    // níveis normais, por isso não precisa de ajuste com a mudança de chão.
     signY: 486,
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
@@ -62,15 +59,16 @@ export const BOSSES = [
     // principal + só 2 plataformas baixas para dar alguma variedade ao salto.
     arena: {
       worldW: 960,
-      // 514 = mesmo limite físico usado por omissão pelos outros bosses
-      // (ver startBossFight em dia-crianca.js), com o chão principal (y=500,
-      // topo em y=485) bem perto do fundo, tal como nas outras arenas — sem
-      // a "almofada" extra que este boss tinha antes.
+      // 514 = mesmo limite físico usado por omissão pelos níveis normais e
+      // pelos outros bosses (ver startBossFight em dia-crianca.js) — o chão
+      // principal (topo em y=506) fica ligeiramente acima deste limite,
+      // exactamente como acontece nos níveis normais, por isso não precisa
+      // de um valor próprio.
       worldH: 514,
       platforms: [
-        [480,500,960,30],   // chão principal, de ponta a ponta
-        [230,400,150,20],   // plataforma baixa esquerda
-        [730,400,150,20]    // plataforma baixa direita
+        [480,521,960,30],   // chão principal, de ponta a ponta — topo em y=506, igual aos níveis normais
+        [230,421,150,20],   // plataforma baixa esquerda (deslocada 21px para baixo, junto com o chão)
+        [730,421,150,20]    // plataforma baixa direita (idem)
       ],
       decor: [
         { emoji:"📖", x:90,  y:150 },
