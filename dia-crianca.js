@@ -3246,7 +3246,6 @@ window.addEventListener("DOMContentLoaded", () => {
     // para ficar por cima do fundo mas atrás do jogador/boss (depth 1).
     if (def.arena?.decor) spawnBossArenaDecor(scene, def.arena.decor);
 
-    player.setAlpha(1); player.setAngle(0);
     // Repor a escala tal como loadLevel() já faz — sem isto, uma animação em
     // curso no instante exato em que o nível termina (respirar parado, o
     // squash/stretch do salto/aterragem, o achatamento do duplo salto) pode
@@ -3265,15 +3264,22 @@ window.addEventListener("DOMContentLoaded", () => {
     // pés do jogador; um valor fixo demasiado baixo (ex.: 460) deixava de
     // funcionar sempre que uma arena movia o chão principal para mais acima,
     // fazendo o VanBerto's ficar preso a meio da plataforma em vez de em cima.
+    player.setAngle(0);
     player.setPosition(120,200); player.setVelocity(0,0);
     if(player.body) player.body.reset(120,200);
     // Alinhar já ao chão da arena (mesmo cálculo usado no arranque de nível
-    // normal, via snapPlayerToGround). Sem isto, o VanBerto's ficava com os
-    // pés "enterrados" na plataforma logo à entrada — visível sobretudo
-    // durante a cinemática, porque a física ainda está pausada nesse momento
-    // e nada o corrigia a tempo (só quando a física retomava é que a colisão
-    // o empurrava para cima, já a meio da cena).
+    // normal, via snapPlayerToGround) — e só tornar o VanBerto's visível
+    // DEPOIS disto (setAlpha(1) só aqui, não antes de setPosition/snap).
+    // Antes, setAlpha(1) corria logo no início desta função, com o jogador
+    // ainda na posição do nível anterior/no y=200 provisório — como a física
+    // está pausada durante toda a cinemática de entrada, isso ficava visível
+    // (aos "pés enterrados", ou preso a meio da plataforma) até a física
+    // retomar no fim do diálogo, altura em que a colisão o empurrava de
+    // repente para a posição certa. Seguindo agora exactamente o mesmo
+    // padrão do loadLevel() (esconder → posicionar → só depois revelar),
+    // o VanBerto's só aparece já na posição final correta.
     snapPlayerToGround();
+    player.setAlpha(1);
     // Snap instantâneo da câmara para o spawn (tal como loadLevel já faz),
     // antes de mudar para o seguimento suave — sem isto, a câmara ainda
     // estava a meio da posição do nível anterior (normalmente bem mais larga
