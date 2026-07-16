@@ -3165,6 +3165,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     inBossFight = true;
     controlsInvertedUntil = 0;
+    // Esconder já aqui, incondicionalmente — nem todos os pontos de entrada
+    // (ex.: "Tentar Novamente" no ecrã de Game Over) escondem o jogador antes
+    // de chamar startBossFight(). Sem isto, o VanBerto's ficava visível na
+    // posição antiga (ex.: onde caiu) até snapPlayerToGround()+setAlpha(1),
+    // mais abaixo, o revelarem já na posição certa — daí o "salto" visível.
+    if(player) player.setAlpha(0);
     // Defesa extra: se uma tentativa anterior tiver ficado presa a meio da
     // animação do portal (ex.: o jogador mudou de separador exatamente ao
     // tocar-lhe), _doorAnimRunning podia ficar "true" para sempre, bloqueando
@@ -3402,9 +3408,9 @@ window.addEventListener("DOMContentLoaded", () => {
     // com um "grito de guerra" DEPOIS — dá a sensação de cena, não de anúncio a passar depressa.
     const introVB = BOSS_INTRO_VB[def.id] || { reaction: "Sinto algo estranho aqui...", rally: "Vamos enfrentar isto juntos!" };
     playBossDialogue([
-      { speaker:"vb",   text: introVB.reaction, anchor: vbDialogueAnchor() },
-      { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro, anchor: bossDialogueAnchor() },
-      { speaker:"vb",   text: introVB.rally, anchor: vbDialogueAnchor() }
+      { speaker:"vb",   text: introVB.reaction },
+      { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro },
+      { speaker:"vb",   text: introVB.rally }
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
@@ -4462,8 +4468,8 @@ window.addEventListener("DOMContentLoaded", () => {
       // awaitingQuiz continua true durante a cinemática de vitória — só liberta
       // o jogador quando o portal for criado, a seguir ao diálogo.
       playBossDialogue([
-        { speaker:"boss", name:def.name, emoji:def.emoji, text: def.defeatLine, anchor: bossDialogueAnchor() },
-        { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!", anchor: vbDialogueAnchor() }
+        { speaker:"boss", name:def.name, emoji:def.emoji, text: def.defeatLine },
+        { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!" }
       ], () => {
         awaitingQuiz = false;
         scene_resumeAfterBoss();
