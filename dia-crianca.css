@@ -2322,6 +2322,15 @@ body.cine-active .cine-bar-top,body.cine-active .cine-bar-bottom{height:13vh;}
    ancora-se por cima de um ponto concreto (ex.: a cabeça do boss). Usada
    quando a fala tem slide.anchor={x,y} (ver playCinematic em cinematics.js).
    left/top vêm inline (JS), por isso aqui só se troca a base bottom:0/transform. */
+/* Variante "centrada": a caixa aparece mesmo no meio do ecrã (estilo cinematográfico
+   clássico), em vez de presa ao fundo — usada no diálogo de boss (playBossDialogue),
+   para nunca ficar sobreposta às personagens nem cortada pela borda do ecrã. */
+#cineDialog.cine-center{
+  left:50%; top:50%; bottom:auto; border-radius:16px;
+  transform:translate(-50%,calc(-50% + 14px)) scale(0.92);
+}
+#cineDialog.cine-center.cine-show{ transform:translate(-50%,-50%) scale(1); }
+
 #cineDialog.cine-floating{
   bottom:auto; border-radius:16px;
   transform:translate(-50%,calc(-100% + 16px)) scale(0.85);

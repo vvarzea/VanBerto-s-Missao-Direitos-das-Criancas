@@ -78,7 +78,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // pensado para dicas rápidas) — ficava pequeno, avançava sozinho por tempo
   // e longe da ação; agora fica centrado, legível, e o jogador controla o ritmo.
   function playBossDialogue(slides, onComplete) {
-    playCinematic(slides, onComplete, false);
+    playCinematic(slides, onComplete, false, true);
   }
 
   // Calcula, em pixels CSS de ecrã, o ponto por cima da cabeça do boss —
