@@ -4898,7 +4898,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function showQuiz(quiz,done,isRetry){
     quizOverlay.classList.remove("hidden");
-    const _qTheme = LEVELS[currentLevel]?.quizTheme;
+    // Em combate de boss, o tema certo é o do PRÓPRIO boss (bossState.def.quizTheme)
+    // — não o do nível que acabou de terminar. Hoje os dois valores são sempre
+    // iguais de propósito (ver comentários em data-bosses.js, "corrigido para
+    // bater com o Nível X"), mas isso é mantido à mão em dois sítios diferentes;
+    // se алguma vez ficarem dessincronizados, ler sempre LEVELS[currentLevel]
+    // aqui mostraria o crachá/dica errados e a "2ª tentativa" escolheria
+    // perguntas de outro tema. Resolver a partir do boss quando ele existe
+    // elimina essa fragilidade.
+    const _qTheme = bossState?.def?.quizTheme || LEVELS[currentLevel]?.quizTheme;
     const _article = QUIZ_ARTICLE[_qTheme];
     const _badgeHTML = _article ? `<span class="quiz-article-badge">📜 ${_article}</span><br>` : "";
     quizQuestion.innerHTML = _badgeHTML + (isRetry ? "🔄 Segunda tentativa! " : "") + quiz.q;
@@ -4955,7 +4963,7 @@ window.addEventListener("DOMContentLoaded", () => {
           SFX.coin();
           vbSayRandom(VB_QUIZ_CORRECT,"good",3200);
           // Mostrar SEMPRE: explicação do quiz E/OU dica do tema
-          const tipFact = QUIZ_TIPS[LEVELS[currentLevel]?.quizTheme] || "";
+          const tipFact = QUIZ_TIPS[_qTheme] || "";
           const expText = quiz.exp ? "💡 " + quiz.exp : "";
           const combined = expText || (tipFact ? "📌 Recorda: " + tipFact : "");
           if(combined){
@@ -4990,19 +4998,19 @@ window.addEventListener("DOMContentLoaded", () => {
 
           quizStats.errors=quizStats.errors||[];
           if(!isRetry) {
-            const qTheme = LEVELS[currentLevel]?.quizTheme || "historia";
+            const qTheme = _qTheme || "historia";
             quizStats.errors.push({level:LEVELS[currentLevel]?.name||`Nível ${currentLevel+1}`,theme:qTheme,q:quiz.q,wrong:ans.t,correct:correct[0].t});
             quizStats.errorsByTheme[qTheme] = (quizStats.errorsByTheme[qTheme]||0) + 1;
           }
           if(quiz.exp){quizExplanation.textContent="💡 "+quiz.exp;quizExplanation.classList.remove("hidden");}
-          const tip=QUIZ_TIPS[LEVELS[currentLevel]?.quizTheme]||"";
+          const tip=QUIZ_TIPS[_qTheme]||"";
           quizFeedback.textContent="❌ Quase! A resposta certa era: "+correct[0].t+"\nTenta outra pergunta!";
           if(tip) quizFeedback.textContent+=`\n💡 Lembra-te: ${tip}`;
           quizFeedback.style.color="#e84d10";
           btnCloseQuiz.classList.remove("hidden"); btnCloseQuiz.textContent="🔄 Tentar outra pergunta";
           btnCloseQuiz.onclick=()=>{
             btnCloseQuiz.classList.add("hidden");
-            showQuiz(pickQuizForLevel(currentLevel,LEVELS[currentLevel].quizTheme),done,true);
+            showQuiz(pickQuizForLevel(currentLevel,_qTheme),done,true);
           };
         }
       };
