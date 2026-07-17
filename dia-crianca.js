@@ -78,7 +78,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // pensado para dicas rápidas) — ficava pequeno, avançava sozinho por tempo
   // e longe da ação; agora fica centrado, legível, e o jogador controla o ritmo.
   function playBossDialogue(slides, onComplete) {
-    playCinematic(slides, onComplete, false, true);
+    playCinematic(slides, onComplete, false);
   }
 
   // Calcula, em pixels CSS de ecrã, o ponto por cima da cabeça do boss —
@@ -3165,12 +3165,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     inBossFight = true;
     controlsInvertedUntil = 0;
-    // Esconder já aqui, incondicionalmente — nem todos os pontos de entrada
-    // (ex.: "Tentar Novamente" no ecrã de Game Over) escondem o jogador antes
-    // de chamar startBossFight(). Sem isto, o VanBerto's ficava visível na
-    // posição antiga (ex.: onde caiu) até snapPlayerToGround()+setAlpha(1),
-    // mais abaixo, o revelarem já na posição certa — daí o "salto" visível.
-    if(player) player.setAlpha(0);
     // Defesa extra: se uma tentativa anterior tiver ficado presa a meio da
     // animação do portal (ex.: o jogador mudou de separador exatamente ao
     // tocar-lhe), _doorAnimRunning podia ficar "true" para sempre, bloqueando
@@ -3381,17 +3375,24 @@ window.addEventListener("DOMContentLoaded", () => {
       bossTimers.push(hopTimer); bossState.hopTimer = hopTimer;
       const qmarkTimer = scene.time.addEvent({ delay: def.qmarkEvery || 2200, loop: true, callback: () => doBossRollQmark(scene) });
       bossTimers.push(qmarkTimer); bossState.qmarkTimer = qmarkTimer;
-      // Animação "idle" — antes o Monstro ficava completamente estático fora
-      // dos golpes (só a andar de um lado para o outro). Agora alterna braços
-      // "wave"/"rest" a espaços regulares e pisca os olhos de vez em quando,
-      // como qualquer personagem viva. Ambas guardadas por bossState.squishing
-      // (ver squishMonstro) para não trocarem a textura por baixo da reação
-      // de dor a meio de um golpe.
-      const armsTimer = scene.time.addEvent({ delay: 1100, loop: true, callback: () => doBossIdleArms(scene) });
-      bossTimers.push(armsTimer); bossState.armsTimer = armsTimer;
-      const idleBlinkTimer = scene.time.addEvent({ delay: 2600 + Math.random()*1600, loop: true, callback: () => doBossIdleBlink(scene) });
-      bossTimers.push(idleBlinkTimer); bossState.idleBlinkTimer = idleBlinkTimer;
     }
+    // Animação "idle" — antes só o Monstro da Ignorância tinha isto (e só
+    // porque este bloco vivia dentro do "if (def.stompBoss)" acima); os
+    // outros bosses ficavam completamente estáticos fora dos golpes. Agora
+    // corre para QUALQUER boss: alterna entre a pose normal e uma pose
+    // alternativa ("_armsdown" — braços em repouso no Monstro, mas o nome
+    // do ficheiro de textura é só uma convenção, cada boss usa essa variante
+    // à sua maneira, ver textures.js) a espaços regulares, e pisca os olhos
+    // de vez em quando, como qualquer personagem viva. doBossIdleArms/
+    // doBossIdleBlink já verificam sozinhas se a textura existe para este
+    // boss (scene.textures.exists) — para um boss que ainda não tenha as
+    // variantes próprias, os timers simplesmente não fazem nada visível.
+    // Ambas guardadas por bossState.squishing (ver squishBoss) para não
+    // trocarem a textura por baixo da reação de dor a meio de um golpe.
+    const armsTimer = scene.time.addEvent({ delay: 1100, loop: true, callback: () => doBossIdleArms(scene) });
+    bossTimers.push(armsTimer); bossState.armsTimer = armsTimer;
+    const idleBlinkTimer = scene.time.addEvent({ delay: 2600 + Math.random()*1600, loop: true, callback: () => doBossIdleBlink(scene) });
+    bossTimers.push(idleBlinkTimer); bossState.idleBlinkTimer = idleBlinkTimer;
 
     hudText.setText(`${def.emoji} ${def.name}`);
     itemCountText.setText("");
@@ -3408,9 +3409,9 @@ window.addEventListener("DOMContentLoaded", () => {
     // com um "grito de guerra" DEPOIS — dá a sensação de cena, não de anúncio a passar depressa.
     const introVB = BOSS_INTRO_VB[def.id] || { reaction: "Sinto algo estranho aqui...", rally: "Vamos enfrentar isto juntos!" };
     playBossDialogue([
-      { speaker:"vb",   text: introVB.reaction },
-      { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro },
-      { speaker:"vb",   text: introVB.rally }
+      { speaker:"vb",   text: introVB.reaction, anchor: vbDialogueAnchor() },
+      { speaker:"boss", name: def.name, emoji: def.emoji, text: def.intro, anchor: bossDialogueAnchor() },
+      { speaker:"vb",   text: introVB.rally, anchor: vbDialogueAnchor() }
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
@@ -3866,12 +3867,17 @@ window.addEventListener("DOMContentLoaded", () => {
       if (b.active && bossState && !bossState.squishing && scene.textures.exists(restoreKey)) b.setTexture(restoreKey);
     });
   }
-  // Reação exagerada tipo desenho animado quando o Monstro leva um salto na
-  // cabeça: achata-se por meio segundo (textura + squash) e volta ao normal,
+  // Reação exagerada tipo desenho animado sempre que QUALQUER boss é atingido:
+  // achata-se por meio segundo (textura "_ouch" + squash) e volta ao normal,
   // com um tremor (pequeno abanão lateral) por cima, para se sentir mesmo
   // "atingido" e não só espremido. bossState.squishing impede a animação
   // idle (braços/piscar) de trocar a textura por baixo desta reação.
-  function squishMonstro(scene, b) {
+  // Chamada de forma centralizada a partir de damageBoss() — assim TODOS os
+  // bosses reagem da mesma forma a um acerto, não só o Monstro da Ignorância
+  // (que a usava antes só a partir de handleStompBossTouch). Se um boss ainda
+  // não tiver a variante "_ouch" própria (ver textures.js), simplesmente não
+  // troca de textura — o tremor e o squash continuam a acontecer na mesma.
+  function squishBoss(scene, b) {
     if (!b || !b.active) return;
     const normalTex = b.texture.key;
     const ouchKey = "boss_" + bossState.def.id + "_ouch";
@@ -3909,7 +3915,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (isFalling && playerBottom <= bossTop + 22) {
       bossState.hitCooldownUntil = sceneRef.time.now + 550;
       player.setVelocityY(-380);
-      squishMonstro(sceneRef, b);
+      // squishBoss() já é chamado dentro de damageBoss() — não repetir aqui.
       ensureAudio(); beep({freq:500,dur:0.09,type:"square",vol:0.07,slideTo:900});
       damageBoss(sceneRef, b.x, b.y-70, "👣 Salto certeiro!", 0.008);
     } else {
@@ -4050,6 +4056,11 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.cameras.main.shake(100, shakeAmount);
     score += 20; scoreText.setText(`🌟 Pontos: ${score}`);
     showFloat(scene, x, y, label, "#ff6b35");
+    // Reação visual de "atingido" (squash + tremor + textura "_ouch" se
+    // existir) — chamada aqui, de forma centralizada, para se aplicar a
+    // QUALQUER boss que leve dano, seja qual for a forma de o atingir
+    // (salto, toque com Star Power ou ataque especial).
+    if (bossState.sprite) squishBoss(scene, bossState.sprite);
     const hitsTaken = bossState.def.hp - bossState.hp;
     if (bossState.def.stompBoss) {
       // Boss "clássico à Mario": sem fases nem escalada de raiva — só o
@@ -4468,8 +4479,8 @@ window.addEventListener("DOMContentLoaded", () => {
       // awaitingQuiz continua true durante a cinemática de vitória — só liberta
       // o jogador quando o portal for criado, a seguir ao diálogo.
       playBossDialogue([
-        { speaker:"boss", name:def.name, emoji:def.emoji, text: def.defeatLine },
-        { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!" }
+        { speaker:"boss", name:def.name, emoji:def.emoji, text: def.defeatLine, anchor: bossDialogueAnchor() },
+        { speaker:"vb", text: BOSS_VICTORY_VB[def.id] || "Conseguimos! Mais um direito está a salvo!", anchor: vbDialogueAnchor() }
       ], () => {
         awaitingQuiz = false;
         scene_resumeAfterBoss();
@@ -4523,9 +4534,28 @@ window.addEventListener("DOMContentLoaded", () => {
 
     let triggered = false;
     let ov = null;
-    ov = scene.physics.add.overlap(player, portal, () => {
+    let portalWatchdog = null;
+    // enterPortal() é chamado tanto pelo overlap físico como pelo watchdog de
+    // proximidade abaixo — só um dos dois dispara realmente (o "triggered"
+    // protege contra disparo duplo), mas ter as duas vias garante que o
+    // VanBerto's entra sempre no portal.
+    //
+    // PORQUÊ um watchdog de proximidade e não só o overlap: este portal é
+    // criado a meio de uma transição cheia de física pausada/retomada
+    // (pause() no quiz, resume() já dentro do diálogo de vitória — ver
+    // startBossQuizPhase acima) e de tweens que mexem em player.x/y
+    // diretamente (a "pose de vitória"). Se o overlap for registado num
+    // instante em que a física ainda não deu um passo completo, ou se o
+    // jogador "teletransportar" para dentro da zona do portal num único
+    // frame (câmara a assentar, tween a terminar), o Arcade Physics pode
+    // nunca chegar a reportar esse overlap — o VanBerto's fica visualmente
+    // dentro/à frente do portal para sempre, sem nada o disparar. A porta
+    // normal (tryOpenDoor) já usa exactamente este tipo de rede de segurança
+    // por polling (_landingCheckTimer) por este mesmo motivo.
+    const enterPortal = () => {
       if (triggered) return;
       triggered = true;
+      if (portalWatchdog) { try{ portalWatchdog.remove(false); }catch{} portalWatchdog = null; }
       try{ scene.physics.world.removeCollider(ov); }catch{}
       try{ ring.stop(); }catch{}
       scene.tweens.killTweensOf(lbl);
@@ -4579,6 +4609,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 targets: player, x: portal.x, y: portal.y - 10,
                 scaleX: 0.05, scaleY: 0.05, angle: 720, alpha: 0,
                 duration: 380, ease: "Sine.easeIn",
+
                 onComplete: () => {
                   if (scene && scene.tweens) scene.tweens.killTweensOf(player);
                   player.setAlpha(0); player.setAngle(0); player.setScale(1);
@@ -4594,7 +4625,21 @@ window.addEventListener("DOMContentLoaded", () => {
           }); // fim playVanBertoDance (FASE 1.5)
         }
       });
-    }, null, scene);
+    };
+
+    ov = scene.physics.add.overlap(player, portal, enterPortal, null, scene);
+
+    // Rede de segurança por proximidade (mesmo raciocínio do _landingCheckTimer
+    // já usado na porta normal, ver tryOpenDoor acima) — confirma a cada 100ms
+    // se o VanBerto's já está mesmo junto ao portal e força a entrada mesmo
+    // que o overlap físico nunca chegue a disparar sozinho.
+    portalWatchdog = scene.time.addEvent({
+      delay: 100, loop: true,
+      callback: () => {
+        if (triggered || !player.active) return;
+        if (Math.abs(player.x - px) < 50 && Math.abs(player.y - py) < 70) enterPortal();
+      }
+    });
   }
 
   function scene_resumeAfterBoss() {

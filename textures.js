@@ -644,8 +644,11 @@ function makeBossTextures(scene){
   }
 
   // ── 2) Vírus Gigante — esfera com espigões, estilo coronavírus ──────
-  if(!scene.textures.exists("boss_virus_gigante")){
-    const tex=scene.textures.createCanvas("boss_virus_gigante",S,S), ctx=tex.getContext();
+  // Corpo/braços/cara separados em helpers (mesmo padrão do Monstro da
+  // Ignorância) para gerar as variantes "_armsdown"/"_blink"/"_ouch" sem
+  // duplicar o desenho todo — dá-lhe a mesma vivacidade (braços/olhos) que
+  // só o Monstro tinha antes.
+  function drawVirusBody(ctx){
     bossShadow(ctx);
     const bodyR=28;
     // brilho exterior dourado — o nível dele é todo em tons de verde-água,
@@ -678,21 +681,91 @@ function makeBossTextures(scene){
     [[-10,-6,6],[9,-11,4],[6,9,5],[-8,10,4]].forEach(([dx,dy,r])=>{
       ctx.beginPath(); ctx.arc(C+dx,C+dy,r,0,Math.PI*2); ctx.fill();
     });
-    // olhos e boca malvados simples
-    ctx.fillStyle="#fff";
-    ctx.beginPath(); ctx.ellipse(C-8,C-2,5,6,0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(C+8,C-2,5,6,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle="#2a0a1a";
-    ctx.beginPath(); ctx.arc(C-8,C,2.4,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(C+8,C,2.4,0,Math.PI*2); ctx.fill();
+  }
+  // Dois pseudópodes finos (tentáculos) que saem do corpo — "wave" esticados
+  // para cima/fora como se acenassem, "rest" a pender ao longo do corpo.
+  function drawVirusArms(ctx, mood){
+    const bodyR=28;
+    ctx.lineCap="round";
+    if (mood === "wave") {
+      [-1,1].forEach(side=>{
+        const bx=C+side*bodyR*0.7, by=C+bodyR*0.5;
+        const tx=C+side*(bodyR+21), ty=C-bodyR*0.25;
+        ctx.strokeStyle="#e0409a"; ctx.lineWidth=7;
+        ctx.beginPath(); ctx.moveTo(bx,by); ctx.quadraticCurveTo(C+side*(bodyR+9), C+bodyR*0.05, tx, ty); ctx.stroke();
+        ctx.fillStyle="#e0409a";
+        ctx.beginPath(); ctx.arc(tx,ty,6.5,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle="#7a1450"; ctx.lineWidth=1.5; ctx.stroke();
+      });
+    } else {
+      [-1,1].forEach(side=>{
+        const bx=C+side*bodyR*0.72, by=C+bodyR*0.35;
+        const tx=C+side*bodyR*0.92, ty=C+bodyR*1.05;
+        ctx.strokeStyle="#e0409a"; ctx.lineWidth=6;
+        ctx.beginPath(); ctx.moveTo(bx,by); ctx.quadraticCurveTo(C+side*bodyR*1.05, C+bodyR*0.7, tx, ty); ctx.stroke();
+        ctx.fillStyle="#e0409a";
+        ctx.beginPath(); ctx.arc(tx,ty,5.5,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle="#7a1450"; ctx.lineWidth=1.5; ctx.stroke();
+      });
+    }
+  }
+  // eyesOpen=false pisca (curva fechada em vez da elipse branca) — boca
+  // mantém-se igual, tal como no Monstro, para não "saltar" ao piscar.
+  function drawVirusFace(ctx, eyesOpen){
+    if (eyesOpen) {
+      ctx.fillStyle="#fff";
+      ctx.beginPath(); ctx.ellipse(C-8,C-2,5,6,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(C+8,C-2,5,6,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#2a0a1a";
+      ctx.beginPath(); ctx.arc(C-8,C,2.4,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(C+8,C,2.4,0,Math.PI*2); ctx.fill();
+    } else {
+      ctx.strokeStyle="#2a0a1a"; ctx.lineWidth=2.5; ctx.lineCap="round";
+      [-8,8].forEach(dx=>{
+        ctx.beginPath(); ctx.moveTo(C+dx-5,C-1); ctx.quadraticCurveTo(C+dx,C+3,C+dx+5,C-1); ctx.stroke();
+      });
+    }
     ctx.strokeStyle="#2a0a1a"; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(C,C+11,7,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+  }
+  if(!scene.textures.exists("boss_virus_gigante")){
+    const tex=scene.textures.createCanvas("boss_virus_gigante",S,S), ctx=tex.getContext();
+    drawVirusBody(ctx); drawVirusArms(ctx,"wave"); drawVirusFace(ctx,true);
+    tex.refresh();
+  }
+  if(!scene.textures.exists("boss_virus_gigante_armsdown")){
+    const tex=scene.textures.createCanvas("boss_virus_gigante_armsdown",S,S), ctx=tex.getContext();
+    drawVirusBody(ctx); drawVirusArms(ctx,"rest"); drawVirusFace(ctx,true);
+    tex.refresh();
+  }
+  if(!scene.textures.exists("boss_virus_gigante_blink")){
+    const tex=scene.textures.createCanvas("boss_virus_gigante_blink",S,S), ctx=tex.getContext();
+    drawVirusBody(ctx); drawVirusArms(ctx,"wave"); drawVirusFace(ctx,false);
+    tex.refresh();
+  }
+  // "ouch" — espigões a tremer visualmente (olhos em espiral) + boca aberta
+  // de choque + tentáculos em repouso, mesmo espírito exagerado do Monstro.
+  if(!scene.textures.exists("boss_virus_gigante_ouch")){
+    const tex=scene.textures.createCanvas("boss_virus_gigante_ouch",S,S), ctx=tex.getContext();
+    drawVirusBody(ctx); drawVirusArms(ctx,"rest");
+    ctx.strokeStyle="#2a0a1a"; ctx.lineWidth=2;
+    [-8,8].forEach(dx=>{
+      ctx.beginPath();
+      for(let a=0;a<=Math.PI*2.4;a+=0.4){
+        const r=1+a*0.7, px=C+dx+Math.cos(a)*r, py=C-2+Math.sin(a)*r;
+        a===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+      }
+      ctx.stroke();
+    });
+    ctx.fillStyle="#2a0a1a";
+    ctx.beginPath(); ctx.ellipse(C,C+13,6,8,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#ff9fc0";
+    ctx.beginPath(); ctx.ellipse(C,C+16,3,4,0,0,Math.PI*2); ctx.fill();
     tex.refresh();
   }
 
   // ── 3) Guardião das Sombras — capa encapuzada, olhos a brilhar ──────
-  if(!scene.textures.exists("boss_guardiao_sombras")){
-    const tex=scene.textures.createCanvas("boss_guardiao_sombras",S,S), ctx=tex.getContext();
+  function drawGuardiaoBody(ctx){
     bossShadow(ctx);
     // capa — forma triangular com bainha irregular em baixo
     const gr=ctx.createLinearGradient(0,C-40,0,S-16);
@@ -709,15 +782,84 @@ function makeBossTextures(scene){
     // capuz — sombra mais escura no topo
     ctx.fillStyle="#08081a";
     ctx.beginPath(); ctx.ellipse(C,C-18,17,20,0,0,Math.PI*2); ctx.fill();
-    // olhos brilhantes dentro do capuz
-    glowEye(ctx, C-7, C-18, 4.2, "#7fe0ff");
-    glowEye(ctx, C+7, C-18, 4.2, "#7fe0ff");
+  }
+  // Mangas fantasmagóricas a sair da capa — "wave" levantadas (como a
+  // invocar sombras), "rest" a pender junto ao corpo. Reaproveita o mesmo
+  // gradiente escuro da capa, com garras pálidas na ponta para se destacar.
+  function drawGuardiaoArms(ctx, mood){
+    const grA=ctx.createLinearGradient(0,C-20,0,C+40);
+    grA.addColorStop(0,"#4a4a72"); grA.addColorStop(1,"#0e0e1c");
+    ctx.strokeStyle="#000"; ctx.lineWidth=2;
+    if (mood === "wave") {
+      [-1,1].forEach(side=>{
+        ctx.fillStyle=grA;
+        ctx.beginPath();
+        ctx.moveTo(C+side*18, C-4);
+        ctx.quadraticCurveTo(C+side*38, C-22, C+side*33, C-44);
+        ctx.lineTo(C+side*21, C-38);
+        ctx.quadraticCurveTo(C+side*22, C-18, C+side*9, C-2);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle="#c8c8e0";
+        for(let i=-1;i<=1;i++){
+          ctx.beginPath();
+          ctx.moveTo(C+side*(27+i*3), C-40); ctx.lineTo(C+side*(29+i*3), C-49); ctx.lineTo(C+side*(31+i*3), C-40);
+          ctx.closePath(); ctx.fill();
+        }
+      });
+    } else {
+      [-1,1].forEach(side=>{
+        ctx.fillStyle=grA;
+        ctx.beginPath();
+        ctx.moveTo(C+side*18, C-4);
+        ctx.quadraticCurveTo(C+side*30, C+16, C+side*23, C+32);
+        ctx.lineTo(C+side*13, C+28);
+        ctx.quadraticCurveTo(C+side*15, C+8, C+side*9, C-2);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      });
+    }
+  }
+  // eyesOpen=false: os olhos-brilho ficam só um traço fino a espreitar do
+  // capuz, em vez do brilho cheio — a mesma ideia do piscar do Monstro.
+  function drawGuardiaoFace(ctx, eyesOpen){
+    if (eyesOpen) {
+      glowEye(ctx, C-7, C-18, 4.2, "#7fe0ff");
+      glowEye(ctx, C+7, C-18, 4.2, "#7fe0ff");
+    } else {
+      ctx.strokeStyle="#7fe0ff"; ctx.lineWidth=2; ctx.lineCap="round";
+      ctx.shadowColor="#7fe0ff"; ctx.shadowBlur=6;
+      [-7,7].forEach(dx=>{
+        ctx.beginPath(); ctx.moveTo(C+dx-3,C-18); ctx.lineTo(C+dx+3,C-18); ctx.stroke();
+      });
+      ctx.shadowBlur=0;
+    }
+  }
+  if(!scene.textures.exists("boss_guardiao_sombras")){
+    const tex=scene.textures.createCanvas("boss_guardiao_sombras",S,S), ctx=tex.getContext();
+    drawGuardiaoBody(ctx); drawGuardiaoArms(ctx,"rest"); drawGuardiaoFace(ctx,true);
+    tex.refresh();
+  }
+  if(!scene.textures.exists("boss_guardiao_sombras_armsdown")){
+    const tex=scene.textures.createCanvas("boss_guardiao_sombras_armsdown",S,S), ctx=tex.getContext();
+    drawGuardiaoBody(ctx); drawGuardiaoArms(ctx,"rest"); drawGuardiaoFace(ctx,true);
+    tex.refresh();
+  }
+  if(!scene.textures.exists("boss_guardiao_sombras_blink")){
+    const tex=scene.textures.createCanvas("boss_guardiao_sombras_blink",S,S), ctx=tex.getContext();
+    drawGuardiaoBody(ctx); drawGuardiaoArms(ctx,"rest"); drawGuardiaoFace(ctx,false);
+    tex.refresh();
+  }
+  // "ouch": mangas levantadas em choque + olhos a brilhar com mais força
+  // (em vez de expressão facial, que a capa não tem) — reage na mesma.
+  if(!scene.textures.exists("boss_guardiao_sombras_ouch")){
+    const tex=scene.textures.createCanvas("boss_guardiao_sombras_ouch",S,S), ctx=tex.getContext();
+    drawGuardiaoBody(ctx); drawGuardiaoArms(ctx,"wave");
+    glowEye(ctx, C-7, C-18, 6, "#ffffff");
+    glowEye(ctx, C+7, C-18, 6, "#ffffff");
     tex.refresh();
   }
 
   // ── 4) Poluidor Mecânico — robô industrial enferrujado, com chaminé ─
-  if(!scene.textures.exists("boss_poluidor_mecanico")){
-    const tex=scene.textures.createCanvas("boss_poluidor_mecanico",S,S), ctx=tex.getContext();
+  function drawPoluidorBody(ctx){
     bossShadow(ctx);
     // fumo estático por cima da chaminé
     ctx.fillStyle="rgba(120,120,110,0.45)";
@@ -752,15 +894,71 @@ function makeBossTextures(scene){
       ctx.beginPath(); ctx.arc(gx,gy,7,0,Math.PI*2); ctx.fill();
       ctx.fillStyle="#8a8a70"; ctx.beginPath(); ctx.arc(gx,gy,3,0,Math.PI*2); ctx.fill();
     });
-    // olho único robótico, vermelho
-    glowEye(ctx, C, C-2, 7, "#ff4030");
     // grelha/boca de ventilação
     ctx.strokeStyle="#2f3320"; ctx.lineWidth=2;
     for(let i=0;i<3;i++){
       ctx.beginPath(); ctx.moveTo(C-10,C+14+i*4); ctx.lineTo(C+10,C+14+i*4); ctx.stroke();
     }
+  }
+  // Braços-garra mecânicos a sair de junto das engrenagens dos ombros —
+  // "wave" levantados/abertos (a ameaçar), "rest" pousados ao longo do corpo.
+  function drawPoluidorArms(ctx, mood){
+    ctx.fillStyle="#7a8a5c"; ctx.strokeStyle="#3a4028"; ctx.lineWidth=2.5;
+    if (mood === "wave") {
+      [-1,1].forEach(side=>{
+        const sx=C+side*30, sy=C-2;
+        ctx.beginPath(); ctx.ellipse(sx+side*11, sy-15, 7,14, side*0.45,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sx+side*15, sy-27); ctx.lineTo(sx+side*24, sy-33); ctx.lineTo(sx+side*17, sy-23); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sx+side*15, sy-21); ctx.lineTo(sx+side*25, sy-21); ctx.lineTo(sx+side*17, sy-15); ctx.closePath(); ctx.fill(); ctx.stroke();
+      });
+    } else {
+      [-1,1].forEach(side=>{
+        const sx=C+side*30, sy=C-2;
+        ctx.beginPath(); ctx.ellipse(sx+side*7, sy+16, 7,14, -side*0.28,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(sx+side*11, sy+31, 6, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      });
+    }
+  }
+  // eyesOpen=false: o olho vermelho encolhe para um traço fino apagado —
+  // "piscar" mecânico, como uma luz LED a desligar por instantes.
+  function drawPoluidorFace(ctx, eyesOpen){
+    if (eyesOpen) {
+      glowEye(ctx, C, C-2, 7, "#ff4030");
+    } else {
+      ctx.strokeStyle="#ff4030"; ctx.lineWidth=3; ctx.lineCap="round";
+      ctx.shadowColor="#ff4030"; ctx.shadowBlur=6;
+      ctx.beginPath(); ctx.moveTo(C-6,C-2); ctx.lineTo(C+6,C-2); ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+  }
+  if(!scene.textures.exists("boss_poluidor_mecanico")){
+    const tex=scene.textures.createCanvas("boss_poluidor_mecanico",S,S), ctx=tex.getContext();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave"); drawPoluidorFace(ctx,true);
     tex.refresh();
   }
+  if(!scene.textures.exists("boss_poluidor_mecanico_armsdown")){
+    const tex=scene.textures.createCanvas("boss_poluidor_mecanico_armsdown",S,S), ctx=tex.getContext();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest"); drawPoluidorFace(ctx,true);
+    tex.refresh();
+  }
+  if(!scene.textures.exists("boss_poluidor_mecanico_blink")){
+    const tex=scene.textures.createCanvas("boss_poluidor_mecanico_blink",S,S), ctx=tex.getContext();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave"); drawPoluidorFace(ctx,false);
+    tex.refresh();
+  }
+  // "ouch": olho a piscar em sobrecarga (branco, não vermelho) + faíscas +
+  // garras em repouso — o mesmo choque exagerado dos outros bosses.
+  if(!scene.textures.exists("boss_poluidor_mecanico_ouch")){
+    const tex=scene.textures.createCanvas("boss_poluidor_mecanico_ouch",S,S), ctx=tex.getContext();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest");
+    glowEye(ctx, C, C-2, 8, "#ffffff");
+    ctx.strokeStyle="#ffe85c"; ctx.lineWidth=2; ctx.lineCap="round";
+    [[C-20,C-14,C-28,C-24],[C+20,C-14,C+28,C-24],[C-16,C+10,C-24,C+18]].forEach(([x1,y1,x2,y2])=>{
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    });
+    tex.refresh();
+  }
+
   // ── Projéteis do Monstro da Ignorância — livro bom vs. livro mau ────
   // Muito diferentes ao olhar: dourado/brilhante vs. escuro/rabiscado com X vermelho.
   if(!scene.textures.exists("boss_proj_book")){

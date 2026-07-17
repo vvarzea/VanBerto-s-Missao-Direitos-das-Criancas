@@ -44,10 +44,7 @@ const SPEAKER_STYLE = {
 // bars=true → cinemática completa (barras pretas), usada nas cutscenes de boss antigas.
 // bars=false → só a caixa de diálogo (retrato+nome+texto), sem tapar o resto do ecrã —
 // usada agora no diálogo de boss, para não esconder a arena atrás das barras.
-// centered=true → a caixa aparece mesmo no meio do ecrã (estilo cinematográfico),
-// em vez de presa ao fundo — usada no diálogo de boss para nunca ficar por cima
-// das personagens nem cortada pela borda do ecrã, seja qual for a resolução.
-export function playCinematic(slides, onComplete, bars = true, centered = false) {
+export function playCinematic(slides, onComplete, bars = true) {
   if (!slides || !slides.length) { onComplete?.(); return; }
   ensureDialogDOM();
   let i = 0;
@@ -61,7 +58,7 @@ export function playCinematic(slides, onComplete, bars = true, centered = false)
   function render() {
     const s = slides[i];
     const style = SPEAKER_STYLE[s.speaker] || SPEAKER_STYLE.vb;
-    dialogEl.className = "cine-show " + style.cls + (centered ? " cine-center" : "");
+    dialogEl.className = "cine-show " + style.cls;
     const avatarEmoji = s.emoji || style.emoji;
     dlgAvatar.textContent = avatarEmoji;
     dlgAvatar.style.display = avatarEmoji ? "" : "none";
