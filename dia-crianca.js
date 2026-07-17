@@ -4275,7 +4275,17 @@ window.addEventListener("DOMContentLoaded", () => {
     ensureAudio(); SFX.coin();
     showFloat(sceneRef, player.x, player.y-68, `+1 (${bossState.collected}/${bossState.def.collectCount})`, "#ffd700");
     itemCountText.setText(`${bossState.def.emoji} Itens: ${bossState.collected}/${bossState.def.collectCount}`);
-    if (bossState.collected >= bossState.def.collectCount) startBossQuizPhase();
+    if (bossState.collected >= bossState.def.collectCount) {
+      // Pequena pausa antes de abrir o quiz — dá tempo ao dedo largar o botão
+      // de movimento em ecrãs de toque. Sem isto, o quiz abria no MESMO
+      // instante em que o último item era tocado (ainda a meio do gesto de
+      // andar/saltar), e o primeiro toque na resposta às vezes não registava
+      // — o mesmo cuidado que a porta normal (560ms) e o boss "stomp"
+      // (2650ms, por causa da cinemática) já tinham, mas que faltava aqui.
+      sceneRef.time.delayedCall(300, () => {
+        if (bossState && bossState.phase === "platform") startBossQuizPhase();
+      });
+    }
     return true;
   }
 

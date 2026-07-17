@@ -158,10 +158,23 @@ canvas { width: 100% !important; height: 100% !important; display: block; touch-
   user-select: none; letter-spacing: 0.2px;
   transition: background 0.12s, transform 0.08s, box-shadow 0.08s;
 }
-.btn:hover:not(:disabled) {
-  background: linear-gradient(180deg, #4e0e80 0%, #32065e 100%);
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 #0a0520, inset 0 1px 0 rgba(255,200,80,0.18);
+/* :hover só se aplica a dispositivos com ponteiro fino e hover real (rato) —
+   em ecrãs de toque, alguns navegadores tratam o primeiro toque num elemento
+   com regras :hover como um "focar" em vez de um clique, exigindo um SEGUNDO
+   toque para o clique disparar de facto. Isto pode dar a sensação de que o
+   botão "não deixa escolher" à primeira — sobretudo em tablets, onde este
+   jogo é muito usado em sala de aula. Sem @media, is regras aplicavam-se
+   sempre, incluindo em toque.
+*/
+@media (hover:hover) and (pointer:fine) {
+  .btn:hover:not(:disabled) {
+    background: linear-gradient(180deg, #4e0e80 0%, #32065e 100%);
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 #0a0520, inset 0 1px 0 rgba(255,200,80,0.18);
+  }
+  .btn.primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, #ff8050 0%, #e85020 100%);
+  }
 }
 .btn:active:not(:disabled) {
   transform: translate(2px, 2px);
@@ -175,9 +188,6 @@ canvas { width: 100% !important; height: 100% !important; display: block; touch-
   border-color: #ffd700;
   box-shadow: 4px 4px 0 #0a0520, inset 0 1px 0 rgba(255,220,100,0.22);
   text-shadow: 0 1px 3px rgba(0,0,0,0.4);
-}
-.btn.primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ff8050 0%, #e85020 100%);
 }
 
 #quizAnswers .btn {
