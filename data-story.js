@@ -28,9 +28,9 @@ export const REGION_INTRO = {
 
 export const BOSS_OBJECTIVE = {
   monstro_ignorancia: "Foge das bolas ❓ e salta-lhe em cima 3 vezes para o vencer!",
-  virus_gigante: "Foge das zonas tóxicas e dos vírus pequenos! Apanha 5 corações ❤️ para disparar a Onda da Saúde — depois apanha mais 5 e responde à pergunta.",
-  guardiao_sombras: "Ele teleporta-se e atira orbes sombrios 🔮! Apanha 5 escudos 🛡️ para disparar o Raio da Proteção — depois apanha mais 5 medalhas e responde.",
-  poluidor_mecanico: "Ele patrulha depressa em plataformas móveis e há poluição no chão! Apanha 5 rebentos 🌱 para disparar a Onda Verde — depois apanha mais 5 brinquedos e responde."
+  virus_gigante: "Foge da bola ❓ rosa e salta-lhe em cima 3 vezes para o vencer!",
+  guardiao_sombras: "Ele teleporta-se e atira orbes sombrios 🔮! Salta-lhe em cima 3 vezes assim que ele reaparecer.",
+  poluidor_mecanico: "Ele patrulha depressa — apanha o ritmo e salta-lhe em cima 3 vezes para o vencer!"
 };
 
 // Diálogo de boss, agora por boss (em vez de frases genéricas sorteadas ao acaso).
@@ -85,6 +85,21 @@ export const BOSS_HP_TAUNTS = {
     atStart: ["Nunca aprenderás!", "A ignorância é eterna!", "Achas mesmo que me vais vencer?"],
     hp2: ["Isso foi sorte!", "Não contava com isso...", "Grrr, tenta outra vez!"],
     hp1: ["Não! Estou a perder!", "Isto não pode ser...", "A luz... é demasiado forte!"]
+  },
+  virus_gigante: {
+    atStart: ["Vou multiplicar-me sem parar!", "Não me consegues apanhar!", "Espalho-me por todo o lado!"],
+    hp2: ["Argh! Isso picou...", "Não contava com esse salto!", "Ainda tenho força de sobra!"],
+    hp1: ["Não... os anticorpos são fortes demais!", "Isto não pode ser...", "Estou a enfraquecer!"]
+  },
+  guardiao_sombras: {
+    atStart: ["As sombras vão engolir-te!", "Nunca me vais apanhar no ar!", "Ninguém te protege aqui!"],
+    hp2: ["Impossível! Consegues ver-me na sombra?", "Isso não devia ter acontecido...", "Grrr, mais rápido da próxima vez!"],
+    hp1: ["Não... a luz está a chegar a todo o lado!", "As sombras... estão a desaparecer!", "Isto não pode ser o fim!"]
+  },
+  poluidor_mecanico: {
+    atStart: ["Vou poluir tudo ainda mais depressa!", "Não me apanhas, sou rápido demais!", "O planeta é meu para sujar!"],
+    hp2: ["Essa amolgou-me a chapa!", "Não contava com essa pancada!", "Ainda tenho muitas engrenagens!"],
+    hp1: ["Não... a natureza está a resistir!", "Os meus circuitos... estão a falhar!", "Isto não pode ser!"]
   }
 };
 

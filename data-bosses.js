@@ -83,64 +83,47 @@ export const BOSSES = [
     name: "Vírus Gigante",
     emoji: "🦠",
     color: 0xe0409a,
-    movementType: "wave",    // flutua em onda, pulsa de tamanho
+    // Convertido para o mesmo "boss clássico à Mario" do Monstro da
+    // Ignorância (ver esse comentário para a filosofia completa): arena do
+    // tamanho da janela, sem scroll, e uma mecânica só — saltar-lhe em cima
+    // 3 vezes. Mantém o seu próprio movimento em onda (flutua, pulsa) e a
+    // bola ❓ (aqui retintada a rosa) como única diferença de personalidade.
+    stompBoss: true,
+    stompsToDefeat: 3,
+    movementType: "wave",    // continua a flutuar em onda, pulsando de tamanho — só a forma de o vencer mudou
+    qmarkEvery: 2400,
+    orbTexture: "boss_proj_qmark",
+    orbTint: 0xe0409a,       // bola ❓ rosa, a condizer com o próprio Vírus
+    // bossY: mesmo raciocínio do Monstro — chão da arena (topo em y=506)
+    // menos metade do corpo desenhado. O Vírus é uma esfera com espigões,
+    // sem "pés": medi o pixel mais baixo do desenho (~44px abaixo do centro
+    // do canvas de 116px) em vez de adivinhar, tal como fiz para o Monstro.
+    // 506 - 44*1.5 = 440.
+    bossY: 440,
+    bossScale: 1.5,
+    hpBarOffset: 88,          // idem — medido a partir do topo real do desenho, não do canvas inteiro
+    signY: 486,
     intro: "Vou espalhar-me por todo o lado!",
     defeatLine: "Argh! Vacinado... derrotado! 💉",
-    collectKind: "heart",
-    collectCount: 5,
     quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
-    hp: 4,                     // 3→4: mais um ciclo de carga/ataque especial até o vencer
+    hp: 3,                     // 4→3: agora são sempre 3 saltos na cabeça, como os outros bosses "stomp"
     themeIdx: 13,              // teal escuro noturno — combina com o verde-água do boss
     rightRecovered: { emoji: "💊", name: "Direito à Saúde" },
-    // Arena própria — em vez de cair na genérica partilhada, com decoração
-    // temática (gotas de água + ADN, ligado ao tema "vírus/saúde").
+    // Arena do tamanho do ecrã (960x540, sem scroll) — chão principal +
+    // 2 plataformas baixas, tal como o Monstro da Ignorância.
     arena: {
-      worldW: 1600,
+      worldW: 960,
+      worldH: 514,
       platforms: [
-        [800,500,1600,30],   // chão principal
-        [280,380,200,22],
-        [800,340,200,22],
-        [1320,380,200,22]
+        [480,521,960,30],   // chão principal, de ponta a ponta — topo em y=506
+        [200,421,140,20],   // plataforma baixa esquerda
+        [760,421,140,20]    // plataforma baixa direita
       ],
-      spawnSpots: [280, 800, 1320],
       decor: [
-        { emoji:"💧", x:120,  y:140 },
-        { emoji:"🧬", x:800,  y:100 },
-        { emoji:"💧", x:1480, y:160 },
-        { emoji:"🧬", x:420,  y:220 },
-        { emoji:"💧", x:1180, y:230 }
+        { emoji:"💧", x:90,  y:150 },
+        { emoji:"🧬", x:480, y:110 },
+        { emoji:"💧", x:870, y:170 }
       ]
-    },
-    // Arena contaminada: começa com 2 zonas tóxicas + 2 vírus pequenos; à
-    // primeira fúria (perde a 1ª vida do boss) sobe para 3 zonas + 4 vírus —
-    // o combate fica visivelmente mais perigoso a meio, não só mais rápido.
-    contaminatedArena: {
-      zonesBase: [ {x:520, w:200}, {x:1080, w:200} ],
-      virusBase: 2,
-      hazardType: "acid",
-      escalations: {
-        1: { zones: [ {x:420,w:180}, {x:900,w:180}, {x:1380,w:180} ], virus: 4 }
-      }
-    },
-    specialAttack: {
-      emoji: "❤️",
-      chargeCount: 5,
-      chargeTexture: "item_heart",
-      chargeTint: 0xffffff,
-      chargeFacts: [
-        "🩺 Ir ao médico regularmente ajuda-te a crescer forte.",
-        "💧 Beber água é um dos maiores segredos de saúde.",
-        "😴 Dormir bem também é cuidar do corpo.",
-        "🍎 Comer fruta e vegetais dá-te energia extra.",
-        "🧼 Lavar as mãos afasta muitos vírus!"
-      ],
-      name: "Onda da Saúde",
-      visual: "wave",
-      visualColor: 0x30e0a0
-    },
-    rageLines: {
-      angry: "Vou multiplicar-me ainda mais!",
-      desperate: "Não... os anticorpos são fortes demais!"
     }
   },
   {
@@ -149,56 +132,40 @@ export const BOSSES = [
     name: "Guardião das Sombras",
     emoji: "🌑",
     color: 0x3a3a5c,
-    movementType: "teleport", // arena escura, teleporta-se entre 3 pontos
+    // Mesma conversão para stompBoss — mantém o teletransporte entre 3
+    // pontos (agora sempre à altura do chão, ver bossY/doBossTeleport em
+    // dia-crianca.js) como a sua marca própria, mais difícil de apanhar
+    // no ar do que um boss que só anda.
+    stompBoss: true,
+    stompsToDefeat: 3,
+    movementType: "teleport",
     teleportDelay: 1700,       // mais rápido que o valor por omissão (2400) — mais difícil de prever
-    throwsOrbs: true,          // orbes sombrios — reaproveita o projétil ❓ do motor, retintado (ver orbTexture/orbTint)
+    qmarkEvery: 2000,          // reaproveita a bola ❓ do motor, aqui como "orbe sombrio" retintado
     orbTexture: "boss_proj_qmark",
     orbTint: 0x6a3fb5,
-    orbEvery: 2000,
+    // bossY: o Guardião é uma capa/robe sem pernas — medi o pixel mais baixo
+    // da bainha (~43px abaixo do centro do canvas). 506 - 43*1.5 = 442.
+    bossY: 442,
+    bossScale: 1.5,
+    hpBarOffset: 82,
+    signY: 486,
     intro: "Nas sombras, ninguém te protege!",
     defeatLine: "A luz da proteção venceu! 🛡️✨",
-    collectKind: "medalha",
-    collectCount: 5,
     quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
-    hp: 4,                     // 3→4
+    hp: 3,                     // 4→3: agora são sempre 3 saltos na cabeça
     themeIdx: 11,              // azul oceano noturno — fortaleza escura, sem exagerar no preto
     rightRecovered: { emoji: "🛡️", name: "Direito à Proteção" },
-    // Arena escura própria — plataformas mais altas e mais estreitas que o
-    // normal (110px vs 150-220 nas outras arenas), exigindo mais precisão a
-    // saltar, coerente com ser o 3º boss (mais difícil que o Vírus Gigante).
+    // Arena do tamanho do ecrã, tal como o Monstro — 3 pontos de teletransporte
+    // (spawnSpots) ajustados à nova largura de 960px em vez de 1600px.
     arena: {
-      worldW: 1600,
+      worldW: 960,
+      worldH: 514,
       platforms: [
-        [800,500,1600,30],   // chão principal
-        [350,360,110,20],
-        [800,300,110,20],
-        [1250,360,110,20]
+        [480,521,960,30],   // chão principal, de ponta a ponta — topo em y=506
+        [220,421,120,20],   // plataforma baixa esquerda
+        [740,421,120,20]    // plataforma baixa direita
       ],
-      spawnSpots: [350, 800, 1250]
-    },
-    // Ataque especial próprio: apanhar 5 escudos para o Raio da Proteção — mais
-    // temático que o genérico "Star Power" e mais difícil, porque os escudos
-    // têm de ser apanhados enquanto se foge do Guardião (teleporte rápido) e
-    // dos orbes sombrios.
-    specialAttack: {
-      emoji: "🛡️",
-      chargeCount: 5,
-      chargeTexture: "item_medalha", // textura de escudo (ver spawnShields em dia-crianca.js)
-      chargeTint: 0x60d0ff,
-      chargeFacts: [
-        "🛡️ Pedir ajuda a um adulto de confiança é um sinal de coragem.",
-        "🏠 Toda a criança tem direito a sentir-se segura em casa.",
-        "🗣️ Contar o que te incomoda a alguém de confiança protege-te.",
-        "🚸 Saber a quem pedir ajuda é uma proteção poderosa.",
-        "💙 Ninguém tem o direito de te fazer sentir mal ou com medo."
-      ],
-      name: "Raio da Proteção",
-      visual: "beam",
-      visualColor: 0x60d0ff
-    },
-    rageLines: {
-      angry: "As sombras vão engolir-te!",
-      desperate: "Não... a luz está a chegar a todo o lado!"
+      spawnSpots: [220, 480, 740]
     }
   },
   {
@@ -208,69 +175,45 @@ export const BOSSES = [
     name: "Poluidor Mecânico",
     emoji: "🏭",
     color: 0x7a8a5c,
+    // Mesma conversão para stompBoss — mantém a patrulha rápida (sensação
+    // industrial) mas larga as plataformas móveis e a arena poluída, para
+    // caber numa única tela sem scroll, tal como os outros 3 bosses.
+    stompBoss: true,
+    stompsToDefeat: 3,
     movementType: "patrol",
     patrolSpeed: 150,        // mais rápido — sensação industrial
-    movingArena: true,       // arena com plataformas móveis (reaproveita o sistema existente)
+    hopEvery: 2000,
+    qmarkEvery: 2000,
+    orbTexture: "boss_proj_qmark",
+    orbTint: 0xffd700,       // faísca/parafuso dourado, a condizer com as engrenagens
+    // bossY: o Poluidor é uma caixa mecânica larga mas mais baixa que os
+    // outros — medi o pixel mais baixo do corpo (~26px abaixo do centro do
+    // canvas, bem menos que os outros porque não tem "cabeça" alta, só caixa
+    // + chaminé). 506 - 26*1.5 = 467.
+    bossY: 467,
+    bossScale: 1.5,
+    hpBarOffset: 82,
+    signY: 486,
     intro: "O planeta é meu para sujar!",
     defeatLine: "O verde venceu o cinzento! 🌱",
-    collectKind: "brinquedo",
-    collectCount: 5,
     quizTheme: "ambiente",
-    hp: 5,                     // o mais resistente dos 4 bosses (era 3, alvo final é 5)
+    hp: 3,                     // 5→3: agora são sempre 3 saltos na cabeça
     themeIdx: 9,                // âmbar dourado enevoado — céu poluído, ainda de dia
     rightRecovered: { emoji: "🌿", name: "Ambiente Saudável" },
-    // Arena industrial própria (soma-se às plataformas móveis já ligadas por
-    // movingArena) + decoração temática de fábrica/poluição.
+    // Arena do tamanho do ecrã, tal como o Monstro.
     arena: {
-      worldW: 1600,
+      worldW: 960,
+      worldH: 514,
       platforms: [
-        [800,500,1600,30],   // chão principal
-        [300,400,180,22],
-        [1300,400,180,22]
+        [480,521,960,30],   // chão principal, de ponta a ponta — topo em y=506
+        [200,421,150,20],   // plataforma baixa esquerda
+        [760,421,150,20]    // plataforma baixa direita
       ],
-      spawnSpots: [300, 800, 1300],
       decor: [
-        { emoji:"🏭", x:120,  y:130 },
-        { emoji:"⚙️", x:800,  y:100 },
-        { emoji:"🏭", x:1480, y:150 },
-        { emoji:"☁️", x:500,  y:190 },
-        { emoji:"☁️", x:1100, y:200 }
+        { emoji:"🏭", x:90,  y:140 },
+        { emoji:"⚙️", x:480, y:110 },
+        { emoji:"☁️", x:870, y:160 }
       ]
-    },
-    // Zonas de poluição no chão — reaproveita o hazard "lava" já existente
-    // (só retintado/reaproveitado como tal, não é lava a sério temática) via
-    // o mesmo sistema de arena contaminada do Vírus Gigante, mas SEM vírus
-    // pequenos (virusBase/virusEnraged a 0) — só o perigo no chão importa aqui.
-    // Fúria final (perde a 2ª vida, o boss já "desesperado"): mais uma zona
-    // de poluição — a patrulha já fica mais rápida automaticamente (speedMult
-    // genérico do motor), tal como pedido.
-    contaminatedArena: {
-      zonesBase: [ {x:800, w:220} ],
-      virusBase: 0,
-      hazardType: "lava",
-      escalations: {
-        2: { zones: [ {x:800,w:220}, {x:1350,w:200} ], virus: 0 }
-      }
-    },
-    specialAttack: {
-      emoji: "🌱",
-      chargeCount: 5,
-      chargeTexture: "item_heart", // reaproveitado/retintado — sem asset novo (ver comentário do Vírus)
-      chargeTint: 0x30c060,
-      chargeFacts: [
-        "🌱 Plantar árvores ajuda a limpar o ar que respiramos.",
-        "♻️ Reciclar lixo evita que a poluição chegue à natureza.",
-        "🚲 Andar de bicicleta polui muito menos do que um carro.",
-        "💧 Poupar água protege rios e oceanos.",
-        "🌍 Cada pequena ação ajuda a cuidar do planeta inteiro."
-      ],
-      name: "Onda Verde",
-      visual: "wave",
-      visualColor: 0x30c060
-    },
-    rageLines: {
-      angry: "Vou poluir tudo ainda mais depressa!",
-      desperate: "Não... a natureza está a resistir!"
     }
   }
 ];

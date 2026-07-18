@@ -3765,9 +3765,10 @@ window.addEventListener("DOMContentLoaded", () => {
       const arenaSpots = bossState.def.arena?.spawnSpots;
       const spots = arenaSpots && arenaSpots.length ? arenaSpots : [350, 800, 1250];
       const nx = spots[Math.floor(Math.random()*spots.length)];
-      b.x = nx; b.y = 380;
-      if (b.body) b.body.reset(nx, 380);
-      showFloat(scene, nx, 320, "❓", "#8a5cff");
+      const ny = bossState.def.bossY != null ? bossState.def.bossY : 380;
+      b.x = nx; b.y = ny;
+      if (b.body) b.body.reset(nx, ny);
+      showFloat(scene, nx, ny-60, "❓", "#8a5cff");
       scene.tweens.add({ targets:b, alpha:1, duration:220 });
     }});
   }
@@ -3780,9 +3781,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const arenaSpots = bossState.def.arena?.spawnSpots;
     const spots = arenaSpots && arenaSpots.length ? arenaSpots : [300, 800, 1300];
     const nx = spots[Math.floor(Math.random()*spots.length)];
+    // bossY (opt-in) em vez do antigo y=380 fixo — um boss "clássico à Mario"
+    // (stompBoss) tem de reaparecer sempre à altura do chão da SUA arena,
+    // para ficar ao alcance de um salto normal; y=380 fixo deixava-o a
+    // flutuar bem acima do chão nas arenas mais pequenas (960px), fora de
+    // alcance. Continua a usar 380 por omissão para não alterar bosses
+    // "teleport" antigos que não definam bossY.
+    const ny = bossState.def.bossY != null ? bossState.def.bossY : 380;
     scene.cameras.main.flash(120, 20, 20, 50);
-    b.x = nx; b.y = 380;
-    if (b.body) b.body.reset(nx, 380);
+    b.x = nx; b.y = ny;
+    if (b.body) b.body.reset(nx, ny);
     ensureAudio(); beep({freq:220,dur:0.10,type:"sawtooth",vol:0.05,slideTo:120});
   }
 
@@ -3969,8 +3977,17 @@ window.addEventListener("DOMContentLoaded", () => {
     const speedMult = bossState.speedMult || 1;
     if (mt === "wave") {
       const t = scene.time.now * 0.0016 * speedMult;
-      const range = 480;
-      b.x = bossState.baseX - 700 + Math.sin(t) * range; // oscila em torno do centro da arena
+      // Relativo ao worldW da própria arena — tal como o "patrol" logo a
+      // seguir já estava corrigido para isto (ver comentário aí). Antes
+      // este movimento tinha um deslocamento fixo (-700) e um raio fixo
+      // (480px), calibrados só para a arena antiga de 1600px; numa arena
+      // "tamanho da janela" (960px, ex.: Vírus Gigante depois de passar a
+      // stompBoss) isso empurrava o boss para fora do ecrã, para valores
+      // de x negativos.
+      const worldW = bossState.def.arena?.worldW || 1600;
+      const centerX = worldW / 2;
+      const range = Math.min(480, centerX - 120);
+      b.x = centerX + Math.sin(t) * range;
       b.y = bossState.baseY + Math.sin(t*1.7) * 44;
       if (b.body) b.body.reset(b.x, b.y);
     } else if (mt === "patrol" || !mt) {
