@@ -3173,6 +3173,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     inBossFight = true;
     controlsInvertedUntil = 0;
+    // invuln=false: mesma defesa que loadLevel() já faz ao iniciar um nível
+    // — garante que repetir um combate de boss (ex.: depois de perder todas
+    // as vidas) nunca começa com uma proteção presa de "true" (ver o bug
+    // corrigido em bossHitPlayer, mais abaixo). Sem isto, TODOS os toques no
+    // boss, incluindo saltar-lhe em cima, eram ignorados em silêncio.
+    invuln = false;
     // Defesa extra: se uma tentativa anterior tiver ficado presa a meio da
     // animação do portal (ex.: o jogador mudou de separador exatamente ao
     // tocar-lhe), _doorAnimRunning podia ficar "true" para sempre, bloqueando
@@ -4220,6 +4226,16 @@ window.addEventListener("DOMContentLoaded", () => {
     if (warnMsg) showFloat(scene, player.x, player.y-60, warnMsg, "#ffd700");
     showFloat(scene, player.x, player.y-90, "💥 -1 Vida!", "#ff5050");
     if (lives <= 0) {
+      // Antes, este caminho definia invuln=true (linha acima) e nunca mais o
+      // desligava — saltava logo para showGameOver() sem passar por
+      // setInvuln(), que é quem agenda o fim da proteção. Ao "Tentar de
+      // novo" depois de perder todas as vidas, invuln ficava preso a
+      // "true" para sempre, e como handleBossMalwareCollision ignora
+      // SEMPRE um toque no boss enquanto invuln for true (mesmo saltos em
+      // cima da cabeça, não só toques de lado), o boss deixava de reagir
+      // por completo — "salto por cima e não acontece nada". Chamar
+      // setInvuln() aqui também garante que a proteção se desliga sozinha.
+      setInvuln(scene, 1400);
       scene.time.delayedCall(400, () => { if (lives<=0) showGameOver(); });
       return;
     }
@@ -5206,9 +5222,14 @@ window.addEventListener("DOMContentLoaded", () => {
       const L=LEVELS[currentLevel];
       touch.left=touch.right=touch.jump=touch.crouch=false;
       player.setVelocity(0,0); player.setPosition(L.spawn.x,L.spawn.y); snapPlayerToGround();
-      if(lives<=0){showGameOver();return;}
-      // Iniciar invulnerabilidade de 2s a partir do spawn (não do hit)
+      // setInvuln() ANTES do "if lives<=0 return" — o mesmo bug corrigido em
+      // bossHitPlayer (invuln=true nunca desligado quando o jogo termina em
+      // Game Over, porque o "return" antecipava-se ao setInvuln). Hoje isto
+      // ficava mascarado porque loadLevel() já repõe invuln=false ao
+      // recomeçar um nível normal, mas corrigir aqui também evita depender
+      // só dessa repetição.
       setInvuln(sceneRef, 2000);
+      if(lives<=0){showGameOver();return;}
       // Flash de "reaparecimento" — círculo de luz no spawn
       const spawnFlash = sceneRef.add.graphics().setDepth(10);
       spawnFlash.fillStyle(0xffffff, 0.7);
