@@ -3847,17 +3847,18 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.time.delayedCall(4500, () => { if (q.active) q.destroy(); });
   }
 
-  // ---- Animação "idle" do Monstro da Ignorância: braços e piscar de olhos,
-  // para deixar de parecer estático entre golpes. Ambas ignoradas durante o
-  // "ouch" (bossState.squishing) para não interromperem a reação de dor, e
-  // durante qualquer fase que não seja "platform" (ex.: intro, derrota). ----
+  // ---- Animação "idle" de braços e piscar de olhos, para os bosses deixarem
+  // de parecer estáticos entre golpes — os 4 bosses têm as suas próprias
+  // variantes de textura (ver textures.js). Ambas ignoradas durante o "ouch"
+  // (bossState.squishing) para não interromperem a reação de dor, e durante
+  // qualquer fase que não seja "platform" (ex.: intro, derrota). ----
   function doBossIdleArms(scene) {
     if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing) return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
     const id = bossState.def.id;
     const wavingKey = "boss_" + id, restKey = "boss_" + id + "_armsdown";
-    if (!scene.textures.exists(restKey)) return; // só o Monstro tem esta variante por agora
+    if (!scene.textures.exists(restKey)) return; // segurança: só troca se a variante existir
     bossState.armsWaving = !bossState.armsWaving;
     const nextKey = bossState.armsWaving ? wavingKey : restKey;
     if (scene.textures.exists(nextKey)) b.setTexture(nextKey);
@@ -3927,14 +3928,23 @@ window.addEventListener("DOMContentLoaded", () => {
       ensureAudio(); beep({freq:500,dur:0.09,type:"square",vol:0.07,slideTo:900});
       damageBoss(sceneRef, b.x, b.y-70, "👣 Salto certeiro!", 0.008);
     } else {
-      bossHitPlayer(sceneRef, b, "🙈 Cuidado com o Monstro!");
+      // Nome do próprio boss em vez de "Monstro" fixo — esta função passou a
+      // ser partilhada pelos 4 bosses "stomp", não só pelo Monstro da
+      // Ignorância (ver conversão dos outros 3 bosses para esta mesma
+      // mecânica); o aviso tinha ficado esquecido com o texto de quando só
+      // servia para ele.
+      bossHitPlayer(sceneRef, b, `🙈 Cuidado com ${bossState.def.name}!`);
     }
     return true;
   }
 
-  // ---- Sequência de derrota do Monstro da Ignorância (redesenho): não
-  // morre, não explode — senta-se, lê um livro que aparece à sua frente e
-  // dá um polegar para cima, antes de seguir para a pergunta final. ----
+  // ---- Sequência de derrota de um boss "stomp" (Monstro da Ignorância e,
+  // agora, os outros 3 bosses convertidos à mesma mecânica): não morre, não
+  // explode — senta-se, lê um livro que aparece à sua frente e dá um
+  // polegar para cima, antes de seguir para a pergunta final. Os outros 3
+  // bosses não têm uma textura "_sentado" própria (só o Monstro tem) — o
+  // sceneRef.textures.exists() logo abaixo já trata disso sozinho, saltando
+  // a troca de textura sem erro nenhum quando ela não existe. ----
   function startBossStompDefeat() {
     if (!bossState) return;
     bossState.phase = "defeat";
@@ -4925,6 +4935,20 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function showQuiz(quiz,done,isRetry){
     quizOverlay.classList.remove("hidden");
+    // bindTap(): liga a MESMA ação a "click" E a "touchend" (com preventDefault
+    // para o touchend não disparar depois um "click" fantasma a duplicar).
+    // Só usar .onclick deixava os botões do quiz por vezes surdos ao primeiro
+    // toque em tablets — a sequência touchstart→touchend→click do browser
+    // pode falhar a converter num "click" em certas condições (overlay a
+    // aparecer a meio de outro gesto, física a retomar, etc.); ouvir também
+    // "touchend" diretamente já não depende dessa conversão. Os handlers já
+    // têm as suas próprias flags de proteção (answered/triggered), por isso
+    // não há risco de disparar duas vezes se ambos os eventos chegarem a
+    // acontecer.
+    const bindTap = (el, handler) => {
+      el.onclick = handler;
+      el.ontouchend = (e) => { e.preventDefault(); handler(); };
+    };
     // Em combate de boss, o tema certo é o do PRÓPRIO boss (bossState.def.quizTheme)
     // — não o do nível que acabou de terminar. Hoje os dois valores são sempre
     // iguais de propósito (ver comentários em data-bosses.js, "corrigido para
@@ -4940,7 +4964,7 @@ window.addEventListener("DOMContentLoaded", () => {
     quizAnswers.innerHTML=""; quizFeedback.textContent=""; quizFeedback.style.color="#ff6b35";
     quizExplanation.textContent=""; quizExplanation.classList.add("hidden");
     // Limpar sempre o btnCloseQuiz ao abrir nova pergunta — evita cliques acidentais
-    btnCloseQuiz.classList.add("hidden"); btnCloseQuiz.onclick=null;
+    btnCloseQuiz.classList.add("hidden"); btnCloseQuiz.onclick=null; btnCloseQuiz.ontouchend=null;
 
     const correct=quiz.a.filter(x=>x.ok), wrong=quiz.a.filter(x=>!x.ok);
     for(let i=wrong.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[wrong[i],wrong[j]]=[wrong[j],wrong[i]];}
@@ -4952,7 +4976,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const b=document.createElement("button");
       b.className="btn"; b.textContent=ans.t;
       b.setAttribute("aria-label",`Resposta: ${ans.t}`);
-      b.onclick=()=>{
+      bindTap(b, () => {
         if(answered) return; answered=true;
         ensureAudio(); if(!isRetry) quizStats.total+=1;
 
@@ -4984,7 +5008,7 @@ window.addEventListener("DOMContentLoaded", () => {
           // depois de markLevelCompleted, no done(ok) — ver nextLevel/showQuiz)
           onCorrectAnswerForAchievements(!isRetry);
           checkAchievements(mapProgress.levelsCompleted.length);
-          btnCloseQuiz.classList.add("hidden"); btnCloseQuiz.onclick=null;
+          btnCloseQuiz.classList.add("hidden"); btnCloseQuiz.onclick=null; btnCloseQuiz.ontouchend=null;
           quizFeedback.textContent=isRetry?"✅ Conseguiste na segunda tentativa! 💪":"✅ Muito bem!";
           quizFeedback.style.color="#208050";
           SFX.coin();
@@ -4998,12 +5022,12 @@ window.addEventListener("DOMContentLoaded", () => {
             quizExplanation.classList.remove("hidden");
             btnCloseQuiz.classList.remove("hidden");
             btnCloseQuiz.textContent = "Continuar ▶";
-            btnCloseQuiz.onclick=()=>{
-              btnCloseQuiz.classList.add("hidden"); btnCloseQuiz.onclick=null;
+            bindTap(btnCloseQuiz, () => {
+              btnCloseQuiz.classList.add("hidden"); btnCloseQuiz.onclick=null; btnCloseQuiz.ontouchend=null;
               // Esconder robot ANTES de fechar o overlay
               if(sceneRef&&player){ sceneRef.tweens.killTweensOf(player); player.setAlpha(0); }
               quizOverlay.classList.add("hidden"); done(true);
-            };
+            });
           } else {
             setTimeout(()=>{
               // Esconder robot ANTES de fechar o overlay
@@ -5035,12 +5059,12 @@ window.addEventListener("DOMContentLoaded", () => {
           if(tip) quizFeedback.textContent+=`\n💡 Lembra-te: ${tip}`;
           quizFeedback.style.color="#e84d10";
           btnCloseQuiz.classList.remove("hidden"); btnCloseQuiz.textContent="🔄 Tentar outra pergunta";
-          btnCloseQuiz.onclick=()=>{
+          bindTap(btnCloseQuiz, () => {
             btnCloseQuiz.classList.add("hidden");
             showQuiz(pickQuizForLevel(currentLevel,_qTheme),done,true);
-          };
+          });
         }
-      };
+      });
       quizAnswers.appendChild(b);
     });
   }
