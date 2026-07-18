@@ -3144,7 +3144,15 @@ window.addEventListener("DOMContentLoaded", () => {
   // usado na chegada do boss ("⚠️ NOME DO BOSS") e na vitória ("✅ VITÓRIA!").
   // Não bloqueia nada (não precisa de toque) — é só um flourish visual rápido.
   function showBossBanner(scene, text, color = "#ffffff") {
-    const label = scene.add.text(800, -40, text, {
+    // x=480: centro real do ecrã, não 800. O jogo corre numa resolução fixa
+    // de 960px (ver `width: 960` na config do Phaser) e este texto usa
+    // setScrollFactor(0) — fica preso ao ecrã, não ao mundo, tal como o
+    // transitionLabel (também centrado em x=480, ver mais acima). x=800
+    // deixava o texto a começar perto do bordo direito, cortado para nomes
+    // mais compridos (ex.: "⚠️ MONSTRO DA IGNORÂNCIA ⚠️" aparecia cortado
+    // a meio) — não é um bug novo desta conversão, já acontecia antes, só
+    // que agora este cartão também é usado no "✅ VITÓRIA!" dos 4 bosses.
+    const label = scene.add.text(480, -40, text, {
       fontSize: "30px", fontStyle: "900", color, stroke: "#1a0025", strokeThickness: 7
     }).setOrigin(0.5).setDepth(50).setScrollFactor(0).setAlpha(0);
     scene.tweens.add({
