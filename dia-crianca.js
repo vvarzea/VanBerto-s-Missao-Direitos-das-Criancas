@@ -2731,6 +2731,13 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!_pendingEntranceReveal) return;
     _pendingEntranceReveal = false;
     if (!player) return;
+    // Reconfirmar o chão mesmo agora, antes de capturar groundY — segurança
+    // extra: mesmo que algo tenha corrido entre o snapPlayerToGround() lá
+    // de trás (em loadLevel) e este momento (ex.: uma pausa mais longa do
+    // que o costume, ou física retomada por outro caminho entretanto), a
+    // posição usada para toda a animação de entrada fica sempre validada
+    // de fresco, e não a assumir que o valor antigo ainda está correto.
+    snapPlayerToGround();
     const groundY = player.y;
     const finalH  = player.displayHeight;
     const pinFeet = () => { player.y = groundY - (player.displayHeight - finalH) / 2; };
