@@ -193,7 +193,18 @@ canvas { width: 100% !important; height: 100% !important; display: block; touch-
 #quizAnswers .btn {
   width: 100%; text-align: center; font-size: 13px;
   transition: background 0.18s, border-color 0.18s, opacity 0.18s, transform 0.08s;
+  /* Sem isto, um toque com um pequeno tremor (normal em crianças) pode ser
+     interpretado pelo telemóvel como o início de um gesto de deslizar/scroll
+     do #quizAnswers (que às vezes tem overflow em ecrãs baixos), gerando um
+     "touchcancel" em vez de "touchend" — o toque nunca chega ao handler e
+     parece que o botão "não aceitou o toque". touch-action:none garante que
+     o gesto é sempre tratado como um toque neste botão. */
+  touch-action: none;
 }
+
+/* Mesmo motivo do #quizAnswers .btn acima — este botão também vive dentro
+   do quiz e sofre do mesmo risco de "touchcancel" por scroll acidental. */
+#btnCloseQuiz { touch-action: none; }
 
 .tiny {
   margin-top: 8px; font-size: 11px;
