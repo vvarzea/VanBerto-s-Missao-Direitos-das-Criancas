@@ -13,7 +13,7 @@ export const REGION_INTRO = {
     arrival: "Bem-vindo ao Reino da Educação — aqui nasceu o Dia da Criança! 📚"
   },
   saude: {
-    vanberto: "Cheira a remédio no ar... alguém aqui precisa muito da nossa ajuda!",
+    vanberto: "Cheira a medicamento no ar... alguém aqui precisa muito da nossa ajuda!",
     arrival: "Bem-vindo ao Vale da Saúde — bem-estar, futuro e identidade esperam por ti. 🏥"
   },
   protecao: {
