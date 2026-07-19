@@ -965,6 +965,15 @@ body.overlay-open #touchControls { opacity: 0 !important; pointer-events: none !
   .card { max-height: calc(100dvh - 24px); overflow-y: auto; }
 }
 
+/* Cartões (menu, mapa, conquistas, álbum, estatísticas, etc.) — em telemóveis
+   na horizontal (ex: Samsung S23, altura ~412px) o .card ficava preso nos
+   560px mesmo havendo muito mais largura disponível, deixando grandes
+   margens escuras vazias dos dois lados. Aqui deixamos o cartão aproveitar
+   bem mais a largura real do ecrã nesses aparelhos. */
+@media (max-height: 500px) and (pointer: coarse) {
+  .card { width: min(680px, 92vw); }
+}
+
 /* Win card — overlay com scroll em landscape touch */
 @media (orientation: landscape) and (pointer: coarse) {
   #winOverlay { align-items: flex-start; padding-top: 8px; padding-bottom: 8px; overflow-y: auto; }
