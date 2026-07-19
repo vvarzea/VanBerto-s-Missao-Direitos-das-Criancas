@@ -3300,6 +3300,34 @@ window.addEventListener("DOMContentLoaded", () => {
     // padrão do loadLevel() (esconder → posicionar → só depois revelar),
     // o VanBerto's só aparece já na posição final correta.
     snapPlayerToGround();
+    // Rede de segurança final: se por qualquer motivo snapPlayerToGround() não
+    // encontrou nenhuma plataforma por baixo do jogador (ex.: arena ainda a
+    // meio de ser montada, plataforma refreshBody() ainda não propagado num
+    // dispositivo mais lento), calcula-se aqui um chão de reserva a partir da
+    // plataforma mais larga desta arena (o chão principal, por convenção) e
+    // força-se o jogador para cima dela. Sem isto, um caso-limite raro podia
+    // deixar o VanBerto's a meio/dentro da plataforma em vez de em cima dela,
+    // exactamente o bug relatado — isto garante que nunca acontece, seja qual
+    // for a resolução ou o tamanho do ecrã (o Phaser escala o mundo lógico
+    // fixo, as coordenadas abaixo são sempre as mesmas independentemente do ecrã).
+    (function ensureBossSpawnOnGround(){
+      const pb = player.body; if(!pb) return;
+      let mainFloor = arenaPlatforms[0];
+      arenaPlatforms.forEach(([x,y,w,h])=>{ if(w>mainFloor[2]) mainFloor=[x,y,w,h]; });
+      let best=null, bestTop=Infinity;
+      platforms.getChildren().forEach(p=>{
+        if(!p.body) return;
+        if(pb.right>p.body.left && pb.left<p.body.right){
+          const top=p.body.top;
+          if(top>=pb.bottom-2 && top<bestTop){ bestTop=top; best=p; }
+        }
+      });
+      if(best) return; // snapPlayerToGround() já resolveu corretamente — nada a fazer
+      const floorTopY = mainFloor[1] - mainFloor[3]/2;
+      player.setVelocity(0,0);
+      player.y = floorTopY - (pb.height - pb.offset.y) + 1;
+      player.body.updateFromGameObject();
+    })();
     player.setAlpha(1);
     // Snap instantâneo da câmara para o spawn (tal como loadLevel já faz),
     // antes de mudar para o seguimento suave — sem isto, a câmara ainda
@@ -4007,7 +4035,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     const speedMult = bossState.speedMult || 1;
     if (mt === "wave") {
-      const t = scene.time.now * 0.0016 * speedMult;
+      const t = scene.time.now * 0.0016 * (bossState.def.waveSpeedMult || 1) * speedMult;
       // Relativo ao worldW da própria arena — tal como o "patrol" logo a
       // seguir já estava corrigido para isto (ver comentário aí). Antes
       // este movimento tinha um deslocamento fixo (-700) e um raio fixo
@@ -4109,7 +4137,42 @@ window.addEventListener("DOMContentLoaded", () => {
     // QUALQUER boss que leve dano, seja qual for a forma de o atingir
     // (salto, toque com Star Power ou ataque especial).
     if (bossState.sprite) squishBoss(scene, bossState.sprite);
+    // Pequenas partículas no ponto de impacto — o jogador tem de "sentir"
+    // que causou dano, além do tremor/textura "_ouch" que squishBoss já dá.
+    const hitBurst = scene.add.particles(0, 0, "spark_item", {
+      x, y, speed: { min: 60, max: 160 }, lifespan: 380, quantity: 12,
+      scale: { start: 0.8, end: 0 }, angle: { min: 0, max: 360 },
+      tint: [0xffd700, 0xff6b35, 0xffffff]
+    });
+    scene.time.delayedCall(340, () => { try{ hitBurst.destroy(); }catch{} });
     const hitsTaken = bossState.def.hp - bossState.hp;
+    // Invulnerabilidade temporária do boss após ser atingido (2.4s, com
+    // piscar visível) — reaproveita o mesmo hitCooldownUntil já usado por
+    // handleStompBossTouch/handleBossMalwareCollision para bloquear novos
+    // toques, mas alarga a janela (antes 500-550ms) para o pedido de 2-3s, e
+    // acrescenta o piscar que faltava, tal como o VanBerto's já faz quando
+    // perde uma vida (ver setInvuln). Só corre se o boss continuar vivo —
+    // na derrota, startBossStompDefeat()/startBossCollectPhase() tratam da
+    // transição visual sozinhos, sem precisar de continuar a piscar.
+    if (bossState.hp > 0 && bossState.sprite && bossState.sprite.active) {
+      const b2 = bossState.sprite;
+      const invulnMs = 2400;
+      bossState.hitCooldownUntil = scene.time.now + invulnMs;
+      if (bossState.invulnBlinkEvent) { try{ bossState.invulnBlinkEvent.remove(false); }catch{} }
+      let blinkN = 0;
+      bossState.invulnBlinkEvent = scene.time.addEvent({
+        delay: 110, repeat: Math.floor(invulnMs/110),
+        callback: () => {
+          if (!b2.active || !bossState || bossState.sprite !== b2) return;
+          blinkN++;
+          b2.setAlpha(blinkN % 2 === 0 ? 1 : 0.35);
+        }
+      });
+      scene.time.delayedCall(invulnMs, () => {
+        if (bossState && bossState.invulnBlinkEvent) { try{ bossState.invulnBlinkEvent.remove(false); }catch{} bossState.invulnBlinkEvent=null; }
+        if (b2 && b2.active) b2.setAlpha(1);
+      });
+    }
     if (bossState.def.stompBoss) {
       // Boss "clássico à Mario": sem fases nem escalada de raiva — só o
       // contador de saltos no HUD e uma fala curta reaproveitada (taunts).

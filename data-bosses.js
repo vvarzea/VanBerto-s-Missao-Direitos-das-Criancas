@@ -91,7 +91,17 @@ export const BOSSES = [
     stompBoss: true,
     stompsToDefeat: 3,
     movementType: "wave",    // continua a flutuar em onda, pulsando de tamanho — só a forma de o vencer mudou
-    qmarkEvery: 2400,
+    // Rebalanceamento pedido: o 2º Boss estava demasiado rápido/frustrante
+    // para o 4º ano. waveSpeedMult reduz a velocidade do movimento em onda
+    // em ~32% (dentro do intervalo pedido de 25%-35%) sem alterar a amplitude
+    // — o boss continua a percorrer a arena toda, só que mais devagar e mais
+    // previsível. Perto dos extremos da onda (topo/fundo do "sen") a
+    // velocidade aproxima-se naturalmente de zero, o que já dá ao jogador
+    // pequenas janelas para preparar o salto, como pedido.
+    waveSpeedMult: 0.68,
+    // qmarkEvery subiu de 2400 → 2900ms — mais tempo entre ataques, para dar
+    // tempo a uma criança reagir e saltar com calma em vez de reflexos de adulto.
+    qmarkEvery: 2900,
     orbTexture: "boss_proj_qmark",
     orbTint: 0xe0409a,       // bola ❓ rosa, a condizer com o próprio Vírus
     // bossY: mesmo raciocínio do Monstro — chão da arena (topo em y=506)
