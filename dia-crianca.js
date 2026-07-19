@@ -3300,32 +3300,39 @@ window.addEventListener("DOMContentLoaded", () => {
     // padrão do loadLevel() (esconder → posicionar → só depois revelar),
     // o VanBerto's só aparece já na posição final correta.
     snapPlayerToGround();
-    // Rede de segurança final: se por qualquer motivo snapPlayerToGround() não
-    // encontrou nenhuma plataforma por baixo do jogador (ex.: arena ainda a
-    // meio de ser montada, plataforma refreshBody() ainda não propagado num
-    // dispositivo mais lento), calcula-se aqui um chão de reserva a partir da
-    // plataforma mais larga desta arena (o chão principal, por convenção) e
-    // força-se o jogador para cima dela. Sem isto, um caso-limite raro podia
-    // deixar o VanBerto's a meio/dentro da plataforma em vez de em cima dela,
-    // exactamente o bug relatado — isto garante que nunca acontece, seja qual
-    // for a resolução ou o tamanho do ecrã (o Phaser escala o mundo lógico
-    // fixo, as coordenadas abaixo são sempre as mesmas independentemente do ecrã).
+    // Causa raiz do "VanBerto's enterrado no chão" nos Bosses, confirmada no
+    // código-fonte do Phaser (Body.reset usa gameObject.getTopLeft(), que
+    // ignora completamente body.offset — só updateFromGameObject()/o passo de
+    // física é que o aplica). Por isso, logo a seguir a um body.reset(), a
+    // primeira chamada a snapPlayerToGround() calcula a distância ao chão
+    // (dy) com o "pb.bottom" a faltar exactamente offset.y (46px), o que
+    // deixa o VanBerto's exactamente offset.y a mais para baixo — enterrado.
+    // Nos níveis normais isto nunca se via porque revealPlayerEntrance() já
+    // chama snapPlayerToGround() uma SEGUNDA vez (comentário lá: "segurança
+    // extra"), sem nenhum reset() pelo meio — e, como a 1ª chamada já deixou
+    // o corpo físico com o offset aplicado (via updateFromGameObject no fim
+    // da própria função), essa 2ª chamada mede a posição real correctamente
+    // e converge exactamente para o chão. Os Bosses nunca tinham essa 2ª
+    // chamada. Replicá-la aqui resolve na origem, com o mesmo mecanismo já
+    // testado e a funcionar em todos os níveis normais — não uma lógica nova.
+    snapPlayerToGround();
+    // Rede de segurança final, só para o caso limite (não deve acontecer)
+    // de nenhuma plataforma ter sido encontrada de todo pelas chamadas
+    // acima — força o jogador para cima do chão principal da arena.
     (function ensureBossSpawnOnGround(){
       const pb = player.body; if(!pb) return;
       let mainFloor = arenaPlatforms[0];
       arenaPlatforms.forEach(([x,y,w,h])=>{ if(w>mainFloor[2]) mainFloor=[x,y,w,h]; });
-      let best=null, bestTop=Infinity;
+      let onAnyPlatform=false;
       platforms.getChildren().forEach(p=>{
         if(!p.body) return;
-        if(pb.right>p.body.left && pb.left<p.body.right){
-          const top=p.body.top;
-          if(top>=pb.bottom-2 && top<bestTop){ bestTop=top; best=p; }
-        }
+        if(pb.right>p.body.left && pb.left<p.body.right && Math.abs(pb.bottom-p.body.top)<=2) onAnyPlatform=true;
       });
-      if(best) return; // snapPlayerToGround() já resolveu corretamente — nada a fazer
+      if(onAnyPlatform) return; // já resolvido — nada a fazer
       const floorTopY = mainFloor[1] - mainFloor[3]/2;
+      const bottomFromCenter = pb.height + pb.offset.y - player.height/2; // distância do centro do sprite ao fundo do corpo físico
       player.setVelocity(0,0);
-      player.y = floorTopY - (pb.height - pb.offset.y) + 1;
+      player.y = floorTopY - 1 - bottomFromCenter;
       player.body.updateFromGameObject();
     })();
     player.setAlpha(1);
