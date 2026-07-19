@@ -98,7 +98,16 @@ export const BOSSES = [
     // previsível. Perto dos extremos da onda (topo/fundo do "sen") a
     // velocidade aproxima-se naturalmente de zero, o que já dá ao jogador
     // pequenas janelas para preparar o salto, como pedido.
-    waveSpeedMult: 0.68,
+    // ATUALIZAÇÃO (feedback: "ainda instável, movimentos estranhos e muito
+    // rápidos"): a redução acima só mexeu na frequência da onda — a
+    // amplitude (raio) tinha ficado quase do tamanho da arena toda (360px
+    // num mundo de 960px), por isso mesmo mais devagar, a velocidade de PICO
+    // a meio da oscilação continuava bem acima da patrulha de qualquer outro
+    // boss (~392px/s vs. 110-150px/s dos outros). waveRange encurta esse raio
+    // e waveSpeedMult desceu mais um pouco — agora o pico ronda ~168px/s,
+    // próximo dos outros bosses, sem deixar de atravessar boa parte da arena.
+    waveSpeedMult: 0.5,
+    waveRange: 210,
     // qmarkEvery subiu de 2400 → 2900ms — mais tempo entre ataques, para dar
     // tempo a uma criança reagir e saltar com calma em vez de reflexos de adulto.
     qmarkEvery: 2900,

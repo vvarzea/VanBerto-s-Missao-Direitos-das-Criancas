@@ -4052,7 +4052,17 @@ window.addEventListener("DOMContentLoaded", () => {
       // de x negativos.
       const worldW = bossState.def.arena?.worldW || 1600;
       const centerX = worldW / 2;
-      const range = Math.min(480, centerX - 120);
+      // waveSpeedMult (abaixo) só desacelera a FREQUÊNCIA da onda — mas a
+      // velocidade de pico do movimento depende de frequência × amplitude.
+      // O raio por omissão (até 480px, quase a arena toda de 960px) continuava
+      // a dar picos de velocidade bem acima da patrulha dos outros bosses
+      // mesmo já com waveSpeedMult reduzido — sentia-se "estranho"/demasiado
+      // rápido a meio da oscilação. waveRange (opt-in, ver data-bosses.js)
+      // deixa um boss pedir um raio mais pequeno; sem ele, mantém-se o
+      // comportamento antigo para não mexer em bosses "wave" futuros.
+      const range = bossState.def.waveRange != null
+        ? Math.min(bossState.def.waveRange, centerX - 120)
+        : Math.min(480, centerX - 120);
       b.x = centerX + Math.sin(t) * range;
       b.y = bossState.baseY + Math.sin(t*1.7) * 44;
       if (b.body) b.body.reset(b.x, b.y);
