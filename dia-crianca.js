@@ -4013,21 +4013,42 @@ window.addEventListener("DOMContentLoaded", () => {
     const pBody = player.body;
     const playerBottom = player.y + (pBody.halfHeight || 24);
     const bossTop = b.y - (b.displayHeight/2 || 60);
-    const isFalling = pBody.velocity.y > 0;
-    if (isFalling && playerBottom <= bossTop + 22) {
+    // >=0 (em vez de >0) inclui o frame exato no topo do arco do salto, em
+    // que a velocidade vertical ainda não passou a positiva mas o jogador já
+    // está claramente a começar a cair sobre o boss.
+    const isFalling = pBody.velocity.y >= 0;
+    // Tolerância do golpe "certeiro" — ligeiramente mais generosa (22->30px)
+    // para não recusar saltos que pareciam visualmente bons só por 1-2 frames
+    // de física.
+    const STOMP_TOLERANCE = 30;
+    if (isFalling && playerBottom <= bossTop + STOMP_TOLERANCE) {
       bossState.hitCooldownUntil = sceneRef.time.now + 550;
       player.setVelocityY(-380);
       // squishBoss() já é chamado dentro de damageBoss() — não repetir aqui.
       ensureAudio(); beep({freq:500,dur:0.09,type:"square",vol:0.07,slideTo:900});
       damageBoss(sceneRef, b.x, b.y-70, "👣 Salto certeiro!", 0.008);
-    } else {
-      // Nome do próprio boss em vez de "Monstro" fixo — esta função passou a
-      // ser partilhada pelos 4 bosses "stomp", não só pelo Monstro da
-      // Ignorância (ver conversão dos outros 3 bosses para esta mesma
-      // mecânica); o aviso tinha ficado esquecido com o texto de quando só
-      // servia para ele.
-      bossHitPlayer(sceneRef, b, `🙈 Cuidado com ${bossState.def.name}!`);
+      return true;
     }
+    // Corrige o erro reportado: um salto que o jogador claramente TENTOU
+    // (estava a cair, ainda por cima da metade de cima do boss) mas que a
+    // deteção não valida por poucos pixels NUNCA deve custar uma vida —
+    // apenas ressalta o VanBerto's, sem consequências, para poder tentar de
+    // novo. Só um toque que não é de todo uma tentativa de salto (o jogador
+    // não estava a cair, ou já ia bem abaixo do meio do boss — contacto
+    // lateral ou por baixo) é que dói a sério.
+    const bossMidY = b.y;
+    const nearMissJumpAttempt = isFalling && playerBottom <= bossMidY;
+    if (nearMissJumpAttempt) {
+      player.setVelocityY(-220);
+      ensureAudio(); beep({freq:340,dur:0.06,type:"square",vol:0.05,slideTo:260});
+      return true;
+    }
+    // Nome do próprio boss em vez de "Monstro" fixo — esta função passou a
+    // ser partilhada pelos 4 bosses "stomp", não só pelo Monstro da
+    // Ignorância (ver conversão dos outros 3 bosses para esta mesma
+    // mecânica); o aviso tinha ficado esquecido com o texto de quando só
+    // servia para ele.
+    bossHitPlayer(sceneRef, b, `🙈 Cuidado com ${bossState.def.name}!`);
     return true;
   }
 
@@ -4200,17 +4221,17 @@ window.addEventListener("DOMContentLoaded", () => {
     });
     scene.time.delayedCall(340, () => { try{ hitBurst.destroy(); }catch{} });
     const hitsTaken = bossState.def.hp - bossState.hp;
-    // Invulnerabilidade temporária do boss após ser atingido (2.4s, com
-    // piscar visível) — reaproveita o mesmo hitCooldownUntil já usado por
-    // handleStompBossTouch/handleBossMalwareCollision para bloquear novos
-    // toques, mas alarga a janela (antes 500-550ms) para o pedido de 2-3s, e
-    // acrescenta o piscar que faltava, tal como o VanBerto's já faz quando
-    // perde uma vida (ver setInvuln). Só corre se o boss continuar vivo —
-    // na derrota, startBossStompDefeat()/startBossCollectPhase() tratam da
-    // transição visual sozinhos, sem precisar de continuar a piscar.
+    // Invulnerabilidade temporária do boss após ser atingido (~1.7s, dentro
+    // do intervalo pedido de 1-2s, com piscar visível) — reaproveita o mesmo
+    // hitCooldownUntil já usado por handleStompBossTouch/
+    // handleBossMalwareCollision para bloquear novos toques, e acrescenta o
+    // piscar que faltava, tal como o VanBerto's já faz quando perde uma vida
+    // (ver setInvuln). Só corre se o boss continuar vivo — na derrota,
+    // startBossStompDefeat()/startBossCollectPhase() tratam da transição
+    // visual sozinhos, sem precisar de continuar a piscar.
     if (bossState.hp > 0 && bossState.sprite && bossState.sprite.active) {
       const b2 = bossState.sprite;
-      const invulnMs = 2400;
+      const invulnMs = 1700;
       bossState.hitCooldownUntil = scene.time.now + invulnMs;
       if (bossState.invulnBlinkEvent) { try{ bossState.invulnBlinkEvent.remove(false); }catch{} }
       let blinkN = 0;
