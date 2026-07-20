@@ -3498,10 +3498,13 @@ window.addEventListener("DOMContentLoaded", () => {
       awaitingQuiz = false; awaitingStory = false;
       scene.physics.resume();
       // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
-      // para ser o primeiro coisa que encontra ao começar a andar.
-      // 280 era 120 (spawn antigo) + 160 — mantém a mesma distância relativa
-      // ao ponto de partida real, agora que este pode variar por boss.
-      spawnBossSign(scene, playerStartX + 160, def.signY != null ? def.signY : 486, objEmoji, objective);
+      // para ser o primeiro coisa que encontra ao começar a andar. signX
+      // (opt-in, def.arena — tal como signY) permite a um boss afinar esta
+      // posição; por omissão fica só 80px à frente do spawn (era 160 — em
+      // arenas mais estreitas isso empurrava o letreiro visivelmente para lá
+      // do centro do ecrã, longe do ponto onde o jogador realmente começa).
+      const signX = def.signX != null ? def.signX : playerStartX + 80;
+      spawnBossSign(scene, signX, def.signY != null ? def.signY : 486, objEmoji, objective);
       if (def.stompBoss) {
         // Sem estrela, sem carga — o HUD mostra logo o progresso dos saltos.
         itemCountText.setText(`👣 Saltos: 0/${def.hp}`);
