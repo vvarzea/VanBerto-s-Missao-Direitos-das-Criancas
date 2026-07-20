@@ -223,7 +223,7 @@ export const BOSSES = [
     color: 0x7a8a5c,
     // Mesma conversão para stompBoss — mantém a patrulha rápida (sensação
     // industrial) mas larga as plataformas móveis e a arena poluída, para
-    // caber numa única tela sem scroll, tal como os outros 3 bosses.
+    // caber num único ecrã sem scroll, tal como os outros 3 bosses.
     stompBoss: true,
     stompsToDefeat: 3,
     movementType: "patrol",

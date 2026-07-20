@@ -40,7 +40,7 @@ export function clearPlatformDecor(){
 }
 
 // Substitui o antigo acesso direto a doorGlowGfx no ecrã de vitória, que
-// limpava e escondia o halo da porta antes de mostrar a tela final.
+// limpava e escondia o halo da porta antes de mostrar o ecrã final.
 export function hideDoorGlow(){
   if(doorGlowGfx){ try{ doorGlowGfx.clear(); doorGlowGfx.setVisible(false); }catch{} }
 }
