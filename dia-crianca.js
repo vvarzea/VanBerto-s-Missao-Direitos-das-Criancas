@@ -4050,6 +4050,13 @@ window.addEventListener("DOMContentLoaded", () => {
     const bossMidY = b.y;
     const nearMissJumpAttempt = isFalling && playerBottom <= bossMidY;
     if (nearMissJumpAttempt) {
+      // Sem isto, este ramo disparava em TODOS os frames em que os corpos
+      // continuassem sobrepostos (o overlap do Phaser corre a cada tick de
+      // física) — som e ressalto a repetir em catadupa em vez de um único
+      // empurrão limpo. Um cooldown curto (bem mais curto que o do golpe
+      // certeiro) já chega para dar um frame de folga sem atrasar uma
+      // tentativa de salto a sério logo a seguir.
+      bossState.hitCooldownUntil = sceneRef.time.now + 300;
       player.setVelocityY(-220);
       ensureAudio(); beep({freq:340,dur:0.06,type:"square",vol:0.05,slideTo:260});
       return true;
