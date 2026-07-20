@@ -1448,7 +1448,13 @@ window.addEventListener("DOMContentLoaded", () => {
         if (!sceneRef._starColorIdx) sceneRef._starColorIdx = 0;
         sceneRef._starColorIdx = (sceneRef._starColorIdx + 1) % starColors.length;
         player.setTint(starColors[sceneRef._starColorIdx]);
-        if (!awaitingQuiz) player.setAlpha(1); // visível durante star power, mas não durante quiz
+        // !_doorAnimRunning: sem isto, a animação do portal do boss (que
+        // deixa awaitingQuiz=false de propósito, para o jogador poder andar
+        // até ele) tinha este reset de alpha a competir, frame a frame, com
+        // o tween que o faz desaparecer no vórtice — o VanBerto's nunca
+        // chegava a ficar invisível. A porta normal nunca sofria disto
+        // porque mantém awaitingQuiz=true durante toda a sua animação.
+        if (!awaitingQuiz && !_doorAnimRunning) player.setAlpha(1); // visível durante star power, mas não durante quiz/porta
       }
       // Rastro de estrelinhas douradas enquanto move
       if (Math.abs(player.body.velocity.x) > 30 || Math.abs(player.body.velocity.y) > 60) {
@@ -1471,8 +1477,10 @@ window.addEventListener("DOMContentLoaded", () => {
       sceneRef._starTrailTimer = 0;
       // Repõe alpha e limpa tint (só se não há outro power ativo)
       if (!powered) player.clearTint();
-      // Só repõe alpha se o robot estiver visível no jogo (não durante animação de porta/quiz)
-      if (player.alpha < 0.9 && !awaitingQuiz) player.setAlpha(1);
+      // Só repõe alpha se o robot estiver visível no jogo (não durante
+      // animação de porta/quiz normal, NEM durante a animação do portal do
+      // boss — ver comentário acima sobre _doorAnimRunning).
+      if (player.alpha < 0.9 && !awaitingQuiz && !_doorAnimRunning) player.setAlpha(1);
     }
 
     applyVanBertoTexture(sceneRef);
