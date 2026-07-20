@@ -70,6 +70,12 @@ export const BOSSES = [
         [230,421,150,20],   // plataforma baixa esquerda (deslocada 21px para baixo, junto com o chão)
         [730,421,150,20]    // plataforma baixa direita (idem)
       ],
+      // Pedido: o VanBerto's começava sempre bem junto à margem esquerda
+      // (120px, o valor por omissão). 400px fica bem mais ao centro da arena
+      // (960px de largura), mas ainda fora do alcance das duas plataformas
+      // baixas (155-305 e 655-805) — continua a aterrar no chão principal,
+      // tal como antes, só que mais perto do meio do ecrã.
+      playerStartX: 400,
       decor: [
         { emoji:"📖", x:90,  y:150 },
         { emoji:"📕", x:870, y:170 },

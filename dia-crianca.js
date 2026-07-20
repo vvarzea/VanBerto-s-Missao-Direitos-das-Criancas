@@ -3286,8 +3286,15 @@ window.addEventListener("DOMContentLoaded", () => {
     // funcionar sempre que uma arena movia o chão principal para mais acima,
     // fazendo o VanBerto's ficar preso a meio da plataforma em vez de em cima.
     player.setAngle(0);
-    player.setPosition(120,200); player.setVelocity(0,0);
-    if(player.body) player.body.reset(120,200);
+    // playerStartX (opt-in, def.arena — ver data-bosses.js) permite a uma
+    // arena de boss escolher onde o VanBerto's começa, em vez do valor fixo
+    // de sempre (120px, bem junto à margem esquerda). Sem isto o VanBerto's
+    // aparecia sempre encostado à esquerda em TODAS as arenas de boss,
+    // mesmo nas mais largas — pedido para começar mais ao centro. Bosses
+    // sem este campo mantêm exactamente o comportamento de sempre (120).
+    const playerStartX = def.arena?.playerStartX != null ? def.arena.playerStartX : 120;
+    player.setPosition(playerStartX,200); player.setVelocity(0,0);
+    if(player.body) player.body.reset(playerStartX,200);
     // Alinhar já ao chão da arena (mesmo cálculo usado no arranque de nível
     // normal, via snapPlayerToGround) — e só tornar o VanBerto's visível
     // DEPOIS disto (setAlpha(1) só aqui, não antes de setPosition/snap).
@@ -3472,13 +3479,29 @@ window.addEventListener("DOMContentLoaded", () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
       if (def.phases) enterBossPhase(scene, def, def.hp); // fase 1 (vida cheia)
+      // Só agora o boss "ganha vida": velocidade de patrulha (ver
+      // spawnBossSprite) ou o tween de respiração/pulsar dos bosses "wave" —
+      // exactamente quando o jogador termina/salta o diálogo de entrada.
+      if (bossState.sprite && bossState.sprite.active) {
+        if (def.movementType === "wave") {
+          const b = bossState.sprite;
+          const pulseScale = b.scaleX * 1.18; // pulsa ~18% maior, proporcional à escala base
+          scene.tweens.add({ targets: b, scaleX: pulseScale, scaleY: pulseScale, duration: 700, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+        } else if (def.movementType !== "blink" && def.movementType !== "teleport") {
+          // Mesma condição "senão" de spawnBossSprite (patrol e qualquer
+          // futuro tipo por omissão) — mantém as duas funções em sincronia.
+          bossState.sprite.setVelocityX(-(def.patrolSpeed || 110));
+        }
+      }
       const objEmoji = def.stompBoss ? "👣" : (def.specialAttack ? (def.specialAttack.emoji || "⚡") : "⭐");
       tipText.setText(objEmoji + " " + objective);
       awaitingQuiz = false; awaitingStory = false;
       scene.physics.resume();
       // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
       // para ser o primeiro coisa que encontra ao começar a andar.
-      spawnBossSign(scene, 280, def.signY != null ? def.signY : 486, objEmoji, objective);
+      // 280 era 120 (spawn antigo) + 160 — mantém a mesma distância relativa
+      // ao ponto de partida real, agora que este pode variar por boss.
+      spawnBossSign(scene, playerStartX + 160, def.signY != null ? def.signY : 486, objEmoji, objective);
       if (def.stompBoss) {
         // Sem estrela, sem carga — o HUD mostra logo o progresso dos saltos.
         itemCountText.setText(`👣 Saltos: 0/${def.hp}`);
@@ -3621,12 +3644,26 @@ window.addEventListener("DOMContentLoaded", () => {
 
     if (def.movementType === "wave") {
       boss.setVelocity(0,0);
-      const pulseScale = boss.scaleX * 1.18; // pulsa ~18% maior, proporcional à escala base
-      scene.tweens.add({ targets: boss, scaleX: pulseScale, scaleY: pulseScale, duration: 700, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+      // O tween de "respiração" (pulsar de tamanho) só arranca no fim do
+      // diálogo agora — ver o callback do playBossDialogue mais abaixo —
+      // pela mesma razão da velocidade de patrulha acima: nada no boss deve
+      // dar sinais de vida antes do jogador poder reagir.
     } else if (def.movementType === "blink" || def.movementType === "teleport") {
       boss.setVelocity(0,0);
     } else {
-      boss.setVelocityX(-(def.patrolSpeed || 110));
+      // "patrol" (ex.: Monstro da Ignorância): antes arrancava já com
+      // velocidade definida aqui, mesmo com o boss ainda em phase="intro" —
+      // ficava parado só porque scene.physics.pause() está ativo durante a
+      // cinemática de entrada (chamado por quem invoca startBossFight). Isso
+      // funciona nos fluxos que já pausam a física antes de chamar
+      // startBossFight, mas o movimento ficava "à espera" de um resume, em vez
+      // de só arrancar mesmo quando o diálogo termina — um único ponto a mais
+      // a ter de se lembrar de pausar a física corretamente para o boss não
+      // se mexer. Agora fica mesmo parado (velocidade 0) à nascença; a
+      // velocidade de patrulha só é aplicada no fim do diálogo (ver o
+      // callback do playBossDialogue, mais abaixo), exactamente quando o
+      // jogador clica "Saltar" ou avança a última fala.
+      boss.setVelocity(0,0);
     }
   }
 
