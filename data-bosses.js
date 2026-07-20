@@ -52,9 +52,10 @@ export const BOSSES = [
     // ABERTO entre as duas plataformas baixas (155-305 e 655-805), a flutuar
     // no ar em vez de ficar por baixo de alguma delas. 230 é o centro da
     // plataforma baixa esquerda — reposiciona o letreiro para ficar
-    // visualmente "pousado" por baixo dela, tal como acontece nos outros 3
-    // bosses (cujo playerStartX por omissão, 120, já calha perto da
-    // respetiva plataforma esquerda sem precisar de override).
+    // visualmente "pousado" por baixo dela. Os outros 3 bosses têm o mesmo
+    // problema (playerStartX também em 400, ver comentário nas respetivas
+    // arenas) e por isso têm o seu próprio signX explícito, cada um com o
+    // centro da sua plataforma baixa esquerda.
     signX: 230,
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
@@ -141,9 +142,8 @@ export const BOSSES = [
     // signX: centro da plataforma baixa esquerda (x=200, ver arena.platforms
     // abaixo) — mesma lógica aplicada ao Monstro da Ignorância: o letreiro
     // fica explicitamente "pousado" por baixo dela, em vez de depender do
-    // cálculo por omissão (playerStartX+80), que por coincidência dá o
-    // mesmo valor aqui (playerStartX não tem override neste boss), mas
-    // ficaria frágil se um dia o playerStartX deste boss mudar.
+    // cálculo por omissão (playerStartX+80, que com o playerStartX agora em
+    // 400 daria 480 e cairia no vão aberto entre as plataformas).
     signX: 200,
     intro: "Vou espalhar-me por todo o lado!",
     defeatLine: "Argh! Vacinado... derrotado! 💉",
@@ -161,6 +161,12 @@ export const BOSSES = [
         [200,421,140,20],   // plataforma baixa esquerda
         [760,421,140,20]    // plataforma baixa direita
       ],
+      // Mesma lógica do Monstro da Ignorância: o VanBerto's deve começar
+      // sempre no mesmo sítio em todos os bosses, em vez do 120 por omissão
+      // (que ficaria colado à margem esquerda) — 400 fica fora do alcance
+      // das duas plataformas baixas (130-270 e 690-830), continuando a
+      // aterrar no chão principal.
+      playerStartX: 400,
       decor: [
         { emoji:"💧", x:90,  y:150 },
         { emoji:"🧬", x:480, y:110 },
@@ -211,6 +217,11 @@ export const BOSSES = [
         [220,421,120,20],   // plataforma baixa esquerda
         [740,421,120,20]    // plataforma baixa direita
       ],
+      // Mesma lógica do Monstro da Ignorância: o VanBerto's deve começar
+      // sempre no mesmo sítio em todos os bosses, em vez do 120 por omissão
+      // — 400 fica fora do alcance das duas plataformas baixas (160-280 e
+      // 680-800), continuando a aterrar no chão principal.
+      playerStartX: 400,
       spawnSpots: [220, 480, 740]
     }
   },
@@ -259,6 +270,11 @@ export const BOSSES = [
         [200,421,150,20],   // plataforma baixa esquerda
         [760,421,150,20]    // plataforma baixa direita
       ],
+      // Mesma lógica do Monstro da Ignorância: o VanBerto's deve começar
+      // sempre no mesmo sítio em todos os bosses, em vez do 120 por omissão
+      // — 400 fica fora do alcance das duas plataformas baixas (125-275 e
+      // 685-835), continuando a aterrar no chão principal.
+      playerStartX: 400,
       decor: [
         { emoji:"🏭", x:90,  y:140 },
         { emoji:"⚙️", x:480, y:110 },
