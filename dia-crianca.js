@@ -1321,7 +1321,13 @@ window.addEventListener("DOMContentLoaded", () => {
          && (document.getElementById("artefactGalleryOverlay")?.classList.contains("hidden") ?? true)
          && (document.getElementById("reviewOverlay")?.classList.contains("hidden") ?? true)
          && (document.getElementById("levelTransitionOverlay")?.style.display || "none") === "none"
-         && !document.getElementById("artefactRevealOverlay")?.classList.contains("show");
+         && !document.getElementById("artefactRevealOverlay")?.classList.contains("show")
+         // mapOverlay (aberto ao completar um mundo) e o cartão de título
+         // #cineTitleCard (cartão "Mundo Completo!"/entrada de região, ver
+         // cinematics.js) também contam como overlay visível — awaitingQuiz
+         // fica true durante ambos (ver goToNextLevel/spawnBossPortal).
+         && (document.getElementById("mapOverlay")?.classList.contains("hidden") ?? true)
+         && !document.getElementById("cineTitleCard")?.classList.contains("show");
       if ((awaitingQuiz || awaitingStory) && !_overlayPaused && _noVisibleOverlay) {
         if (!sceneRef._wdStart) sceneRef._wdStart = Date.now();
         if (Date.now() - sceneRef._wdStart > 6000) {
@@ -4851,6 +4857,14 @@ window.addEventListener("DOMContentLoaded", () => {
                   try{ ring.destroy(); }catch{}
                   try{ portal.destroy(); }catch{}
                   _doorAnimRunning = false; // reset — sequência do portal genuinamente terminada
+                  // Repor awaitingQuiz=true (tinha sido desligado de propósito, mais acima,
+                  // só para o jogador poder caminhar até ao portal) — sem isto, o VanBerto's
+                  // ficava sem NENHUMA proteção contra o "safety-net" de alpha do update()
+                  // durante o fade-in do ecrã seguinte (cartão de fim de mundo ou transição
+                  // de nível), reaparecendo por instantes antes desse ecrã cobrir tudo.
+                  // goToNextLevel()/loadLevel() tratam de repor awaitingQuiz=false quando o
+                  // ecrã seguinte já estiver mesmo pronto — tal como já acontece na porta normal.
+                  awaitingQuiz = true;
                   onEnter();
                 }
               });
@@ -4913,9 +4927,14 @@ window.addEventListener("DOMContentLoaded", () => {
       const goToNextLevel = () => {
         const justFinished = currentLevel; // ainda não foi atualizado por loadLevel
         if (isLastLevelOfRegion(justFinished)) {
-          awaitingQuiz = false; awaitingStory = false;
+          // awaitingQuiz/awaitingStory só são libertados DEPOIS do mapa já estar
+          // aberto (cobrindo tudo) — mantê-los a true durante o cartão "Mundo
+          // Completo!" evita que o safety-net de alpha do update() reponha o
+          // VanBerto's visível a meio do fade-in desse cartão (ver comentário
+          // em spawnBossPortal/enterPortal sobre o mesmo mecanismo).
           celebrateWorldComplete(regionForLevel(justFinished), () => {
             openOverlay("mapOverlay", renderMap);
+            awaitingQuiz = false; awaitingStory = false;
           });
           return;
         }
