@@ -2392,10 +2392,11 @@ body.cine-active .cine-bar-top,body.cine-active .cine-bar-bottom{height:13vh;}
   display:flex; align-items:flex-start; gap:12px;
   background:rgba(6,10,28,0.94); border:2px solid #80c8ff; border-radius:16px 16px 0 0;
   padding:14px 18px 16px; box-shadow:0 -4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(128,200,255,0.25);
-  font-family:'Baloo 2',sans-serif; opacity:0; transition:opacity 0.26s ease, transform 0.32s cubic-bezier(.34,1.4,.64,1);
+  font-family:'Baloo 2',sans-serif; opacity:0; pointer-events:none;
+  transition:opacity 0.26s ease, transform 0.32s cubic-bezier(.34,1.4,.64,1);
   cursor:pointer;
 }
-#cineDialog.cine-show{ opacity:1; transform:translate(-50%,0); }
+#cineDialog.cine-show{ opacity:1; pointer-events:auto; transform:translate(-50%,0); }
 #cineDialog.cine-boss{ border-color:#ff6b6b; box-shadow:0 -4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(255,107,107,0.3); }
 #cineDialog.cine-npc{ border-color:#4fd6c0; box-shadow:0 -4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(79,214,192,0.3); }
 
