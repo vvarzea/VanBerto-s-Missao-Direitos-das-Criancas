@@ -138,6 +138,13 @@ export const BOSSES = [
     bossScale: 1.5,
     hpBarOffset: 88,          // idem — medido a partir do topo real do desenho, não do canvas inteiro
     signY: 486,
+    // signX: centro da plataforma baixa esquerda (x=200, ver arena.platforms
+    // abaixo) — mesma lógica aplicada ao Monstro da Ignorância: o letreiro
+    // fica explicitamente "pousado" por baixo dela, em vez de depender do
+    // cálculo por omissão (playerStartX+80), que por coincidência dá o
+    // mesmo valor aqui (playerStartX não tem override neste boss), mas
+    // ficaria frágil se um dia o playerStartX deste boss mudar.
+    signX: 200,
     intro: "Vou espalhar-me por todo o lado!",
     defeatLine: "Argh! Vacinado... derrotado! 💉",
     quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
@@ -184,6 +191,10 @@ export const BOSSES = [
     bossScale: 1.5,
     hpBarOffset: 82,
     signY: 486,
+    // signX: centro da plataforma baixa esquerda (x=220, ver arena.platforms
+    // abaixo) — mesma lógica dos outros bosses (ver comentário no Monstro
+    // da Ignorância).
+    signX: 220,
     intro: "Nas sombras, ninguém te protege!",
     defeatLine: "A luz da proteção venceu! 🛡️✨",
     quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
@@ -229,6 +240,10 @@ export const BOSSES = [
     bossScale: 1.5,
     hpBarOffset: 82,
     signY: 486,
+    // signX: centro da plataforma baixa esquerda (x=200, ver arena.platforms
+    // abaixo) — mesma lógica dos outros bosses (ver comentário no Monstro
+    // da Ignorância).
+    signX: 200,
     intro: "O planeta é meu para sujar!",
     defeatLine: "O verde venceu o cinzento! 🌱",
     quizTheme: "ambiente",
