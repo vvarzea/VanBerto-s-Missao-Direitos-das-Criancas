@@ -112,7 +112,7 @@ export const QUIZ_ARTICLE = {
   declaracao:   null,
   convencao:    null,
   brincar:      "Art. 31.º",
-  educacao:     "Art. 28.º",
+  educacao:     "Art. 28.º / 29.º",
   saude:        "Art. 24.º",
   protecao:     "Art. 19.º / 37.º",
   participacao: "Art. 12.º",

@@ -4083,6 +4083,13 @@ window.addEventListener("DOMContentLoaded", () => {
     const b = bossState.sprite;
     const def = bossState.def;
     if (b) { b.setVelocity(0,0); if (b.body) b.body.setEnable(false); }
+    // Boss vencido — os temporizadores de combate (saltos, bolas, piscar, etc.)
+    // já não têm nada para fazer a partir daqui (as suas callbacks verificam a
+    // fase e ficam em no-op fora de "platform"), mas continuavam literalmente a
+    // disparar até ao início do combate seguinte ou ao carregar do próximo
+    // nível (ver loadLevel/startBossFight). Parar aqui evita esse trabalho
+    // desnecessário assim que a fase de derrota começa.
+    bossTimers.forEach(t=>{try{t.remove(false);}catch{}}); bossTimers=[];
     destroyBossHpBar();
     itemCountText.setText("");
     tipText.setText("");
@@ -4413,6 +4420,10 @@ window.addEventListener("DOMContentLoaded", () => {
     bossState.phase = "collect";
     const b = bossState.sprite;
     b.setVelocity(0,0); b.body.setEnable(false); b.setAlpha(0.35);
+    // Ver comentário equivalente em startBossStompDefeat(): parar os
+    // temporizadores de combate assim que o boss é vencido, em vez de os
+    // deixar a disparar (em no-op) até ao combate seguinte.
+    bossTimers.forEach(t=>{try{t.remove(false);}catch{}}); bossTimers=[];
     if (bossLockIcon) { try{bossLockIcon.destroy();}catch{} bossLockIcon=null; } // boss já não é tocável — ícone deixa de fazer sentido
     if (bossRageIcon) { try{bossRageIcon.destroy();}catch{} bossRageIcon=null; }
     destroyBossHpBar(); // vida chegou a 0 — a barra já não tem função a partir daqui
