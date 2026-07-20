@@ -46,6 +46,16 @@ export const BOSSES = [
     // ao ponto de partida do jogador — 486 é o mesmo valor por omissão dos
     // níveis normais, por isso não precisa de ajuste com a mudança de chão.
     signY: 486,
+    // signX (opt-in): sem isto, o letreiro do objetivo usava playerStartX+80
+    // (=480) por omissão — como este boss tem playerStartX deslocado para o
+    // centro (ver arena.playerStartX, mais abaixo), isso caía mesmo no vão
+    // ABERTO entre as duas plataformas baixas (155-305 e 655-805), a flutuar
+    // no ar em vez de ficar por baixo de alguma delas. 230 é o centro da
+    // plataforma baixa esquerda — reposiciona o letreiro para ficar
+    // visualmente "pousado" por baixo dela, tal como acontece nos outros 3
+    // bosses (cujo playerStartX por omissão, 120, já calha perto da
+    // respetiva plataforma esquerda sem precisar de override).
+    signX: 230,
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
     quizTheme: "educacao",
