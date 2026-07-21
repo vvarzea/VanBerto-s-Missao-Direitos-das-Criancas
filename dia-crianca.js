@@ -3449,9 +3449,15 @@ window.addEventListener("DOMContentLoaded", () => {
       // "De vez em quando faz um pequeno salto" — puramente visual (não é
       // um ataque, só personalidade) — e uma bola ❓ lenta pelo chão.
       const hopTimer = scene.time.addEvent({ delay: def.hopEvery || 2400, loop: true, callback: () => doBossHop(scene) });
-      bossTimers.push(hopTimer); bossState.hopTimer = hopTimer;
+      bossTimers.push(hopTimer); bossState.hopTimer = hopTimer; bossState.hopBaseDelay = def.hopEvery || 2400;
       const qmarkTimer = scene.time.addEvent({ delay: def.qmarkEvery || 2200, loop: true, callback: () => doBossRollQmark(scene) });
-      bossTimers.push(qmarkTimer); bossState.qmarkTimer = qmarkTimer;
+      bossTimers.push(qmarkTimer); bossState.qmarkTimer = qmarkTimer; bossState.qmarkBaseDelay = def.qmarkEvery || 2200;
+    }
+    if (def.smokePuffEvery) {
+      // Marca própria do Poluidor Mecânico (ver data-bosses.js) — baforadas
+      // de fumo da chaminé, puramente visuais/atmosféricas.
+      const smokeTimer = scene.time.addEvent({ delay: def.smokePuffEvery, loop: true, callback: () => doBossSmokePuff(scene) });
+      bossTimers.push(smokeTimer); bossState.smokeTimer = smokeTimer; bossState.smokeBaseDelay = def.smokePuffEvery;
     }
     // Animação "idle" — antes só o Monstro da Ignorância tinha isto (e só
     // porque este bloco vivia dentro do "if (def.stompBoss)" acima); os
@@ -3741,6 +3747,31 @@ window.addEventListener("DOMContentLoaded", () => {
     bossState.hpBarBg.strokeRoundedRect(x, y, w, h, 5);
     bossState.hpBarFill.clear();
     const growFactor = bossState.hpGrowFactor != null ? bossState.hpGrowFactor : 1;
+    if (def && def.stompBoss) {
+      // Barra em segmentos discretos — um por salto ainda necessário — em
+      // vez de uma barra contínua. Pedido: com hp sempre a valer 3 nestes
+      // bosses, uma barra contínua (pensada para intervalos de 0-100%) mal
+      // se distinguia entre "cheia" e "a 2/3", e não batia certo com o
+      // contador "👣 Saltos: X/3" já mostrado no HUD — segmentos bem
+      // separados são lidos de relance por uma criança, tal como o contador.
+      const total = bossState.def.hp || 3;
+      const gap = 3;
+      const segW = (w - gap * (total - 1)) / total;
+      for (let i = 0; i < total; i++) {
+        const filled = i < bossState.hp;
+        const segX = x + i * (segW + gap);
+        // O crescimento inicial (hpGrowFactor) só se aplica ao ÚLTIMO
+        // segmento preenchido — dá a mesma sensação de "a carregar" de
+        // antes, sem encolher segmentos que já deviam estar cheios.
+        const isLastFilled = filled && i === bossState.hp - 1;
+        const segScale = isLastFilled ? growFactor : 1;
+        const segColor = !filled ? 0x2a2a3e : (bossState.hp === 1 ? 0xff5050 : 0x60e060);
+        bossState.hpBarFill.fillStyle(segColor, 1);
+        const drawW = Math.max(0, (segW - 4) * segScale);
+        bossState.hpBarFill.fillRoundedRect(segX + 2, y + 2, drawW, h - 4, 3);
+      }
+      return;
+    }
     const pct = Math.max(0, bossState.hp / bossState.def.hp) * growFactor;
     const fillColor = pct > 0.5 ? 0x60e060 : (pct > 0.25 ? 0xffd700 : 0xff5050);
     bossState.hpBarFill.fillStyle(fillColor, 1);
@@ -3888,20 +3919,39 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!inBossFight || !bossState || bossState.phase !== "platform") return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
-    const arenaSpots = bossState.def.arena?.spawnSpots;
-    const spots = arenaSpots && arenaSpots.length ? arenaSpots : [300, 800, 1300];
-    const nx = spots[Math.floor(Math.random()*spots.length)];
-    // bossY (opt-in) em vez do antigo y=380 fixo — um boss "clássico à Mario"
-    // (stompBoss) tem de reaparecer sempre à altura do chão da SUA arena,
-    // para ficar ao alcance de um salto normal; y=380 fixo deixava-o a
-    // flutuar bem acima do chão nas arenas mais pequenas (960px), fora de
-    // alcance. Continua a usar 380 por omissão para não alterar bosses
-    // "teleport" antigos que não definam bossY.
-    const ny = bossState.def.bossY != null ? bossState.def.bossY : 380;
-    scene.cameras.main.flash(120, 20, 20, 50);
-    b.x = nx; b.y = ny;
-    if (b.body) b.body.reset(nx, ny);
-    ensureAudio(); beep({freq:220,dur:0.10,type:"sawtooth",vol:0.05,slideTo:120});
+    // Aviso ("vou desaparecer!") — antes o Guardião desaparecia sem qualquer
+    // sinal prévio, o que podia parecer injusto (sobretudo com o
+    // teleportDelay mais curto que os outros bosses "teleport"). Um brilho a
+    // crescer no sítio onde ele está, ~320ms antes do salto em si, dá a uma
+    // criança tempo de reagir sem tirar a imprevisibilidade do PARA ONDE vai
+    // reaparecer (isso continua só a decidir-se no fim destes 320ms).
+    ensureAudio(); beep({freq:640,dur:0.09,type:"sine",vol:0.03,slideTo:920});
+    const warnGlow = scene.add.circle(b.x, b.y, 8, 0xffffff, 0).setDepth(5);
+    scene.tweens.add({
+      targets: warnGlow, radius: 46, alpha: { from: 0, to: 0.55 }, duration: 320, ease: "Sine.easeOut",
+      onComplete: () => { try{ warnGlow.destroy(); }catch{} }
+    });
+    scene.time.delayedCall(320, () => {
+      try{ warnGlow.destroy(); }catch{}
+      // Segurança: se o combate acabou/reiniciou durante estes 320ms
+      // (ex.: o jogador derrotou o boss mesmo antes do aviso terminar),
+      // não continuar para o teletransporte em si.
+      if (!inBossFight || !bossState || bossState.phase !== "platform" || !b.active) return;
+      const arenaSpots = bossState.def.arena?.spawnSpots;
+      const spots = arenaSpots && arenaSpots.length ? arenaSpots : [300, 800, 1300];
+      const nx = spots[Math.floor(Math.random()*spots.length)];
+      // bossY (opt-in) em vez do antigo y=380 fixo — um boss "clássico à Mario"
+      // (stompBoss) tem de reaparecer sempre à altura do chão da SUA arena,
+      // para ficar ao alcance de um salto normal; y=380 fixo deixava-o a
+      // flutuar bem acima do chão nas arenas mais pequenas (960px), fora de
+      // alcance. Continua a usar 380 por omissão para não alterar bosses
+      // "teleport" antigos que não definam bossY.
+      const ny = bossState.def.bossY != null ? bossState.def.bossY : 380;
+      scene.cameras.main.flash(120, 20, 20, 50);
+      b.x = nx; b.y = ny;
+      if (b.body) b.body.reset(nx, ny);
+      ensureAudio(); beep({freq:220,dur:0.10,type:"sawtooth",vol:0.05,slideTo:120});
+    });
   }
 
   // ---- Livros do Monstro da Ignorância: a maioria são bons (dourados, apanha!),
@@ -3955,6 +4005,27 @@ window.addEventListener("DOMContentLoaded", () => {
     q.setAngularVelocity(towardPlayer * 130);
     scene.physics.add.collider(q, platforms);
     scene.time.delayedCall(4500, () => { if (q.active) q.destroy(); });
+  }
+
+  // ---- Baforada de fumo do Poluidor Mecânico (marca própria do boss — ver
+  // smokePuffEvery em data-bosses.js): puramente atmosférico, nunca tira
+  // vida nem colide com o jogador — só uma nuvem cinzenta a subir da
+  // chaminé, que ofusca ligeiramente aquela zona da arena por instantes.
+  // Pedido: os 4 bosses "stomp" partilhavam exactamente a mesma receita
+  // (andar/flutuar/teleportar + bola ❓); isto dá ao Poluidor uma
+  // personalidade visual só sua, condizente com o tema industrial/poluente. ----
+  function doBossSmokePuff(scene) {
+    if (!inBossFight || !bossState || bossState.phase !== "platform") return;
+    const b = bossState.sprite;
+    if (!b || !b.active) return;
+    const chimneyY = b.y - (b.displayHeight/2 || 50) - 4;
+    const puff = scene.add.particles(0, 0, "spark_item", {
+      x: b.x, y: chimneyY, speed:{min:20,max:55}, angle:{min:260,max:280},
+      lifespan:1700, quantity:11, scale:{start:1.5,end:3.4}, alpha:{start:0.4,end:0},
+      tint:[0x9a9a9a,0x6a6a6a,0xc4c4c4], gravityY:-14
+    });
+    scene.time.delayedCall(750, () => { try{puff.destroy();}catch{} });
+    ensureAudio(); beep({freq:110,dur:0.10,type:"sine",vol:0.02,slideTo:70});
   }
 
   // ---- Animação "idle" de braços e piscar de olhos, para os bosses deixarem
@@ -4193,6 +4264,12 @@ window.addEventListener("DOMContentLoaded", () => {
     if (bossState.teleTimer)  bossState.teleTimer.delay  = bossState.teleBaseDelay  / bossState.speedMult;
     if (bossState.bookTimer)  bossState.bookTimer.delay  = bossState.bookBaseDelay  / bossState.speedMult;
     if (bossState.orbTimer)   bossState.orbTimer.delay   = bossState.orbBaseDelay   / bossState.speedMult;
+    // Idem para os bosses "stomp" (salto/bola ❓/fumo) — antes a escalada de
+    // fúria só existia para bosses com fases próprias; os 4 bosses "clássicos
+    // à Mario" ficavam sempre exactamente ao mesmo ritmo do 1º ao 3º salto.
+    if (bossState.hopTimer)   bossState.hopTimer.delay   = bossState.hopBaseDelay   / bossState.speedMult;
+    if (bossState.qmarkTimer) bossState.qmarkTimer.delay = bossState.qmarkBaseDelay / bossState.speedMult;
+    if (bossState.smokeTimer) bossState.smokeTimer.delay = bossState.smokeBaseDelay / bossState.speedMult;
 
     // Escalada da arena contaminada/poluída (Vírus Gigante, Poluidor Mecânico) —
     // 100% opt-in via def.contaminatedArena.escalations[level]; bosses sem esse
@@ -4280,8 +4357,12 @@ window.addEventListener("DOMContentLoaded", () => {
       });
     }
     if (bossState.def.stompBoss) {
-      // Boss "clássico à Mario": sem fases nem escalada de raiva — só o
-      // contador de saltos no HUD e uma fala curta reaproveitada (taunts).
+      // Boss "clássico à Mario": contador de saltos no HUD + fala curta
+      // (taunts) — e agora também a mesma escalada de fúria genérica dos
+      // outros bosses (mais rápido e mais imprevisível a cada salto
+      // certeiro), para o combate não ficar sempre ao mesmo ritmo do 1º ao
+      // 3º (e último) salto. Só sobe até ao 2º salto — no 3º o boss já foi
+      // derrotado, não há "fúria" nenhuma para mostrar.
       const stomps = hitsTaken;
       itemCountText.setText(`👣 Saltos: ${Math.max(0,stomps)}/${bossState.def.hp}`);
       const taunts = BOSS_HP_TAUNTS[bossState.def.id];
@@ -4290,6 +4371,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const pool = taunts[key];
         if (pool && pool.length) showFloat(scene, x, y-30, pool[Math.floor(Math.random()*pool.length)], "#ff9090");
       }
+      if (hitsTaken > 0 && bossState.hp > 0) bossEnterRage(scene, Math.min(2, hitsTaken));
     } else if (bossState.def.phases) {
       // Bosses com fases próprias não usam a escalada genérica — cada
       // acerto muda de fase com comportamento próprio.

@@ -59,6 +59,12 @@ export const BOSSES = [
     signX: 230,
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
     defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
+    // rageLines (opt-in, ver bossEnterRage em dia-crianca.js): fala curta e
+    // própria mostrada quando o boss acelera a meio do combate (1º e 2º
+    // salto) — agora que os bosses "stomp" também têm escalada de fúria,
+    // não só os bosses com fases próprias. Frases diferentes das de
+    // BOSS_HP_TAUNTS (data-story.js) para não repetir texto.
+    rageLines: { angry: "Ainda tenho perguntas para ti!", desperate: "Não... a resposta certa venceu!" },
     quizTheme: "educacao",
     hp: 3,
     // Tema próprio (em vez do índigo/roxo-noturno nº16, que se confundia
@@ -147,6 +153,8 @@ export const BOSSES = [
     signX: 200,
     intro: "Vou espalhar-me por todo o lado!",
     defeatLine: "Argh! Vacinado... derrotado! 💉",
+    // rageLines: ver comentário no Monstro da Ignorância.
+    rageLines: { angry: "Vou mutar mais depressa!", desperate: "As defesas... estão a vencer!" },
     quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
     hp: 3,                     // 4→3: agora são sempre 3 saltos na cabeça, como os outros bosses "stomp"
     themeIdx: 13,              // teal escuro noturno — combina com o verde-água do boss
@@ -203,6 +211,8 @@ export const BOSSES = [
     signX: 220,
     intro: "Nas sombras, ninguém te protege!",
     defeatLine: "A luz da proteção venceu! 🛡️✨",
+    // rageLines: ver comentário no Monstro da Ignorância.
+    rageLines: { angry: "As sombras ficam mais rápidas!", desperate: "A luz está a apagar-me!" },
     quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
     hp: 3,                     // 4→3: agora são sempre 3 saltos na cabeça
     themeIdx: 11,              // azul oceano noturno — fortaleza escura, sem exagerar no preto
@@ -257,6 +267,17 @@ export const BOSSES = [
     signX: 200,
     intro: "O planeta é meu para sujar!",
     defeatLine: "O verde venceu o cinzento! 🌱",
+    // rageLines: ver comentário no Monstro da Ignorância.
+    rageLines: { angry: "Motores a fundo!", desperate: "Sistema... a desligar!" },
+    // Marca própria do Poluidor (pedido: os 4 bosses "stomp" partilhavam
+    // exactamente a mesma receita — andar/flutuar/teleportar + bola ❓ — sem
+    // nada que os distinguisse de verdade uns dos outros). Baforadas de fumo
+    // da chaminé, só visuais e sem colisão (não tiram vida nem empurram o
+    // VanBerto's) — mas espalham-se por uma zona da arena e ofuscam
+    // ligeiramente a visão por lá durante 1-2s, o que obriga a calcular o
+    // salto por instinto em vez de ver sempre tudo perfeitamente nítido,
+    // condizente com a personalidade "industrial/poluente" do boss.
+    smokePuffEvery: 2700,
     quizTheme: "ambiente",
     hp: 3,                     // 5→3: agora são sempre 3 saltos na cabeça
     themeIdx: 9,                // âmbar dourado enevoado — céu poluído, ainda de dia
