@@ -3424,7 +3424,15 @@ window.addEventListener("DOMContentLoaded", () => {
     } else if (def.movementType === "teleport") {
       // Véu de sombra suave, ligado à cor do próprio boss (não um bloco opaco fixo)
       bossOverlay = scene.add.rectangle(worldW/2, 257, worldW, 514, def.color, 0.16).setDepth(1);
-      scene.tweens.add({ targets: bossOverlay, alpha:{from:0.75,to:1}, duration:1900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      // CORRIGIDO: a animação tinha ficado com alpha:{from:0.75,to:1} — quase
+      // opaco (75%-100%), quando o retângulo cobre a arena toda a uma
+      // profundidade (depth 1) acima do próprio boss (depth 0, por omissão).
+      // Resultado: o Guardião das Sombras ficava tapado por um véu escuro
+      // praticamente sólido mal o combate começava — impossível de ver para
+      // lhe saltar em cima, e por isso "bloqueava" o jogo. Os valores certos
+      // andam à volta do alpha inicial (0.16), para ser mesmo um véu suave,
+      // como o comentário acima sempre disse ("não um bloco opaco fixo").
+      scene.tweens.add({ targets: bossOverlay, alpha:{from:0.12,to:0.22}, duration:1900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
       // teleportDelay (opt-in): permite a cada boss teleportar-se mais rápido
       // que o valor por omissão — sem isto, todos os bosses "teleport" ficavam
       // presos ao mesmo ritmo do Guardião das Sombras original.
@@ -3498,6 +3506,15 @@ window.addEventListener("DOMContentLoaded", () => {
     ], () => {
       if (!bossState) return; // segurança: nível pode ter sido reiniciado entretanto
       bossState.phase = "platform";
+      // Sai do riso maléfico da intro (ver spawnBossSprite) assim que o
+      // combate a sério começa — volta à cara normal, para a animação idle
+      // (doBossIdleArms/doBossIdleBlink) assumir a partir daqui.
+      if (bossState.sprite && bossState.sprite.active) {
+        const normalKey = "boss_" + def.id;
+        if (scene.textures.exists(normalKey) && bossState.sprite.texture.key !== normalKey) {
+          bossState.sprite.setTexture(normalKey);
+        }
+      }
       if (def.phases) enterBossPhase(scene, def, def.hp); // fase 1 (vida cheia)
       // Só agora o boss "ganha vida": velocidade de patrulha (ver
       // spawnBossSprite) ou o tween de respiração/pulsar dos bosses "wave" —
@@ -3652,11 +3669,17 @@ window.addEventListener("DOMContentLoaded", () => {
   function spawnBossSprite(scene, def, x) {
     const texKey = "boss_"+def.id;
     const hasCustomTex = scene.textures.exists(texKey);
+    // laughKey (riso maléfico, ver textures.js): se existir, o boss nasce já
+    // com esta cara — mostra-se durante toda a cinemática de intro, antes de
+    // o jogador poder reagir, e volta à cara normal mal o combate arranca
+    // (ver o callback de playBossDialogue, mais abaixo).
+    const laughKey = texKey + "_laugh";
+    const hasLaugh = scene.textures.exists(laughKey);
     // bossY (opt-in, ver data-bosses.js) permite a um boss ficar fixo à
     // altura do chão da sua arena, em vez de flutuar sempre a meio do ecrã —
     // usado pelo Monstro da Ignorância, que "anda" e nunca flutua.
     const y = def.bossY != null ? def.bossY : 380;
-    const boss = malwareGroup.create(x, y, hasCustomTex ? texKey : "vilao_bug");
+    const boss = malwareGroup.create(x, y, hasLaugh ? laughKey : (hasCustomTex ? texKey : "vilao_bug"));
     boss.setScale(hasCustomTex ? (def.bossScale || 1.55) : 2.2);
     if (!hasCustomTex) boss.setTint(def.color); // rede de segurança, caso a textura não tenha carregado
     boss.setData("isBoss", true);
@@ -3748,28 +3771,16 @@ window.addEventListener("DOMContentLoaded", () => {
     bossState.hpBarFill.clear();
     const growFactor = bossState.hpGrowFactor != null ? bossState.hpGrowFactor : 1;
     if (def && def.stompBoss) {
-      // Barra em segmentos discretos — um por salto ainda necessário — em
-      // vez de uma barra contínua. Pedido: com hp sempre a valer 3 nestes
-      // bosses, uma barra contínua (pensada para intervalos de 0-100%) mal
-      // se distinguia entre "cheia" e "a 2/3", e não batia certo com o
-      // contador "👣 Saltos: X/3" já mostrado no HUD — segmentos bem
-      // separados são lidos de relance por uma criança, tal como o contador.
-      const total = bossState.def.hp || 3;
-      const gap = 3;
-      const segW = (w - gap * (total - 1)) / total;
-      for (let i = 0; i < total; i++) {
-        const filled = i < bossState.hp;
-        const segX = x + i * (segW + gap);
-        // O crescimento inicial (hpGrowFactor) só se aplica ao ÚLTIMO
-        // segmento preenchido — dá a mesma sensação de "a carregar" de
-        // antes, sem encolher segmentos que já deviam estar cheios.
-        const isLastFilled = filled && i === bossState.hp - 1;
-        const segScale = isLastFilled ? growFactor : 1;
-        const segColor = !filled ? 0x2a2a3e : (bossState.hp === 1 ? 0xff5050 : 0x60e060);
-        bossState.hpBarFill.fillStyle(segColor, 1);
-        const drawW = Math.max(0, (segW - 4) * segScale);
-        bossState.hpBarFill.fillRoundedRect(segX + 2, y + 2, drawW, h - 4, 3);
-      }
+      // Barra contínua (pedido): verde no início, laranja logo depois do 1º
+      // salto certeiro, vermelha depois do 2º — a cor reflete os SALTOS DADOS
+      // (não uma percentagem genérica), porque com hp sempre a valer 3 uma
+      // percentagem normal (>50%/>25%) não mudava de cor no sítio certo. O
+      // contador "👣 Saltos: X/3" no HUD continua a dar o detalhe exato.
+      const hitsTaken = (bossState.def.hp || 3) - bossState.hp;
+      const fillColor = hitsTaken <= 0 ? 0x60e060 : (hitsTaken === 1 ? 0xff9500 : 0xff5050);
+      const pct = Math.max(0, bossState.hp / bossState.def.hp) * growFactor;
+      bossState.hpBarFill.fillStyle(fillColor, 1);
+      bossState.hpBarFill.fillRoundedRect(x+2, y+2, Math.max(0,(w-4)*pct), h-4, 3);
       return;
     }
     const pct = Math.max(0, bossState.hp / bossState.def.hp) * growFactor;
@@ -4034,7 +4045,9 @@ window.addEventListener("DOMContentLoaded", () => {
   // (bossState.squishing) para não interromperem a reação de dor, e durante
   // qualquer fase que não seja "platform" (ex.: intro, derrota). ----
   function doBossIdleArms(scene) {
-    if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing) return;
+    // rageLevel>0: a cara já está "zangada"/vermelha (ver bossEnterRage) —
+    // não voltar a trocar para braços normais/repouso por cima disso.
+    if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing || bossState.rageLevel > 0) return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
     const id = bossState.def.id;
@@ -4045,7 +4058,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (scene.textures.exists(nextKey)) b.setTexture(nextKey);
   }
   function doBossIdleBlink(scene) {
-    if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing) return;
+    if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing || bossState.rageLevel > 0) return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
     const id = bossState.def.id;
@@ -4147,19 +4160,23 @@ window.addEventListener("DOMContentLoaded", () => {
     return true;
   }
 
-  // ---- Sequência de derrota de um boss "stomp" (Monstro da Ignorância e,
-  // agora, os outros 3 bosses convertidos à mesma mecânica): não morre, não
-  // explode — senta-se, lê um livro que aparece à sua frente e dá um
-  // polegar para cima, antes de seguir para a pergunta final. Os outros 3
-  // bosses não têm uma textura "_sentado" própria (só o Monstro tem) — o
-  // sceneRef.textures.exists() logo abaixo já trata disso sozinho, saltando
-  // a troca de textura sem erro nenhum quando ela não existe. ----
+  // ---- Sequência de derrota de um boss "stomp" (pedido: substitui por
+  // completo a antiga cena calma — sentado, a ler um livro, polegar para
+  // cima). Agora fecha o arco emocional do combate: riso maléfico na
+  // entrada (ver spawnBossSprite) → cara vermelha ao escalar em fúria (ver
+  // bossEnterRage) → aqui, ao perder, fica triste (textura "_sad", ver
+  // textures.js) e foge a correr da arena, antes de seguir para a pergunta
+  // final. ----
   function startBossStompDefeat() {
     if (!bossState) return;
     bossState.phase = "defeat";
     const b = bossState.sprite;
     const def = bossState.def;
-    if (b) { b.setVelocity(0,0); if (b.body) b.body.setEnable(false); }
+    // Corpo continua com física ligada de propósito (ao contrário de antes)
+    // — precisa de se poder mover a fugir, mais abaixo. handleBossMalwareCollision
+    // já absorve qualquer toque em silêncio fora da fase "platform", por isso
+    // não há risco de o jogador "levar dano" de um boss já derrotado.
+    if (b) { b.setVelocity(0,0); b.clearTint(); }
     // Boss vencido — os temporizadores de combate (saltos, bolas, piscar, etc.)
     // já não têm nada para fazer a partir daqui (as suas callbacks verificam a
     // fase e ficam em no-op fora de "platform"), mas continuavam literalmente a
@@ -4170,23 +4187,57 @@ window.addEventListener("DOMContentLoaded", () => {
     destroyBossHpBar();
     itemCountText.setText("");
     tipText.setText("");
-    const sentadoKey = "boss_" + def.id + "_sentado";
-    sceneRef.time.delayedCall(250, () => {
+    const sadKey = "boss_" + def.id + "_sad";
+    if (b && b.active) {
+      if (sceneRef.textures.exists(sadKey)) b.setTexture(sadKey);
+      showFloat(sceneRef, b.x, b.y-70, "😢", "#a0c0ff");
+    }
+    // Meio segundo de cara triste antes de fugir — dá tempo à criança de
+    // "ler" a expressão antes de o boss se ir embora.
+    sceneRef.time.delayedCall(500, () => {
       if (!b || !b.active) return;
-      if (sceneRef.textures.exists(sentadoKey)) b.setTexture(sentadoKey);
-      showFloat(sceneRef, b.x, b.y-70, "😊", "#ffe066");
+      const worldW = def.arena?.worldW || 1600;
+      const fleeDir = (b.x > worldW/2) ? 1 : -1; // foge para a borda mais próxima
+      // Desliga a colisão com os limites do mundo só para este momento — sem
+      // isto o boss ressaltava na borda em vez de sair mesmo da arena, o que
+      // estragaria a sensação de fuga.
+      if (b.body) b.body.setCollideWorldBounds(false);
+      b.setVelocity(fleeDir * 260, 0);
+      b.setFlipX(fleeDir < 0);
+      // Pequeno solavanco vertical a cada passada, para parecer mesmo uma
+      // corrida e não um deslize suave.
+      sceneRef.tweens.add({ targets:b, y:b.y-9, duration:130, yoyo:true, repeat:8, ease:"Quad.easeOut" });
+      ensureAudio(); beep({freq:180,dur:0.08,type:"square",vol:0.03,slideTo:90});
     });
-    sceneRef.time.delayedCall(900, () => {
+    sceneRef.time.delayedCall(1750, () => {
       if (!b || !b.active) return;
-      const book = sceneRef.add.text(b.x, b.y-16, "📖", { fontSize:"26px" }).setOrigin(0.5).setDepth(6);
-      sceneRef.tweens.add({ targets:book, y:book.y-6, duration:520, yoyo:true, repeat:2, ease:"Sine.easeInOut",
-        onComplete: () => { try{book.destroy();}catch{} } });
+      sceneRef.tweens.add({ targets:b, alpha:0, duration:350,
+        onComplete: () => { try{ if (b.body) b.body.setEnable(false); }catch{} } });
     });
-    sceneRef.time.delayedCall(2050, () => {
-      if (!b || !b.active) return;
-      showFloat(sceneRef, b.x, b.y-70, "👍", "#8fffb0");
+    sceneRef.time.delayedCall(2350, () => { if (bossState && bossState.phase === "defeat") startBossQuizPhase(); });
+  }
+
+  // ---- Festa do VanBerto's ao perderes todas as vidas durante um combate de
+  // boss (pedido, "tipo Super Mario"): antes de o ecrã de "Game Over"
+  // aparecer, o boss celebra por instantes — reaproveita a mesma cara de
+  // riso maléfico já criada para a intro (ver spawnBossSprite/textures.js),
+  // com uns pequenos saltos de festa por cima. Só chamada a partir de
+  // bossHitPlayer, já dentro do contexto de um combate de boss. ----
+  function triggerBossParty(scene) {
+    if (!bossState) return;
+    const b = bossState.sprite, def = bossState.def;
+    if (!b || !b.active) return;
+    const laughKey = "boss_" + def.id + "_laugh";
+    if (scene.textures.exists(laughKey)) b.setTexture(laughKey);
+    b.setVelocity(0,0);
+    const baseY = b.y;
+    scene.tweens.add({ targets:b, y: baseY-26, duration:220, yoyo:true, repeat:4, ease:"Quad.easeOut" });
+    scene.tweens.add({
+      targets:b, angle:{from:-8,to:8}, duration:220, yoyo:true, repeat:4, ease:"Sine.easeInOut",
+      onComplete: () => { if (b.active) b.setAngle(0); }
     });
-    sceneRef.time.delayedCall(2650, () => { if (bossState && bossState.phase === "defeat") startBossQuizPhase(); });
+    showFloat(scene, b.x, b.y-80, "😈", "#ffd700");
+    ensureAudio(); beep({freq:520,dur:0.09,type:"square",vol:0.05,slideTo:780});
   }
 
   function updateBossFight(scene) {
@@ -4282,6 +4333,17 @@ window.addEventListener("DOMContentLoaded", () => {
         if (esc.zones) spawnToxicZones(scene, esc.zones, def.contaminatedArena.hazardType);
         if (esc.virus != null) bossState.desiredVirusCount = esc.virus;
       }
+    }
+
+    // Cara fica vermelha de raiva (pedido) — nova variante de textura
+    // "_angry" (ver textures.js) se existir, + tint avermelhado por cima
+    // (mais intenso na 2ª fúria/desesperada). Persiste até à derrota — ver
+    // o guard bossState.rageLevel>0 em doBossIdleArms/doBossIdleBlink, que
+    // deixa de sobrepor esta cara com a animação idle normal a partir daqui.
+    if (b && b.active) {
+      const angryKey = "boss_" + def.id + "_angry";
+      if (scene.textures.exists(angryKey)) b.setTexture(angryKey);
+      b.setTint(level === 1 ? 0xffb0a0 : 0xff6a5c);
     }
 
     // Ícone de emoção por cima do boss — 😠 zangado, 😡 desesperado — substitui
@@ -4405,7 +4467,15 @@ window.addEventListener("DOMContentLoaded", () => {
     // fim de um combate (ex.: o corpo do boss ainda por desativar no instante
     // exacto em que passa a "defeat", ou um vírus pequeno da arena contaminada
     // que ainda não foi limpo).
-    if (bossState.phase !== "platform") { try{malwareObj.body?.setEnable(false);}catch{} return true; }
+    if (bossState.phase !== "platform") {
+      // Exceção: em "defeat" o boss está deliberadamente a fugir a correr
+      // (ver startBossStompDefeat) e precisa do corpo físico ligado para se
+      // mover — desativá-lo aqui só porque o jogador lhe tocou de raspão
+      // durante a fuga pará-lo-ia a meio do caminho. Nas outras fases
+      // (intro/collect/quiz) mantém-se o comportamento de sempre.
+      if (bossState.phase !== "defeat") { try{malwareObj.body?.setEnable(false);}catch{} }
+      return true;
+    }
     if (invuln) return true; // já protegido — ignora este toque, sem reprocessar dano
 
     if (isMini) {
@@ -4494,7 +4564,10 @@ window.addEventListener("DOMContentLoaded", () => {
       // por completo — "salto por cima e não acontece nada". Chamar
       // setInvuln() aqui também garante que a proteção se desliga sozinha.
       setInvuln(scene, 1400);
-      scene.time.delayedCall(400, () => { if (lives<=0) showGameOver(); });
+      // Festa do boss (pedido, "tipo Super Mario") — antes do ecrã de "Game
+      // Over" aparecer, dá-se uns instantes para o boss celebrar.
+      triggerBossParty(scene);
+      scene.time.delayedCall(1300, () => { if (lives<=0) showGameOver(); });
       return;
     }
     scene.time.delayedCall(400, () => {

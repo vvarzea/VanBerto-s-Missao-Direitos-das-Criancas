@@ -611,6 +611,68 @@ function makeBossTextures(scene){
     ctx.beginPath(); ctx.ellipse(C, C+25, 5, 5, 0, 0, Math.PI*2); ctx.fill();
     tex.refresh();
   }
+  // Estado "riso maléfico" — usado na entrada do combate (intro): antes de
+  // a luta começar a sério, o boss ri-se de forma trocista, confiante que
+  // vai ganhar. Olhos semicerrados de gozo ("^ ^") + boca bem aberta a rir.
+  if(!scene.textures.exists("boss_monstro_ignorancia_laugh")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_laugh",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    drawMonstroArms(ctx, "wave");
+    ctx.strokeStyle="#2a1060"; ctx.lineWidth=3; ctx.lineCap="round";
+    [-16,16].forEach(dx=>{
+      ctx.beginPath(); ctx.arc(C+dx, C-6, 8, Math.PI*1.15, Math.PI*1.85); ctx.stroke();
+    });
+    ctx.beginPath(); ctx.moveTo(C-28,C-30); ctx.lineTo(C-6,C-24); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+6,C-24); ctx.lineTo(C+28,C-30); ctx.stroke();
+    ctx.fillStyle="#2a1060";
+    ctx.beginPath(); ctx.ellipse(C, C+16, 17, 13, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle="#fffaff";
+    ctx.beginPath(); ctx.ellipse(C, C+9, 13, 4, 0, 0, Math.PI); ctx.fill();
+    tex.refresh();
+  }
+  // Estado "zangado" (vermelho) — ao escalar de fúria a meio do combate (ver
+  // bossEnterRage em dia-crianca.js), a cara fecha-se em fúria: sobrolho em
+  // V carregado, olhos estreitos. O motor de jogo aplica também um tint
+  // avermelhado por cima deste estado (ver bossEnterRage), daí "vermelho".
+  if(!scene.textures.exists("boss_monstro_ignorancia_angry")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_angry",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    drawMonstroArms(ctx, "wave");
+    [-16,16].forEach(dx=>{
+      ctx.fillStyle="#fffaff";
+      ctx.beginPath(); ctx.ellipse(C+dx, C-8, 9, 7, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle="#2a1060"; ctx.beginPath(); ctx.arc(C+dx, C-8, 3.4, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.strokeStyle="#2a1060"; ctx.lineWidth=4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-28,C-24); ctx.lineTo(C-8,C-14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+8,C-14); ctx.lineTo(C+28,C-24); ctx.stroke();
+    ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(C-16,C+14); ctx.lineTo(C+16,C+14); ctx.stroke();
+    tex.refresh();
+  }
+  // Estado "triste" — usado na derrota: em vez do "sentado" calmo de antes
+  // (ver comentário em startBossStompDefeat, dia-crianca.js), o boss fica
+  // com pena e foge a correr. Sobrolho preocupado + olhos fechados de
+  // tristeza + boca em "n" invertido (franzida para baixo) + uma lágrima.
+  if(!scene.textures.exists("boss_monstro_ignorancia_sad")){
+    const tex=scene.textures.createCanvas("boss_monstro_ignorancia_sad",S,S), ctx=tex.getContext();
+    drawMonstroBody(ctx);
+    drawMonstroArms(ctx, "rest");
+    ctx.strokeStyle="#2a1060"; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-24,C-28); ctx.lineTo(C-8,C-22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+8,C-22); ctx.lineTo(C+24,C-28); ctx.stroke();
+    [-16,16].forEach(dx=>{
+      ctx.fillStyle="#fffaff";
+      ctx.beginPath(); ctx.ellipse(C+dx, C-8, 10, 11, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#2a1060"; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle="#2a1060"; ctx.beginPath(); ctx.arc(C+dx, C-4, 3, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.fillStyle="#7fc8ff";
+    ctx.beginPath(); ctx.ellipse(C-16, C+2, 3, 5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#2a1060"; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(C-14,C+24); ctx.quadraticCurveTo(C,C+13,C+14,C+22); ctx.stroke();
+    tex.refresh();
+  }
   // Estado "sentado" — usado na sequência de derrota: senta-se no chão,
   // lê um livro que aparece à sua frente e dá um polegar para cima. Não
   // morre, não explode — só fica contente e simpático, tal como pedido.
@@ -764,6 +826,51 @@ function makeBossTextures(scene){
     tex.refresh();
   }
 
+  // Estado "riso maléfico" — entrada em combate: convencido, quase a
+  // rir-se antes mesmo de começar a lutar.
+  if(!scene.textures.exists("boss_virus_gigante_laugh")){
+    const tex=scene.textures.createCanvas("boss_virus_gigante_laugh",S,S), ctx=tex.getContext();
+    drawVirusBody(ctx); drawVirusArms(ctx,"wave");
+    ctx.strokeStyle="#2a0a1a"; ctx.lineWidth=2.5; ctx.lineCap="round";
+    [-8,8].forEach(dx=>{
+      ctx.beginPath(); ctx.arc(C+dx, C-3, 5, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+    });
+    ctx.fillStyle="#2a0a1a";
+    ctx.beginPath(); ctx.ellipse(C,C+13,9,7,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#ff9fc0";
+    ctx.beginPath(); ctx.ellipse(C,C+9,6,2.4,0,0,Math.PI); ctx.fill();
+    tex.refresh();
+  }
+  // Estado "zangado" (vermelho) — durante a escalada de fúria; o motor de
+  // jogo aplica também um tint avermelhado por cima deste estado.
+  if(!scene.textures.exists("boss_virus_gigante_angry")){
+    const tex=scene.textures.createCanvas("boss_virus_gigante_angry",S,S), ctx=tex.getContext();
+    drawVirusBody(ctx); drawVirusArms(ctx,"wave");
+    ctx.fillStyle="#2a0a1a";
+    ctx.beginPath(); ctx.ellipse(C-8,C-2,4.5,3,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(C+8,C-2,4.5,3,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#2a0a1a"; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-14,C-10); ctx.lineTo(C-3,C-5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+3,C-5); ctx.lineTo(C+14,C-10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C-9,C+12); ctx.lineTo(C-4,C+9); ctx.lineTo(C,C+13); ctx.lineTo(C+4,C+9); ctx.lineTo(C+9,C+12); ctx.stroke();
+    tex.refresh();
+  }
+  // Estado "triste" — derrota: perde o brilho e foge, em vez de continuar
+  // no combate.
+  if(!scene.textures.exists("boss_virus_gigante_sad")){
+    const tex=scene.textures.createCanvas("boss_virus_gigante_sad",S,S), ctx=tex.getContext();
+    drawVirusBody(ctx); drawVirusArms(ctx,"rest");
+    ctx.strokeStyle="#2a0a1a"; ctx.lineWidth=2.5; ctx.lineCap="round";
+    [-8,8].forEach(dx=>{
+      ctx.beginPath(); ctx.arc(C+dx, C+1, 5, Math.PI*0.15, Math.PI*0.85); ctx.stroke();
+    });
+    ctx.fillStyle="#7fc8ff";
+    ctx.beginPath(); ctx.ellipse(C-8,C+5,2.4,4,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#2a0a1a"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(C-6,C+16); ctx.quadraticCurveTo(C,C+10,C+6,C+15); ctx.stroke();
+    tex.refresh();
+  }
+
   // ── 3) Guardião das Sombras — capa encapuzada, olhos a brilhar ──────
   function drawGuardiaoBody(ctx){
     bossShadow(ctx);
@@ -855,6 +962,42 @@ function makeBossTextures(scene){
     drawGuardiaoBody(ctx); drawGuardiaoArms(ctx,"wave");
     glowEye(ctx, C-7, C-18, 6, "#ffffff");
     glowEye(ctx, C+7, C-18, 6, "#ffffff");
+    tex.refresh();
+  }
+
+  // Estado "riso maléfico" — entrada em combate: olhos semicerrados de
+  // gozo, confiante que a escuridão vai vencer. Sem boca (a capa não tem,
+  // ver comentário no "ouch" acima) — tudo se exprime só nos olhos.
+  if(!scene.textures.exists("boss_guardiao_sombras_laugh")){
+    const tex=scene.textures.createCanvas("boss_guardiao_sombras_laugh",S,S), ctx=tex.getContext();
+    drawGuardiaoBody(ctx); drawGuardiaoArms(ctx,"rest");
+    ctx.strokeStyle="#7fe0ff"; ctx.lineWidth=2.5; ctx.lineCap="round";
+    ctx.shadowColor="#7fe0ff"; ctx.shadowBlur=8;
+    [-7,7].forEach(dx=>{
+      ctx.beginPath(); ctx.arc(C+dx, C-15, 4.5, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+    });
+    ctx.shadowBlur=0;
+    tex.refresh();
+  }
+  // Estado "zangado" (vermelho) — durante a escalada de fúria, o brilho dos
+  // olhos muda de ciano para um tom quente/avermelhado; o motor de jogo
+  // aplica também um tint por cima deste estado.
+  if(!scene.textures.exists("boss_guardiao_sombras_angry")){
+    const tex=scene.textures.createCanvas("boss_guardiao_sombras_angry",S,S), ctx=tex.getContext();
+    drawGuardiaoBody(ctx); drawGuardiaoArms(ctx,"wave");
+    glowEye(ctx, C-7, C-18, 5.4, "#ff6a5c");
+    glowEye(ctx, C+7, C-18, 5.4, "#ff6a5c");
+    ctx.strokeStyle="#ff6a5c"; ctx.lineWidth=2.5; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-15,C-27); ctx.lineTo(C-4,C-22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+4,C-22); ctx.lineTo(C+15,C-27); ctx.stroke();
+    tex.refresh();
+  }
+  // Estado "triste" — derrota: o brilho apaga-se quase todo antes de fugir.
+  if(!scene.textures.exists("boss_guardiao_sombras_sad")){
+    const tex=scene.textures.createCanvas("boss_guardiao_sombras_sad",S,S), ctx=tex.getContext();
+    drawGuardiaoBody(ctx); drawGuardiaoArms(ctx,"rest");
+    glowEye(ctx, C-7, C-14, 2.6, "#5a90a8");
+    glowEye(ctx, C+7, C-14, 2.6, "#5a90a8");
     tex.refresh();
   }
 
@@ -956,6 +1099,45 @@ function makeBossTextures(scene){
     [[C-20,C-14,C-28,C-24],[C+20,C-14,C+28,C-24],[C-16,C+10,C-24,C+18]].forEach(([x1,y1,x2,y2])=>{
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
     });
+    tex.refresh();
+  }
+
+  // Estado "riso maléfico" — entrada em combate: o olho brilha de gozo com
+  // pequenas faíscas douradas, como uma gargalhada mecânica.
+  if(!scene.textures.exists("boss_poluidor_mecanico_laugh")){
+    const tex=scene.textures.createCanvas("boss_poluidor_mecanico_laugh",S,S), ctx=tex.getContext();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave");
+    ctx.strokeStyle="#ff4030"; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.shadowColor="#ff4030"; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.arc(C,C-2,7,Math.PI*1.1,Math.PI*1.9); ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle="#ffe85c"; ctx.lineWidth=2;
+    [[C-16,C-12,C-22,C-18],[C+16,C-12,C+22,C-18]].forEach(([x1,y1,x2,y2])=>{
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    });
+    tex.refresh();
+  }
+  // Estado "zangado" (vermelho) — o LED central fica maior e mais intenso
+  // durante a escalada de fúria; o motor de jogo aplica também um tint por
+  // cima deste estado.
+  if(!scene.textures.exists("boss_poluidor_mecanico_angry")){
+    const tex=scene.textures.createCanvas("boss_poluidor_mecanico_angry",S,S), ctx=tex.getContext();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave");
+    glowEye(ctx, C, C-2, 10, "#ff4030");
+    ctx.strokeStyle="#3a4028"; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-14,C-16); ctx.lineTo(C-4,C-10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+4,C-10); ctx.lineTo(C+14,C-16); ctx.stroke();
+    tex.refresh();
+  }
+  // Estado "triste" — derrota: o LED apaga-se quase todo antes do robô se
+  // desligar e fugir a coxear.
+  if(!scene.textures.exists("boss_poluidor_mecanico_sad")){
+    const tex=scene.textures.createCanvas("boss_poluidor_mecanico_sad",S,S), ctx=tex.getContext();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest");
+    ctx.strokeStyle="#ff8070"; ctx.lineWidth=2; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-5,C-2); ctx.lineTo(C+5,C-2); ctx.stroke();
+    ctx.strokeStyle="#3a4028"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(C-10,C+14); ctx.lineTo(C-2,C+18); ctx.lineTo(C+10,C+12); ctx.stroke();
     tex.refresh();
   }
 
