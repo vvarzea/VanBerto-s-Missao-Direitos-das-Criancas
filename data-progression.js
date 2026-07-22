@@ -1,12 +1,18 @@
 // ===== Sistemas de progressão: mapa, artefactos, conquistas =====
 // MAP_REGIONS, ARTEFACTS, ARTEFACT_SETS, SET_REACTIONS, ACHIEVEMENTS_DEFS
 
+// Reorganizado pelos 4 pilares da Convenção sobre os Direitos da Criança
+// (Sobrevivência / Desenvolvimento / Proteção / Participação — UNICEF),
+// mantendo os 20 níveis e a sua dificuldade intactos (só o TEMA de cada
+// nível mudou de posição, ver data-levels.js). Sobrevivência só tem 1 nível
+// próprio (Saúde) no conteúdo atual do jogo, por isso fica junto ao
+// prólogo histórico no 1º mundo, em vez de sozinho num "mundo" de 1 nível.
 export const MAP_REGIONS = [
-  { id:"educacao",   icon:"📚", name:"Reino da Educação",       sub:"As origens do Dia da Criança",         levels:[0,1,2,3,4] },
-  { id:"saude",      icon:"🏥", name:"Vale da Saúde",            sub:"Bem-estar, futuro e identidade",       levels:[5,6,7,8,9] },
-  { id:"protecao",   icon:"🛡️", name:"Fortaleza da Proteção",   sub:"Família, refúgio e liberdade",         levels:[10,11,12,13,14] },
-  { id:"moderno",    icon:"🌐", name:"Cidade do Mundo Moderno", sub:"Privacidade, cultura e sustentabilidade", levels:[15,16,17,18,19] },
-  { id:"base",       icon:"🏠", name:"Base do VanBerto's",       sub:"O teu ponto de partida",                levels:[] },
+  { id:"origens",        icon:"📜", name:"Reino das Origens",       sub:"A história dos direitos — e a Saúde",     levels:[0,1,2,3,4] },
+  { id:"desenvolvimento",icon:"📚", name:"Vale do Desenvolvimento", sub:"Brincar, futuro, cultura e educação",     levels:[5,6,7,8] },
+  { id:"protecao",       icon:"🛡️", name:"Fortaleza da Proteção",   sub:"Família, refúgio, trabalho e ambiente",   levels:[9,10,11,12,13,14] },
+  { id:"participacao",   icon:"🗣️", name:"Cidade da Participação",  sub:"Identidade, privacidade e expressão",     levels:[15,16,17,18,19] },
+  { id:"base",           icon:"🏠", name:"Base do VanBerto's",       sub:"O teu ponto de partida",                  levels:[] },
 ];
 
 export const ARTEFACTS = [
