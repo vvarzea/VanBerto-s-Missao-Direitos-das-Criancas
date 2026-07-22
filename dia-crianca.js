@@ -3225,7 +3225,7 @@ window.addEventListener("DOMContentLoaded", () => {
     destroyBossHpBar();
     // Começa em "intro": todos os timers/movimentos do boss (que verificam
     // phase!=="platform") ficam inertes enquanto decorre a cinemática de entrada.
-    bossState = { def, hp: def.hp, phase: "intro", collected: 0, onComplete, hitCooldownUntil: 0, rageLevel: 0, speedMult: 1 };
+    bossState = { def, hp: def.hp, phase: "intro", collected: 0, onComplete, hitCooldownUntil: 0, rageLevel: 0, speedMult: 1, qmarkShotCount: 0 };
 
     // Limpar o palco tal como loadLevel já faz — arena dedicada, isolada do nível anterior
     enemyTimers.forEach(t=>{try{t.remove(false);}catch{}}); enemyTimers=[];
@@ -4061,7 +4061,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const b = bossState.sprite;
     if (!b || !b.active) return;
     const def = bossState.def;
-    const towardPlayer = player.x < b.x ? -1 : 1;
+    // qmarkShotCount conta quantos ataques este boss já disparou neste
+    // combate (posto a 0 em startBossFight). Usado por forceFirstOrbRight
+    // (opt-in em data-bosses.js) para o 1º ataque ir sempre para a direita,
+    // independentemente de onde o VanBerto's estiver — só a partir do 2º
+    // ataque é que persegue mesmo o jogador.
+    const shotIdx = bossState.qmarkShotCount || 0;
+    bossState.qmarkShotCount = shotIdx + 1;
+    const towardPlayer = (shotIdx === 0 && def.forceFirstOrbRight)
+      ? 1
+      : (player.x < b.x ? -1 : 1);
     const q = itemsGroup.create(b.x, b.y - 10, def.orbTexture || "boss_proj_qmark");
     if (def.orbTint != null) q.setTint(def.orbTint);
     q.setDepth(2).setData("bossProjQmark", true);

@@ -128,6 +128,7 @@ export const BOSSES = [
     // qmarkEvery subiu de 2400 → 2900ms — mais tempo entre ataques, para dar
     // tempo a uma criança reagir e saltar com calma em vez de reflexos de adulto.
     qmarkEvery: 2900,
+    forceFirstOrbRight: true, // pedido: o 1º ataque deste boss vai sempre para a direita — só a partir do 2º persegue mesmo o VanBerto's
     orbTexture: "boss_proj_germ", // micróbio com espigões — antes reutilizava a bola "?" do Monstro, sem sentido temático para um vírus
     orbTint: 0xe0409a,       // rosa, a condizer com o próprio Vírus
     // bossY: mesmo raciocínio do Monstro — chão da arena (topo em y=506)
