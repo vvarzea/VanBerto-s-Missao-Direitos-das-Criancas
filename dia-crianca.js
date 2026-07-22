@@ -4068,7 +4068,8 @@ window.addEventListener("DOMContentLoaded", () => {
     // ataque é que persegue mesmo o jogador.
     const shotIdx = bossState.qmarkShotCount || 0;
     bossState.qmarkShotCount = shotIdx + 1;
-    const towardPlayer = (shotIdx === 0 && def.forceFirstOrbRight)
+    const isForcedFirstShot = (shotIdx === 0 && def.forceFirstOrbRight);
+    const towardPlayer = isForcedFirstShot
       ? 1
       : (player.x < b.x ? -1 : 1);
     const q = itemsGroup.create(b.x, b.y - 10, def.orbTexture || "boss_proj_qmark");
@@ -4077,7 +4078,20 @@ window.addEventListener("DOMContentLoaded", () => {
     q.body.setAllowGravity(true);
     q.body.setGravityY(480);
     q.body.setBounce(0.5, 0);
-    q.body.setCollideWorldBounds(true);
+    // CORRIGIDO (pedido: "o 2º boss continua a ir direito ao VanBerto's no
+    // 1º disparo"): o Vírus Gigante nasce perto do limite direito da sua
+    // arena (worldW-200, e a arena dele só tem 960px de largura — ver
+    // spawnBossSprite/data-bosses.js), por isso a bola forçada para a
+    // direita só percorria ~200px antes de bater no limite do mundo. Com
+    // setCollideWorldBounds(true) + setBounce(0.5,0) ela ressaltava e
+    // voltava mesmo a direito ao jogador, anulando a intenção de
+    // forceFirstOrbRight (dar um 1º ataque "inofensivo"). Para o disparo
+    // forçado, desliga-se a colisão com os limites do mundo — a bola sai
+    // simplesmente de cena pela direita (é destruída aos 4500ms de
+    // qualquer forma) em vez de voltar. Todos os outros disparos (a partir
+    // do 2º, e qualquer boss sem forceFirstOrbRight) mantêm o
+    // comportamento antigo, incluindo o ressalto normal nas plataformas.
+    q.body.setCollideWorldBounds(!isForcedFirstShot);
     q.setVelocity(towardPlayer * 90, -120);
     q.setAngularVelocity(towardPlayer * 130);
     scene.physics.add.collider(q, platforms);
