@@ -144,6 +144,12 @@ export const LEVELS = [
     name: "Nível 7 — O Direito ao Brincar",
     artIdx:3, theme:3, quizTheme:"brincar", worldW:2800,
     spawn:{x:480,y:460}, doorX:2630,
+    // signX: por defeito o letreiro/informação ficaria em spawn.x+240 (=720),
+    // o que cai quase em cima do 1º trampolim (x:680) e a poucos passos do
+    // vilão logo a seguir (x:650, pattern "mini") — informação, trampolim e
+    // vilão todos empilhados na mesma zona pequena. Movido para 540: zona
+    // livre logo a seguir ao spawn, bem antes desse conjunto.
+    signX: 540,
     // ══ MECÂNICA ESPECIAL: TRAMPOLINS ══
     // Plataformas mais largas (240px) e vãos mais curtos (~200px) — acessível em mobile.
     // Os trampolins são o caminho principal mas um bom salto normal chega às plataformas mais baixas.
