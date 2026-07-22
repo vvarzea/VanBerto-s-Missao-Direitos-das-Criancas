@@ -1034,14 +1034,26 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     // Botão "Ir para nível" — seletor de nível para a professora (protegido por PIN)
-    const TEACHER_PIN = "3583";
+    // Nota de segurança: isto é só uma barreira de conveniência (não há como
+    // guardar um segredo real só com JavaScript no browser). Por isso guarda-se
+    // o hash SHA-256 do PIN em vez do PIN em texto simples — um aluno que veja
+    // o código-fonte não lê o código diretamente, só o hash (irreversível na
+    // prática). Para trocar o PIN, gera um novo hash (ex.: na consola do
+    // browser: `await crypto.subtle.digest("SHA-256", new TextEncoder().encode("NOVOPIN"))`
+    // e converte para hex) e substitui o valor abaixo.
+    const TEACHER_PIN_HASH = "d4cd013f21bbf4b52c431691b7056337c35d0ad6fc7acc7084abc1039633618e"; // hash de "3583"
+    async function sha256Hex(text) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
     const btnGoToLevel = document.getElementById("btnGoToLevel");
     if (btnGoToLevel) {
-      btnGoToLevel.onclick = () => {
+      btnGoToLevel.onclick = async () => {
         if (!sceneRef) return;
         const pin = prompt("🔒 Código da professora:");
         if (pin === null) return;
-        if (pin !== TEACHER_PIN) { alert("❌ Código incorreto."); return; }
+        const pinHash = await sha256Hex(pin);
+        if (pinHash !== TEACHER_PIN_HASH) { alert("❌ Código incorreto."); return; }
         const levelNames = LEVELS.map((l,i)=>`${i+1}. ${l.name.replace(/^Nível \d+\s*[—–-]\s*/,"")}`).join("\n");
         const input = prompt(
           `🎯 Ir para qual nível? (1-${LEVELS.length})\n\n${levelNames}`,
