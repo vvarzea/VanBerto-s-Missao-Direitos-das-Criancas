@@ -4334,8 +4334,17 @@ window.addEventListener("DOMContentLoaded", () => {
       const range = bossState.def.waveRange != null
         ? Math.min(bossState.def.waveRange, centerX - 120)
         : Math.min(480, centerX - 120);
+      // Antes: b.y usava sin(t*1.7) — uma frequência diferente da de b.x
+      // (sin(t)) — o que desenhava uma curva de Lissajous, sem ciclo simples
+      // de prever. Isso tornava este boss muito mais difícil de "ler" do que
+      // os outros 3 (que só se movem num eixo, ou ficam parados entre
+      // saltos), mesmo já com a velocidade reduzida (waveSpeedMult).
+      // Agora X e Y usam o MESMO t (com cos em vez de sin no eixo Y, só
+      // para dar o efeito de órbita) — isto desenha uma elipse simples e
+      // sempre igual, uma volta completa por ciclo: fácil de prever depois
+      // de a criança ver passar uma vez.
       b.x = centerX + Math.sin(t) * range;
-      b.y = bossState.baseY + Math.sin(t*1.7) * 44;
+      b.y = bossState.baseY + Math.cos(t) * 40;
       if (b.body) b.body.reset(b.x, b.y);
     } else if (mt === "patrol" || !mt) {
       const speed = (bossState.def.patrolSpeed || 110) * speedMult;

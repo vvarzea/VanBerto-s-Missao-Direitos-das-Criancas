@@ -1195,6 +1195,73 @@ function makeBossTextures(scene){
     ctx.textBaseline="alphabetic";
     tex.refresh();
   }
+
+  // ── Micróbio do Vírus Gigante — bolinha com espigões curtos, sem símbolo
+  // nenhum (o "?" só fazia sentido no Monstro da Ignorância). Desenhada em
+  // tons neutros/claros para o setTint (orbTint em data-bosses.js) pintar
+  // limpo por cima, tal como já acontecia com a bola ❓ original.
+  if(!scene.textures.exists("boss_proj_germ")){
+    const w=30,h=30,tex=scene.textures.createCanvas("boss_proj_germ",w,h), ctx=tex.getContext();
+    const cx=w/2, cy=h/2, r=10;
+    // espigões curtos à volta (visual de vírus/micróbio, não de "perigo")
+    ctx.strokeStyle="#e8e0ff"; ctx.lineWidth=2.2;
+    for(let i=0;i<8;i++){
+      const a=(Math.PI*2*i)/8;
+      const x1=cx+Math.cos(a)*r, y1=cy+Math.sin(a)*r;
+      const x2=cx+Math.cos(a)*(r+4.5), y2=cy+Math.sin(a)*(r+4.5);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x2,y2,1.6,0,Math.PI*2); ctx.fillStyle="#e8e0ff"; ctx.fill();
+    }
+    const gr=ctx.createRadialGradient(cx-3,cy-3,1,cx,cy,r);
+    gr.addColorStop(0,"#ffffff"); gr.addColorStop(0.6,"#e8e0ff"); gr.addColorStop(1,"#b8a8e0");
+    ctx.fillStyle=gr;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    // pequenas manchas internas, tipo organelos
+    ctx.fillStyle="rgba(150,120,200,0.5)";
+    ctx.beginPath(); ctx.arc(cx-3,cy+2,2.4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+3,cy-3,1.8,0,Math.PI*2); ctx.fill();
+    tex.refresh();
+  }
+
+  // ── Orbe sombrio do Guardião das Sombras — nuvem escura com brilho, sem
+  // símbolo — desenhada quase branca (o tint em data-bosses.js é que lhe dá
+  // a cor roxo-escura final).
+  if(!scene.textures.exists("boss_proj_shadow")){
+    const w=30,h=30,tex=scene.textures.createCanvas("boss_proj_shadow",w,h), ctx=tex.getContext();
+    const cx=w/2, cy=h/2;
+    ctx.shadowColor="#f0eaff"; ctx.shadowBlur=8;
+    const gr=ctx.createRadialGradient(cx,cy,1,cx,cy,13);
+    gr.addColorStop(0,"#ffffff"); gr.addColorStop(0.5,"#e0d8ff"); gr.addColorStop(1,"#a898d8");
+    ctx.fillStyle=gr;
+    ctx.beginPath(); ctx.arc(cx,cy,11,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    // "cauda" de fumo/sombra a espiralar para dar sensação de algo imaterial
+    ctx.strokeStyle="rgba(255,255,255,0.55)"; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(cx,cy,6,0.6,3.6); ctx.stroke();
+    tex.refresh();
+  }
+
+  // ── Faísca/parafuso do Poluidor Mecânico — pequena porca dourada com
+  // brilho, sem símbolo — tema industrial em vez de "perigo desconhecido".
+  if(!scene.textures.exists("boss_proj_bolt")){
+    const w=30,h=30,tex=scene.textures.createCanvas("boss_proj_bolt",w,h), ctx=tex.getContext();
+    const cx=w/2, cy=h/2, r=9;
+    const gr=ctx.createRadialGradient(cx-3,cy-3,1,cx,cy,r+3);
+    gr.addColorStop(0,"#fffef0"); gr.addColorStop(0.6,"#f0ecc8"); gr.addColorStop(1,"#c8bc80");
+    ctx.fillStyle=gr;
+    // hexágono (porca)
+    ctx.beginPath();
+    for(let i=0;i<6;i++){
+      const a=(Math.PI*2*i)/6 - Math.PI/2;
+      const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle="#8a7a30"; ctx.lineWidth=1.6; ctx.stroke();
+    ctx.fillStyle="#8a7a30";
+    ctx.beginPath(); ctx.arc(cx,cy,3.2,0,Math.PI*2); ctx.fill();
+    tex.refresh();
+  }
 }
 
 function makeSparkTexture(scene){
