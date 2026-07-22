@@ -3453,14 +3453,9 @@ window.addEventListener("DOMContentLoaded", () => {
       const bookTimer = scene.time.addEvent({ delay: 1700, loop: true, callback: () => doBossThrowBook(scene) });
       bossTimers.push(bookTimer); bossState.bookTimer = bookTimer; bossState.bookBaseDelay = 1700;
     }
-    if (def.stompBoss) {
-      // "De vez em quando faz um pequeno salto" — puramente visual (não é
-      // um ataque, só personalidade) — e uma bola ❓ lenta pelo chão.
-      const hopTimer = scene.time.addEvent({ delay: def.hopEvery || 2400, loop: true, callback: () => doBossHop(scene) });
-      bossTimers.push(hopTimer); bossState.hopTimer = hopTimer; bossState.hopBaseDelay = def.hopEvery || 2400;
-      const qmarkTimer = scene.time.addEvent({ delay: def.qmarkEvery || 2200, loop: true, callback: () => doBossRollQmark(scene) });
-      bossTimers.push(qmarkTimer); bossState.qmarkTimer = qmarkTimer; bossState.qmarkBaseDelay = def.qmarkEvery || 2200;
-    }
+    // hopTimer/qmarkTimer (stompBoss) deixaram de ser criados aqui — ver o
+    // callback de playBossDialogue, mais abaixo, e o comentário lá sobre o
+    // porquê (pedido: "o ataque tem de ser mais calmo ao início").
     if (def.smokePuffEvery) {
       // Marca própria do Poluidor Mecânico (ver data-bosses.js) — baforadas
       // de fumo da chaminé, puramente visuais/atmosféricas.
@@ -3546,6 +3541,31 @@ window.addEventListener("DOMContentLoaded", () => {
       }
       const objEmoji = def.stompBoss ? "👣" : (def.specialAttack ? (def.specialAttack.emoji || "⚡") : "⭐");
       tipText.setText(objEmoji + " " + objective);
+      if (def.stompBoss) {
+        // CORRIGIDO (pedido: "o boss não pode ir logo atacar, é impossível
+        // fugir — ao início o ataque tem de ser mais calmo"). Estes dois
+        // temporizadores costumavam ser criados na fase de preparação, ANTES
+        // do diálogo de entrada — como o relógio do Phaser corre por trás
+        // independentemente de o diálogo ainda estar a decorrer, o 1º orbe
+        // podia chegar quase de imediato mal o jogador ganhava controlo,
+        // dependendo só de quanto tempo tinha demorado a ler o diálogo (o
+        // mesmo problema de fundo já corrigido para o movimento em onda do
+        // Vírus Gigante, ver bossState.waveStartTime, mais acima). Agora só
+        // começam a contar a partir DAQUI — o instante exacto em que o
+        // combate a sério começa — e o 1º arremesso tem ainda um alívio
+        // extra (+1500ms) por cima do intervalo normal, para dar tempo a
+        // perceber o movimento do boss antes do primeiro ataque de verdade.
+        const hopDelay = def.hopEvery || 2400;
+        const hopTimer = scene.time.addEvent({ delay: hopDelay, loop: true, callback: () => doBossHop(scene) });
+        bossTimers.push(hopTimer); bossState.hopTimer = hopTimer; bossState.hopBaseDelay = hopDelay;
+        const qmarkDelay = def.qmarkEvery || 2200;
+        const firstQmark = scene.time.delayedCall(qmarkDelay + 1500, () => {
+          doBossRollQmark(scene);
+          const qmarkTimer = scene.time.addEvent({ delay: qmarkDelay, loop: true, callback: () => doBossRollQmark(scene) });
+          bossTimers.push(qmarkTimer); bossState.qmarkTimer = qmarkTimer; bossState.qmarkBaseDelay = qmarkDelay;
+        });
+        bossTimers.push(firstQmark);
+      }
       awaitingQuiz = false; awaitingStory = false;
       scene.physics.resume();
       // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
