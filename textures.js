@@ -1223,21 +1223,37 @@ function makeBossTextures(scene){
     tex.refresh();
   }
 
-  // ── Orbe sombrio do Guardião das Sombras — nuvem escura com brilho, sem
-  // símbolo — desenhada quase branca (o tint em data-bosses.js é que lhe dá
-  // a cor roxo-escura final).
+  // ── Orbe sombrio do Guardião das Sombras — antes era só um círculo liso
+  // com um traço fino (não lia como "nuvem" nenhuma, parecia só uma bolinha
+  // igual às outras). Agora é um aglomerado de bolhas sobrepostas (silhueta
+  // tipo nuvenzinha), com 2 caudas de fumo a espiralar para os lados e um
+  // par de "olhos" ténues — dá logo a ideia de nuvem/sombra com alguma
+  // presença assombrada, sem símbolo nenhum. Desenhada quase branca (o tint
+  // em data-bosses.js é que lhe dá a cor roxo-escura final).
   if(!scene.textures.exists("boss_proj_shadow")){
     const w=30,h=30,tex=scene.textures.createCanvas("boss_proj_shadow",w,h), ctx=tex.getContext();
     const cx=w/2, cy=h/2;
-    ctx.shadowColor="#f0eaff"; ctx.shadowBlur=8;
-    const gr=ctx.createRadialGradient(cx,cy,1,cx,cy,13);
-    gr.addColorStop(0,"#ffffff"); gr.addColorStop(0.5,"#e0d8ff"); gr.addColorStop(1,"#a898d8");
+    ctx.shadowColor="#e8e0ff"; ctx.shadowBlur=6;
+    const gr=ctx.createRadialGradient(cx-2,cy-2,1,cx,cy,13);
+    gr.addColorStop(0,"#ffffff"); gr.addColorStop(0.45,"#d8ccf5"); gr.addColorStop(1,"#9a86d0");
     ctx.fillStyle=gr;
-    ctx.beginPath(); ctx.arc(cx,cy,11,0,Math.PI*2); ctx.fill();
+    // Várias bolhas sobrepostas em vez de um único círculo perfeito — é isto
+    // que dá a silhueta irregular e "fofa" de nuvem, em vez de uma bola lisa.
+    [[0,-2,7],[-6,1,5.5],[6,1,5.5],[-3,5,5],[3,5,5],[0,0,8]].forEach(([dx,dy,r])=>{
+      ctx.beginPath(); ctx.arc(cx+dx,cy+dy,r,0,Math.PI*2); ctx.fill();
+    });
     ctx.shadowBlur=0;
-    // "cauda" de fumo/sombra a espiralar para dar sensação de algo imaterial
-    ctx.strokeStyle="rgba(255,255,255,0.55)"; ctx.lineWidth=1.6;
-    ctx.beginPath(); ctx.arc(cx,cy,6,0.6,3.6); ctx.stroke();
+    // Duas caudas de fumo/sombra a espiralar para os lados opostos — reforça
+    // a sensação de algo imaterial (nem espigões de vírus, nem contorno reto
+    // de porca/parafuso).
+    ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(cx-9,cy-1); ctx.quadraticCurveTo(cx-13,cy-6,cx-11,cy-11); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+9,cy+2); ctx.quadraticCurveTo(cx+13,cy+7,cx+10,cy+12); ctx.stroke();
+    // Par de "olhos" bem ténues — presença ligeiramente assombrada, sem
+    // exagerar (isto continua a ser um jogo do 4º ano).
+    ctx.fillStyle="rgba(230,220,255,0.9)";
+    ctx.beginPath(); ctx.ellipse(cx-2.5,cy-1,1.1,1.6,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+2.5,cy-1,1.1,1.6,0,0,Math.PI*2); ctx.fill();
     tex.refresh();
   }
 
