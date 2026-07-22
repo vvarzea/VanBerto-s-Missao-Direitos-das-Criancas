@@ -3524,6 +3524,20 @@ window.addEventListener("DOMContentLoaded", () => {
           const b = bossState.sprite;
           const pulseScale = b.scaleX * 1.18; // pulsa ~18% maior, proporcional à escala base
           scene.tweens.add({ targets: b, scaleX: pulseScale, scaleY: pulseScale, duration: 700, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+          // CORRIGIDO — bloqueava qualquer hipótese de reagir à 1ª investida:
+          // o movimento em onda (ver updateBossFight) calculava a posição a
+          // partir de scene.time.now, ou seja, o tempo TOTAL desde que a
+          // página abriu — não desde que o combate começou. Isso fazia o
+          // Vírus Gigante "saltar" instantaneamente (não deslizar) para um
+          // ponto qualquer da onda mal a fase "platform" arrancava — podia
+          // muito bem calhar mesmo em cima do VanBerto's, sem aviso nenhum
+          // nem tempo de reação, dependendo só de há quanto tempo o jogo
+          // estava aberto. Guardar aqui o instante exacto em que o combate
+          // começa (waveStartTime) e usar SÓ o tempo decorrido a partir daí
+          // (ver updateBossFight) garante que a onda começa sempre no
+          // centro da arena, previsível, dando ao jogador um instante para
+          // se orientar antes de o boss começar a deslizar de um lado para o outro.
+          bossState.waveStartTime = scene.time.now;
         } else if (def.movementType !== "blink" && def.movementType !== "teleport") {
           // Mesma condição "senão" de spawnBossSprite (patrol e qualquer
           // futuro tipo por omissão) — mantém as duas funções em sincronia.
@@ -4260,7 +4274,14 @@ window.addEventListener("DOMContentLoaded", () => {
     const mt = bossState.def.movementType;
     const speedMult = bossState.speedMult || 1;
     if (mt === "wave") {
-      const t = scene.time.now * 0.0016 * (bossState.def.waveSpeedMult || 1) * speedMult;
+      // Relativo ao instante em que o combate começou (waveStartTime, ver
+      // acima) — NUNCA a scene.time.now diretamente. Ver comentário nesse
+      // ponto: usar o tempo absoluto da sessão fazia a onda começar num
+      // ponto aleatório (dependente de há quanto tempo o jogo estava
+      // aberto), incluindo, por vezes, mesmo em cima do jogador logo no
+      // primeiro frame do combate.
+      const elapsed = scene.time.now - (bossState.waveStartTime != null ? bossState.waveStartTime : scene.time.now);
+      const t = elapsed * 0.0016 * (bossState.def.waveSpeedMult || 1) * speedMult;
       // Relativo ao worldW da própria arena — tal como o "patrol" logo a
       // seguir já estava corrigido para isto (ver comentário aí). Antes
       // este movimento tinha um deslocamento fixo (-700) e um raio fixo
