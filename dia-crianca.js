@@ -3156,7 +3156,7 @@ window.addEventListener("DOMContentLoaded", () => {
   let bossOverlay = null; // rectangle usado pelo Guardião das Sombras
   let bossLockIcon = null; // 🔒/⭐ flutuante por cima do boss — lembrete visual permanente,
                            // sem depender de o jogador ler o texto do objetivo
-  let bossRageIcon = null; // 😠/😡 flutuante por cima do boss — mostra a fase de raiva atual
+  let bossRageIcon = null; // já não é criado em lado nenhum (ver bossEnterRage) — a variável e as
   let controlsInvertedUntil = 0; // usado pelo "livro mau" do Monstro da Ignorância
   let bossVignette = null; // moldura escura nos cantos — usada pela fase final de def.phases (ex.: "Preconceito")
   let bossArenaDecor = []; // elementos ambiente (emoji+tween) da arena temática — ver def.arena.decor
@@ -3943,7 +3943,18 @@ window.addEventListener("DOMContentLoaded", () => {
       onComplete: () => { try{ warnGlow.destroy(); }catch{} }
     });
     scene.time.delayedCall(320, () => {
-      try{ warnGlow.destroy(); }catch{}
+      // CORRIGIDO — este era o bloqueio total ao entrar em combate com o
+      // Guardião das Sombras. O tween acima e este delayedCall tinham AMBOS
+      // 320ms — ao dispararem no mesmo instante, havia uma corrida: se este
+      // delayedCall destruísse warnGlow antes de o tween processar o seu
+      // último frame, o Phaser tentava continuar a atualizar a propriedade
+      // "radius" num objeto já destruído (internamente nulo) e lançava
+      // "Cannot set properties of null (setting 'radius')" — um erro por
+      // apanhar que travava o motor de jogo por completo (nada respondia
+      // mais). scene.tweens.killTweensOf() ANTES do destroy() garante que o
+      // tween para de vez, em vez de tentar mais um frame de animação num
+      // alvo que já não existe.
+      if (warnGlow) { try{ scene.tweens.killTweensOf(warnGlow); }catch{} try{ warnGlow.destroy(); }catch{} }
       // Segurança: se o combate acabou/reiniciou durante estes 320ms
       // (ex.: o jogador derrotou o boss mesmo antes do aviso terminar),
       // não continuar para o teletransporte em si.
@@ -4177,6 +4188,12 @@ window.addEventListener("DOMContentLoaded", () => {
     // já absorve qualquer toque em silêncio fora da fase "platform", por isso
     // não há risco de o jogador "levar dano" de um boss já derrotado.
     if (b) { b.setVelocity(0,0); b.clearTint(); }
+    // Véu de sombra do Guardião das Sombras (bossOverlay, ver movementType
+    // "teleport" em startBossFight): só a função de derrota dos bosses SEM
+    // stompBoss o destruía — como agora TODOS os bosses são stompBoss, esse
+    // caminho ficou morto e o véu nunca mais era removido ao vencer o
+    // Guardião, ficando a piscar por cima dos níveis seguintes.
+    if (bossOverlay) { try{bossOverlay.destroy();}catch{} bossOverlay = null; }
     // Boss vencido — os temporizadores de combate (saltos, bolas, piscar, etc.)
     // já não têm nada para fazer a partir daqui (as suas callbacks verificam a
     // fase e ficam em no-op fora de "platform"), mas continuavam literalmente a
@@ -4188,10 +4205,7 @@ window.addEventListener("DOMContentLoaded", () => {
     itemCountText.setText("");
     tipText.setText("");
     const sadKey = "boss_" + def.id + "_sad";
-    if (b && b.active) {
-      if (sceneRef.textures.exists(sadKey)) b.setTexture(sadKey);
-      showFloat(sceneRef, b.x, b.y-70, "😢", "#a0c0ff");
-    }
+    if (b && b.active && sceneRef.textures.exists(sadKey)) b.setTexture(sadKey);
     // Meio segundo de cara triste antes de fugir — dá tempo à criança de
     // "ler" a expressão antes de o boss se ir embora.
     sceneRef.time.delayedCall(500, () => {
@@ -4236,7 +4250,6 @@ window.addEventListener("DOMContentLoaded", () => {
       targets:b, angle:{from:-8,to:8}, duration:220, yoyo:true, repeat:4, ease:"Sine.easeInOut",
       onComplete: () => { if (b.active) b.setAngle(0); }
     });
-    showFloat(scene, b.x, b.y-80, "😈", "#ffd700");
     ensureAudio(); beep({freq:520,dur:0.09,type:"square",vol:0.05,slideTo:780});
   }
 
@@ -4245,12 +4258,6 @@ window.addEventListener("DOMContentLoaded", () => {
     if (bossState.phase !== "platform") return;
     const b = bossState.sprite;
     const mt = bossState.def.movementType;
-    // O ícone de raiva (😠/😡) acompanha o boss, tal como a barra de vida —
-    // sem isto ficava preso no sítio onde apareceu, mesmo com o boss em movimento.
-    if (bossRageIcon) {
-      bossRageIcon.x = b.x;
-      bossRageIcon.y = b.y - (b.displayHeight/2 || 40) - 26;
-    }
     const speedMult = bossState.speedMult || 1;
     if (mt === "wave") {
       const t = scene.time.now * 0.0016 * (bossState.def.waveSpeedMult || 1) * speedMult;
@@ -4346,12 +4353,11 @@ window.addEventListener("DOMContentLoaded", () => {
       b.setTint(level === 1 ? 0xffb0a0 : 0xff6a5c);
     }
 
-    // Ícone de emoção por cima do boss — 😠 zangado, 😡 desesperado — substitui
-    // o 🔒/⭐ só por um instante (bossLockIcon continua a atualizar-se por cima).
-    if (bossRageIcon) { try{bossRageIcon.destroy();}catch{} }
-    const emo = level === 1 ? "😠" : "😡";
-    bossRageIcon = scene.add.text(b ? b.x : bossState.baseX, (b ? b.y - (b.displayHeight/2||40) - 26 : bossState.baseY), emo, { fontSize:"26px" }).setOrigin(0.5).setDepth(8);
-    scene.tweens.add({ targets:bossRageIcon, scaleX:{from:0.7,to:1.3}, scaleY:{from:0.7,to:1.3}, duration:260, yoyo:true, repeat:2, ease:"Back.easeOut" });
+    // O ícone flutuante 😠/😡 que existia aqui foi removido (pedido: nada de
+    // emojis por cima do boss — a cara dele, já trocada acima para "_angry"
+    // + tint, é que deve exprimir a fúria sozinha, tal como um boss clássico
+    // à Mario nunca teve um ícone de emoção a flutuar por cima).
+    if (bossRageIcon) { try{bossRageIcon.destroy();}catch{} bossRageIcon = null; }
 
     // Reação de câmara mais forte quanto mais zangado — sem exagerar, só o
     // suficiente para se notar a diferença entre as duas fases.
