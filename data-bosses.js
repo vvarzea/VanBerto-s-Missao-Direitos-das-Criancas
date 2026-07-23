@@ -148,6 +148,12 @@ export const BOSSES = [
     // certo agora que este é o boss de abertura.
     waveSpeedMult: 0.3,
     waveRange: 210,
+    // NOVO (pedido: "morre quase logo ao começar" — arranca demasiado
+    // perto do ponto de partida do VanBerto's): sem isto, o boss começava
+    // a onda mesmo no centro da arena (480), a só ~80px do spawn (400).
+    // Math.PI/2 arranca-o antes no extremo mais longe do spawn (~690px,
+    // quase 290px de distância) — ver updateBossFight em dia-crianca.js.
+    wavePhaseOffset: Math.PI / 2,
     // qmarkEvery subiu de 2900 → 3400ms (era 2400 antes disso) — como 1º
     // boss do jogo, a criança precisa de mais tempo só para perceber o
     // movimento em onda antes do 1º ataque a sério chegar.

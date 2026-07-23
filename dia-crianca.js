@@ -3580,6 +3580,17 @@ window.addEventListener("DOMContentLoaded", () => {
       }
       awaitingQuiz = false; awaitingStory = false;
       scene.physics.resume();
+      if (def.stompBoss) {
+        // Instantes de proteção ao ganhar controlo (pedido: "morre quase
+        // logo ao começar", reportado no Vírus Gigante, o boss de
+        // abertura) — reaproveita o mesmo setInvuln() já usado depois de
+        // levar um golpe, mas agora também no ARRANQUE do combate. Dá à
+        // criança um instante para se orientar antes de qualquer contacto
+        // poder doer, tal como um boss clássico nunca ataca no exato
+        // instante em que o jogador ganha controlo. Aplica-se aos 4
+        // bosses (não só ao Vírus) — mesmo problema, mesma solução.
+        setInvuln(scene, 1600);
+      }
       // Letreiro do objetivo — perto do ponto de partida do jogador na arena,
       // para ser o primeiro coisa que encontra ao começar a andar. signX
       // (opt-in, def.arena — tal como signY) permite a um boss afinar esta
@@ -4389,7 +4400,16 @@ window.addEventListener("DOMContentLoaded", () => {
       // aberto), incluindo, por vezes, mesmo em cima do jogador logo no
       // primeiro frame do combate.
       const elapsed = scene.time.now - (bossState.waveStartTime != null ? bossState.waveStartTime : scene.time.now);
-      const t = elapsed * 0.0016 * (bossState.def.waveSpeedMult || 1) * speedMult;
+      // wavePhaseOffset (opt-in, ver data-bosses.js): desloca o ponto de
+      // partida da onda ao longo da curva, sem mexer em velocidade nem
+      // amplitude. Pedido: "o Vírus Gigante morre quase logo ao começar" —
+      // sem offset, t=0 coloca o boss mesmo no CENTRO da arena (480),
+      // apenas ~80px do ponto de partida do VanBerto's (400) — dá muito
+      // pouca distância/tempo de reação logo que o jogador ganha controlo.
+      // Math.PI/2 arranca a onda no extremo mais LONGE do spawn (~690,
+      // quase 290px de distância) em vez do centro, dando um instante real
+      // para o jogador se orientar antes do boss se aproximar.
+      const t = elapsed * 0.0016 * (bossState.def.waveSpeedMult || 1) * speedMult + (bossState.def.wavePhaseOffset || 0);
       // Relativo ao worldW da própria arena — tal como o "patrol" logo a
       // seguir já estava corrigido para isto (ver comentário aí). Antes
       // este movimento tinha um deslocamento fixo (-700) e um raio fixo
