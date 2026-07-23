@@ -8,21 +8,21 @@
 //   que a criança encontra ao caminhar pelo nível. Aparece uma única vez.
 
 export const REGION_INTRO = {
-  origens: {
-    vanberto: "Vamos descobrir de onde vêm os direitos das crianças... e cuidar de nós próprios!",
-    arrival: "Bem-vindo ao Reino das Origens — a história dos direitos, e o Direito à Saúde. 📜"
+  educacao: {
+    vanberto: "Sinto os livros a chamar por nós... o conhecimento perdeu-se algures aqui!",
+    arrival: "Bem-vindo ao Reino da Educação — aqui nasceu o Dia da Criança! 📚"
   },
-  desenvolvimento: {
-    vanberto: "Sinto os livros e a alegria de brincar a chamar por nós... vamos crescer juntos!",
-    arrival: "Bem-vindo ao Vale do Desenvolvimento — brincar, aprender e sonhar com o futuro. 📚"
+  saude: {
+    vanberto: "Cheira a medicamento no ar... alguém aqui precisa muito da nossa ajuda!",
+    arrival: "Bem-vindo ao Vale da Saúde — bem-estar, futuro e identidade esperam por ti. 🏥"
   },
   protecao: {
     vanberto: "Esta fortaleza esconde algo sombrio... vamos ter cuidado, mas com coragem!",
-    arrival: "A Fortaleza da Proteção guarda a família, o refúgio e um planeta seguro. 🛡️"
+    arrival: "A Fortaleza da Proteção guarda a família, o refúgio e a liberdade de todos. 🛡️"
   },
-  participacao: {
+  moderno: {
     vanberto: "Estamos quase lá! Sinto que o último grande desafio está bem perto...",
-    arrival: "A Cidade da Participação guarda a tua identidade, a tua voz e o teu direito a seres ouvido. 🗣️"
+    arrival: "A Cidade do Mundo Moderno guarda os segredos da privacidade e do futuro digital. 🌐"
   }
 };
 
@@ -60,7 +60,7 @@ export const BOSS_INTRO_VB = {
 export const BOSS_VICTORY_VB = {
   monstro_ignorancia: "Conseguimos! O direito à educação vai continuar a brilhar! 📚✨",
   virus_gigante: "Vencemos! A saúde de todas as crianças está mais protegida! 💊",
-  guardiao_sombras: "A nossa voz venceu as sombras! Ninguém nos vai calar! 🗣️",
+  guardiao_sombras: "A proteção venceu as sombras! Estamos todos mais seguros! 🛡️",
   poluidor_mecanico: "O planeta agradece! Vamos continuar a cuidar dele juntos! 🌱"
 };
 
