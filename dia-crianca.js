@@ -4202,7 +4202,13 @@ window.addEventListener("DOMContentLoaded", () => {
     if (scene.textures.exists(nextKey)) b.setTexture(nextKey);
   }
   function doBossIdleBlink(scene) {
-    if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing || bossState.rageLevel > 0) return;
+    // (pedido: "mais expressões, piscar o olho") — ao contrário de
+    // doBossIdleArms, este continua a correr mesmo com bossState.rageLevel
+    // > 0: mesmo zangado, o boss deve continuar a piscar os olhos de vez
+    // em quando, para não ficar com uma cara "presa" e sem vida durante o
+    // resto do combate. restoreKey (abaixo) já garante que volta sempre
+    // ao estado correto — normal OU zangado, conforme onde estava.
+    if (!inBossFight || !bossState || bossState.phase !== "platform" || bossState.squishing) return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
     const id = bossState.def.id;
@@ -4339,6 +4345,26 @@ window.addEventListener("DOMContentLoaded", () => {
     tipText.setText("");
     const sadKey = "boss_" + def.id + "_sad";
     if (b && b.active && sceneRef.textures.exists(sadKey)) b.setTexture(sadKey);
+    // Choro contínuo (pedido: "chorar quando perde e vai embora") — em vez
+    // de só a lágrima estática já desenhada na textura "_sad", pinga
+    // lágrimas de verdade da cara do boss enquanto foge, até começar a
+    // desvanecer (ver o delayedCall de 1750ms mais abaixo, que também
+    // pára este temporizador).
+    const tearTimer = sceneRef.time.addEvent({
+      delay: 220, loop: true,
+      callback: () => {
+        if (!b || !b.active) { try{ tearTimer.remove(false); }catch{} return; }
+        const tx = b.x + (b.flipX ? 14 : -14);
+        const ty = b.y - (b.displayHeight ? b.displayHeight * 0.18 : 20);
+        const drop = sceneRef.add.particles(0, 0, "spark_item", {
+          x: tx, y: ty, speed: { min: 15, max: 35 }, angle: { min: 78, max: 102 },
+          lifespan: 420, quantity: 1, scale: { start: 0.55, end: 0.15 },
+          gravityY: 260, tint: 0x7fc8ff
+        });
+        sceneRef.time.delayedCall(450, () => { try{ drop.destroy(); }catch{} });
+      }
+    });
+    bossState.tearTimer = tearTimer;
     // Meio segundo de cara triste antes de fugir — dá tempo à criança de
     // "ler" a expressão antes de o boss se ir embora.
     sceneRef.time.delayedCall(500, () => {
@@ -4357,6 +4383,7 @@ window.addEventListener("DOMContentLoaded", () => {
       ensureAudio(); beep({freq:180,dur:0.08,type:"square",vol:0.03,slideTo:90});
     });
     sceneRef.time.delayedCall(1750, () => {
+      if (bossState && bossState.tearTimer) { try{ bossState.tearTimer.remove(false); }catch{} bossState.tearTimer = null; }
       if (!b || !b.active) return;
       sceneRef.tweens.add({ targets:b, alpha:0, duration:350,
         onComplete: () => { try{ if (b.body) b.body.setEnable(false); }catch{} } });
@@ -4722,6 +4749,23 @@ window.addEventListener("DOMContentLoaded", () => {
   function bossHitPlayer(scene, sourceObj, warnMsg) {
     if (invuln || lives <= 0) return;
     ensureAudio(); SFX.hit();
+    // Risada trocista (pedido: "mais expressões... rir") — sempre que o
+    // boss consegue acertar no VanBerto's durante o combate, mostra por
+    // instantes a mesma cara de riso maléfico da entrada (textura
+    // "_laugh"), depois volta ao estado em que estava (normal/zangado).
+    // Só dentro de um combate de boss ativo — bossHitPlayer também é
+    // chamada por outras fontes de dano fora daí.
+    if (inBossFight && bossState && bossState.sprite && bossState.sprite.active && !bossState.squishing) {
+      const bb = bossState.sprite;
+      const laughKey = "boss_" + bossState.def.id + "_laugh";
+      if (scene.textures.exists(laughKey)) {
+        const beforeKey = bb.texture.key;
+        bb.setTexture(laughKey);
+        scene.time.delayedCall(550, () => {
+          if (bb.active && bossState && !bossState.squishing && scene.textures.exists(beforeKey)) bb.setTexture(beforeKey);
+        });
+      }
+    }
     hitFlash.classList.add("active"); setTimeout(()=>hitFlash.classList.remove("active"),200);
     const knockDir = (sourceObj && sourceObj.x < player.x) ? 1 : -1;
     player.setVelocityX(knockDir * 300);
