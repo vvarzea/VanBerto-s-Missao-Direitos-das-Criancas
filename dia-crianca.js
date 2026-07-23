@@ -3734,6 +3734,49 @@ window.addEventListener("DOMContentLoaded", () => {
     bossState.sprite = boss;
     bossState.baseX = x; bossState.baseY = y;
 
+    // Entrada com mais impacto (pedido "mais género Mario"), sem mexer no
+    // chão da arena — cada boss ganha uma assinatura própria em vez de
+    // simplesmente "aparecer" já completo. 100% opt-in, puramente visual,
+    // não interfere com a física (ainda pausada nesta fase da cinemática).
+    if (def.entranceGrow) {
+      // Bosses que andam/flutuam (Monstro, Vírus, Poluidor): nascem
+      // minúsculos e crescem até ao tamanho final, com um pequeno
+      // solavanco de câmara + som grave no fim — como um boss grande a
+      // chegar à arena.
+      const finalScaleX = boss.scaleX, finalScaleY = boss.scaleY;
+      boss.setScale(0.05);
+      scene.tweens.add({
+        targets: boss, scaleX: finalScaleX, scaleY: finalScaleY,
+        duration: 650, ease: "Back.easeOut",
+        onComplete: () => {
+          if (!boss.active) return;
+          scene.cameras.main.shake(160, 0.01);
+          ensureAudio(); beep({ freq: 90, dur: 0.14, type: "square", vol: 0.05, slideTo: 50 });
+        }
+      });
+    } else if (def.entranceMaterialize) {
+      // Guardião das Sombras: em vez de crescer, materializa-se a partir
+      // de nada — começa invisível e ganha opacidade aos poucos, com um
+      // pequeno turbilhão de partículas escuras à sua volta, condizente
+      // com a temática de sombras (mais apropriado do que "crescer" para
+      // um boss cuja marca já é aparecer/desaparecer por teletransporte).
+      boss.setAlpha(0);
+      const swirl = scene.add.particles(0, 0, "spark_item", {
+        x: boss.x, y: boss.y, speed: { min: 20, max: 70 }, lifespan: 700,
+        quantity: 2, frequency: 40, angle: { min: 0, max: 360 },
+        scale: { start: 0.9, end: 0 }, tint: [def.color, 0x000000]
+      });
+      scene.tweens.add({
+        targets: boss, alpha: 1, duration: 750, ease: "Sine.easeIn",
+        onComplete: () => {
+          try{ swirl.stop(); }catch{}
+          scene.time.delayedCall(400, () => { try{ swirl.destroy(); }catch{} });
+          if (!boss.active) return;
+          scene.cameras.main.shake(140, 0.008);
+        }
+      });
+    }
+
     if (def.movementType === "wave") {
       boss.setVelocity(0,0);
       // O tween de "respiração" (pulsar de tamanho) só arranca no fim do
@@ -4056,7 +4099,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // ---- Ataque do Monstro da Ignorância (redesenho): bolas ❓ que saltitam
   // devagar pelo chão — lentas e fáceis de ver/evitar, nunca voam direto à
   // cabeça do jogador. Substituem os livros/fake news do combate antigo. ----
-  function doBossRollQmark(scene) {
+  function doBossRollQmark(scene, isFollowUp) {
     if (!inBossFight || !bossState || bossState.phase !== "platform") return;
     const b = bossState.sprite;
     if (!b || !b.active) return;
@@ -4096,6 +4139,16 @@ window.addEventListener("DOMContentLoaded", () => {
     q.setAngularVelocity(towardPlayer * 130);
     scene.physics.add.collider(q, platforms);
     scene.time.delayedCall(4500, () => { if (q.active) q.destroy(); });
+
+    // Ataque duplo na fúria máxima (pedido "mais género Mario" — o boss
+    // fica mais intenso nos seus próprios ataques, sem precisar de nenhum
+    // perigo novo no chão): na 2ª fúria (desesperada), cada arremesso vem
+    // acompanhado de um 2º, um pouco atrás — como um boss clássico a
+    // atirar em sequência quando está mais fraco. isFollowUp evita uma
+    // cadeia infinita (o 2º disparo nunca gera um 3º).
+    if (!isFollowUp && def.doubleThrowAtMaxRage && bossState.rageLevel >= 2) {
+      scene.time.delayedCall(260, () => doBossRollQmark(scene, true));
+    }
   }
 
   // ---- Baforada de fumo do Poluidor Mecânico (marca própria do boss — ver
@@ -4533,7 +4586,31 @@ window.addEventListener("DOMContentLoaded", () => {
       bossEnterRage(scene, Math.min(2, hitsTaken));
     }
     if (bossState.hp <= 0) {
-      if (bossState.def.stompBoss) startBossStompDefeat();
+      if (bossState.def.stompBoss) {
+        if (bossState.def.epicDefeat) {
+          // Golpe final mais espetacular (opt-in via def.epicDefeat, ver
+          // data-bosses.js): um instante de "hitstop" (física congela por
+          // 180ms — os timers/tweens continuam a correr por trás), um
+          // flash branco e uma explosão maior do que a normal, antes da
+          // já existente sequência de fuga (startBossStompDefeat). Dá ao
+          // 3º salto certeiro um peso extra, como o golpe final de um
+          // boss clássico.
+          scene.physics.pause();
+          scene.cameras.main.flash(220, 255, 255, 255);
+          const bigBurst = scene.add.particles(0, 0, "spark_item", {
+            x, y, speed: { min: 120, max: 320 }, lifespan: 600, quantity: 40,
+            scale: { start: 1.3, end: 0 }, angle: { min: 0, max: 360 }, gravityY: 200,
+            tint: [bossState.def.color, 0xffffff, 0xffd700]
+          });
+          scene.time.delayedCall(560, () => { try{ bigBurst.destroy(); }catch{} });
+          scene.time.delayedCall(180, () => {
+            scene.physics.resume();
+            startBossStompDefeat();
+          });
+        } else {
+          startBossStompDefeat();
+        }
+      }
       else startBossCollectPhase();
     }
   }

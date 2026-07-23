@@ -24,6 +24,14 @@ export const BOSSES = [
     // os outros 3 bosses (ainda sem stompBoss) continuam exactamente iguais.
     stompBoss: true,
     stompsToDefeat: 3,       // 3 saltos na cabeça = derrotado (reaproveita def.hp)
+    // Melhorias "mais género Mario" (pedido), sem nenhum perigo novo no
+    // chão — ver spawnBossSprite/damageBoss/doBossRollQmark em
+    // dia-crianca.js: entrada dramática (cresce até ao tamanho final),
+    // golpe final mais espetacular (hitstop + flash + explosão maior no
+    // 3º salto) e ataque duplo quando está na fúria máxima.
+    entranceGrow: true,
+    epicDefeat: true,
+    doubleThrowAtMaxRage: true,
     movementType: "patrol",  // anda devagar de um lado para o outro — nunca teletransporta, nunca desaparece
     patrolSpeed: 55,
     hopEvery: 2400,          // de vez em quando dá um pequeno salto (só visual)
@@ -112,6 +120,11 @@ export const BOSSES = [
     // bola ❓ (aqui retintada a rosa) como única diferença de personalidade.
     stompBoss: true,
     stompsToDefeat: 3,
+    // Melhorias "mais género Mario" (ver comentário completo no Monstro
+    // da Ignorância, acima) — mesmo pacote, sem perigo novo no chão.
+    entranceGrow: true,
+    epicDefeat: true,
+    doubleThrowAtMaxRage: true,
     movementType: "wave",    // continua a flutuar em onda, pulsando de tamanho — só a forma de o vencer mudou
     // REBALANCEADO OUTRA VEZ (pedido: "o boss da saúde tem de ser mais fácil
     // porque é o primeiro") — ao passar a ser o 1º boss do jogo (antes era o
@@ -202,6 +215,13 @@ export const BOSSES = [
     // no ar do que um boss que só anda.
     stompBoss: true,
     stompsToDefeat: 3,
+    // Melhorias "mais género Mario" — este boss usa entranceMaterialize em
+    // vez de entranceGrow (ver spawnBossSprite em dia-crianca.js): em vez
+    // de crescer, materializa-se a partir de sombras, condizente com a
+    // sua identidade de teletransporte/desaparecimento.
+    entranceMaterialize: true,
+    epicDefeat: true,
+    doubleThrowAtMaxRage: true,
     movementType: "teleport",
     teleportDelay: 1700,       // mais rápido que o valor por omissão (2400) — mais difícil de prever
     qmarkEvery: 2000,
@@ -259,6 +279,11 @@ export const BOSSES = [
     // caber num único ecrã sem scroll, tal como os outros 3 bosses.
     stompBoss: true,
     stompsToDefeat: 3,
+    // Melhorias "mais género Mario" (ver comentário completo no Monstro
+    // da Ignorância) — mesmo pacote, sem perigo novo no chão.
+    entranceGrow: true,
+    epicDefeat: true,
+    doubleThrowAtMaxRage: true,
     movementType: "patrol",
     patrolSpeed: 150,        // mais rápido — sensação industrial
     hopEvery: 2000,
