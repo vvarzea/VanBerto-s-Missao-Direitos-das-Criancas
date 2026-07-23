@@ -128,50 +128,41 @@
 
 # 
 
-# \## Reorganização pelos 4 pilares da Convenção (nova)
+# \## 4 Mundos a sério (nova)
 
 # 
 
-# O mapa passou a seguir os \*\*4 pilares oficiais da Convenção sobre os
-Direitos da Criança (UNICEF)\*\* — Sobrevivência, Desenvolvimento, Proteção e
-Participação — em vez de blocos puramente cronológicos de 5 níveis:
+# O mapa passou de 6 regiões (com níveis misturados entre si) para \*\*4 mundos\*\*,
+
+# cada um com exactamente 5 níveis seguidos e o seu próprio boss no fim:
 
 # 
 
-# \- \*\*Reino das Origens\*\* — níveis 1-5 (história/declaração/convenção/UNICEF
-+ Saúde) → boss Vírus Gigante. Sobrevivência só tem 1 nível próprio no
-conteúdo atual do jogo (Saúde), por isso ficou junto ao prólogo histórico em
-vez de sozinho num "mundo" de 1 nível.
+# \- \*\*Reino da Educação\*\* — níveis 1-5 → boss Monstro da Ignorância
 
-# \- \*\*Vale do Desenvolvimento\*\* — níveis 6-9 (brincar/futuro/cultura/educação)
-→ boss Monstro da Ignorância
+# \- \*\*Vale da Saúde\*\* — níveis 6-10 → boss Vírus Gigante
 
-# \- \*\*Fortaleza da Proteção\*\* — níveis 10-15 (proteção/família/refugiados/
-trabalho infantil/inclusão/ambiente) → boss Poluidor Mecânico
+# \- \*\*Fortaleza da Proteção\*\* — níveis 11-15 → boss Guardião das Sombras
 
-# \- \*\*Cidade da Participação\*\* — níveis 16-20 (participação/identidade/
-privacidade/expressão/digital) → boss Guardião das Sombras
+# \- \*\*Cidade do Mundo Moderno\*\* — níveis 16-20 → boss Poluidor Mecânico
 
 # &#x20; (este último aparece depois do nível 19 — fica ainda o nível 20,
 
-# &#x20; "Direitos Digitais", como epílogo antes do ecrã de vitória final.)
+# &#x20; "Direitos Digitais", como epílogo antes do ecrã de vitória final, tal
+
+# &#x20; como já acontecia antes desta reorganização.)
 
 # 
 
-# Os blocos deixaram de ter todos 5 níveis (agora são 5/4/6/5) porque nem
-todos os pilares têm o mesmo número de direitos representados no jogo —
-preferiu-se blocos de tamanho desigual mas tematicamente puros a forçar 4
-blocos iguais com conteúdo inventado. O `artIdx` (ligação a
-`HISTORY`/`ARTEFACTS`/`NPC\_SIGNS`) não muda com a posição, por isso nenhum
-conteúdo textual ficou desalinhado.
+# Os 20 níveis em `data-levels.js` foram reordenados fisicamente para ficarem
 
-# 
+# em blocos contíguos por mundo (só 5 objetos mudaram de posição — o resto
 
-# \*\*Vírus Gigante como 1º boss\*\*: por ser agora o primeiro boss do jogo (era o
-2º), o seu movimento em onda foi tornado mais lento (`waveSpeedMult`
-0.5→0.3, pico de velocidade ~168px/s→~100px/s) e o intervalo entre ataques
-aumentou (`qmarkEvery` 2900→3400ms), para dar tempo a uma criança perceber o
-padrão de movimento antes do 1º combate a sério do jogo.
+# manteve-se igual). `artIdx` (ligação a `HISTORY`/`ARTEFACTS`/`NPC\_SIGNS`) não
+
+# muda com a posição, por isso nenhum conteúdo textual ficou desalinhado —
+
+# confirmado pelos testes automáticos (`node tests/run-tests.mjs`, 24/24 OK).
 
 # 
 
@@ -189,14 +180,15 @@ padrão de movimento antes do 1º combate a sério do jogo.
 
 # 
 
-# \*\*Nota sobre progresso guardado\*\*: 16 dos 20 níveis mudaram de tema/posição
-nesta reorganização (mais do que na reorganização anterior por "4 mundos"
-cronológicos), incluindo a troca de qual boss aparece em qual ponto do jogo.
-Progresso já guardado no browser antes desta atualização vai ficar
-desalinhado — vale a pena recomeçar o progresso depois de atualizares os
-ficheiros.
+# \*\*Nota sobre progresso guardado\*\*: como 5 níveis mudaram de posição (do
 
-# 
+# antigo "Vale da Saúde/Fortaleza" espalhados), progresso já guardado no
+
+# browser antes desta atualização pode ficar ligeiramente desalinhado nesses
+
+# níveis específicos. Vale a pena recomeçar o progresso (ou aceitar pequenas
+
+# inconsistências pontuais) depois de atualizares os ficheiros.
 
 # 
 

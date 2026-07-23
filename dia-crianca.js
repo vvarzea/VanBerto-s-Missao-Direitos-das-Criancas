@@ -3734,26 +3734,6 @@ window.addEventListener("DOMContentLoaded", () => {
     bossState.sprite = boss;
     bossState.baseX = x; bossState.baseY = y;
 
-    // Entrada "à Bowser" (opt-in via def.entranceGrow, ver data-bosses.js):
-    // o boss nasce minúsculo e cresce até ao tamanho final, com um pequeno
-    // solavanco de câmara + som grave no fim, em vez de aparecer já
-    // completo. Corre em paralelo com o resto da cinemática de entrada
-    // (diálogo/shake genérico já disparado por startBossFight) — puramente
-    // visual, não interfere com a física (ainda pausada nesta fase).
-    if (def.entranceGrow) {
-      const finalScaleX = boss.scaleX, finalScaleY = boss.scaleY;
-      boss.setScale(0.05);
-      scene.tweens.add({
-        targets: boss, scaleX: finalScaleX, scaleY: finalScaleY,
-        duration: 650, ease: "Back.easeOut",
-        onComplete: () => {
-          if (!boss.active) return;
-          scene.cameras.main.shake(160, 0.01);
-          ensureAudio(); beep({ freq: 90, dur: 0.14, type: "square", vol: 0.05, slideTo: 50 });
-        }
-      });
-    }
-
     if (def.movementType === "wave") {
       boss.setVelocity(0,0);
       // O tween de "respiração" (pulsar de tamanho) só arranca no fim do
@@ -4553,31 +4533,7 @@ window.addEventListener("DOMContentLoaded", () => {
       bossEnterRage(scene, Math.min(2, hitsTaken));
     }
     if (bossState.hp <= 0) {
-      if (bossState.def.stompBoss) {
-        if (bossState.def.epicDefeat) {
-          // Golpe final mais espetacular (opt-in via def.epicDefeat, ver
-          // data-bosses.js): um instante de "hitstop" (jogo congela por
-          // 180ms — pausa física, não os timers/tweens, que continuam a
-          // correr por trás), um flash branco e uma explosão maior do que
-          // a normal, antes de a já existente sequência de fuga arrancar
-          // (startBossStompDefeat). Dá ao 3º salto certeiro um peso extra,
-          // como o golpe final de um boss clássico.
-          scene.physics.pause();
-          scene.cameras.main.flash(220, 255, 255, 255);
-          const bigBurst = scene.add.particles(0, 0, "spark_item", {
-            x, y, speed: { min: 120, max: 320 }, lifespan: 600, quantity: 40,
-            scale: { start: 1.3, end: 0 }, angle: { min: 0, max: 360 }, gravityY: 200,
-            tint: [bossState.def.color, 0xffffff, 0xffd700]
-          });
-          scene.time.delayedCall(560, () => { try{ bigBurst.destroy(); }catch{} });
-          scene.time.delayedCall(180, () => {
-            scene.physics.resume();
-            startBossStompDefeat();
-          });
-        } else {
-          startBossStompDefeat();
-        }
-      }
+      if (bossState.def.stompBoss) startBossStompDefeat();
       else startBossCollectPhase();
     }
   }

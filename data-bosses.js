@@ -9,7 +9,10 @@
 export const BOSSES = [
   {
     id: "monstro_ignorancia",
-    afterLevel: 4,           // aparece no fim do Mundo 1 — Reino da Educação (níveis 0-4)
+    afterLevel: 8,           // MOVIDO: era o boss do Mundo 1 (após o nível 4); passa a ser o
+                              // 2º boss, a fechar o pilar Desenvolvimento (Níveis 6-9 —
+                              // brincar, futuro, cultura, educação). quizTheme/rightRecovered
+                              // já eram "educacao", que continua a ser o último nível do bloco.
     name: "Monstro da Ignorância",
     emoji: "👾",
     color: 0x8a5cff,
@@ -96,7 +99,9 @@ export const BOSSES = [
   },
   {
     id: "virus_gigante",
-    afterLevel: 9,            // aparece no fim do Mundo 2 — Vale da Saúde (níveis 5-9)
+    afterLevel: 4,            // MOVIDO: era o boss do Mundo 2 (após o nível 9/identidade);
+                               // passa a ser o 1º boss do jogo, a fechar o pilar Sobrevivência
+                               // (Nível 5 — Saúde, o único nível desse pilar).
     name: "Vírus Gigante",
     emoji: "🦠",
     color: 0xe0409a,
@@ -107,38 +112,33 @@ export const BOSSES = [
     // bola ❓ (aqui retintada a rosa) como única diferença de personalidade.
     stompBoss: true,
     stompsToDefeat: 3,
-    // Melhoria "mais género Super Mario" (pedido): entrada dramática — o
-    // boss nasce minúsculo e "cresce" até ao tamanho final com um pequeno
-    // solavanco no fim (ver spawnBossSprite em dia-crianca.js), como um
-    // Bowser a chegar à arena, em vez de simplesmente aparecer já no
-    // tamanho definitivo. 100% opt-in — não afeta os outros 3 bosses.
-    entranceGrow: true,
-    // Golpe final mais espetacular (pedido): no 3º salto certeiro, um
-    // instante de pausa ("hitstop"), um flash branco e uma explosão maior
-    // do que o normal, antes da fuga já existente — ver damageBoss em
-    // dia-crianca.js. 100% opt-in.
-    epicDefeat: true,
     movementType: "wave",    // continua a flutuar em onda, pulsando de tamanho — só a forma de o vencer mudou
-    // Rebalanceamento pedido: o 2º Boss estava demasiado rápido/frustrante
-    // para o 4º ano. waveSpeedMult reduz a velocidade do movimento em onda
-    // em ~32% (dentro do intervalo pedido de 25%-35%) sem alterar a amplitude
-    // — o boss continua a percorrer a arena toda, só que mais devagar e mais
-    // previsível. Perto dos extremos da onda (topo/fundo do "sen") a
-    // velocidade aproxima-se naturalmente de zero, o que já dá ao jogador
-    // pequenas janelas para preparar o salto, como pedido.
-    // ATUALIZAÇÃO (feedback: "ainda instável, movimentos estranhos e muito
-    // rápidos"): a redução acima só mexeu na frequência da onda — a
-    // amplitude (raio) tinha ficado quase do tamanho da arena toda (360px
-    // num mundo de 960px), por isso mesmo mais devagar, a velocidade de PICO
-    // a meio da oscilação continuava bem acima da patrulha de qualquer outro
-    // boss (~392px/s vs. 110-150px/s dos outros). waveRange encurta esse raio
-    // e waveSpeedMult desceu mais um pouco — agora o pico ronda ~168px/s,
-    // próximo dos outros bosses, sem deixar de atravessar boa parte da arena.
-    waveSpeedMult: 0.5,
+    // REBALANCEADO OUTRA VEZ (pedido: "o boss da saúde tem de ser mais fácil
+    // porque é o primeiro") — ao passar a ser o 1º boss do jogo (antes era o
+    // 2º), o pico de ~168px/s herdado do rebalanceamento anterior (ver
+    // histórico abaixo) deixou de fazer sentido: é a primeira vez que a
+    // criança vê este tipo de combate, e o movimento em onda (contínuo,
+    // sinusoidal) já é menos previsível do que a patrulha simples do Monstro
+    // da Ignorância (que continua a ser 55px/s, constante). waveSpeedMult
+    // desceu de 0.5 para 0.3 — o pico cai para ~100px/s, bem mais perto do
+    // ritmo "primeiro contacto" do outro boss inicial, mantendo waveRange
+    // igual para não perder a cobertura da arena (só fica mais lento a
+    // percorrê-la, não mais pequeno).
+    //
+    // Histórico do rebalanceamento anterior (já não se aplica ao contexto
+    // atual, mas mantido para registo): "o 2º Boss estava demasiado
+    // rápido/frustrante para o 4º ano" → waveSpeedMult reduzido ~32%; depois
+    // "ainda instável, movimentos estranhos e muito rápidos" → waveRange
+    // encurtado de ~360px para 210px e waveSpeedMult descido para 0.5,
+    // chegando ao pico de ~168px/s (próximo dos 110-150px/s dos outros
+    // bosses de então). Essa referência ("outros bosses") já não é o padrão
+    // certo agora que este é o boss de abertura.
+    waveSpeedMult: 0.3,
     waveRange: 210,
-    // qmarkEvery subiu de 2400 → 2900ms — mais tempo entre ataques, para dar
-    // tempo a uma criança reagir e saltar com calma em vez de reflexos de adulto.
-    qmarkEvery: 2900,
+    // qmarkEvery subiu de 2900 → 3400ms (era 2400 antes disso) — como 1º
+    // boss do jogo, a criança precisa de mais tempo só para perceber o
+    // movimento em onda antes do 1º ataque a sério chegar.
+    qmarkEvery: 3400,
     forceFirstOrbRight: true, // pedido: o 1º ataque deste boss vai sempre para a direita — só a partir do 2º persegue mesmo o VanBerto's
     orbTexture: "boss_proj_germ", // micróbio com espigões — antes reutilizava a bola "?" do Monstro, sem sentido temático para um vírus
     orbTint: 0xe0409a,       // rosa, a condizer com o próprio Vírus
@@ -159,29 +159,10 @@ export const BOSSES = [
     signX: 200,
     intro: "Vou espalhar-me por todo o lado!",
     defeatLine: "Argh! Vacinado... derrotado! 💉",
-    quizTheme: "identidade", // era "saude" — corrigido para bater com o Nível 10 (o último antes deste boss)
+    quizTheme: "saude", // voltou a "saude" — com a reordenação dos pilares, o Nível 5 (o último antes deste boss) é outra vez sobre saúde
     hp: 3,                     // 4→3: agora são sempre 3 saltos na cabeça, como os outros bosses "stomp"
     themeIdx: 13,              // teal escuro noturno — combina com o verde-água do boss
     rightRecovered: { emoji: "💊", name: "Direito à Saúde" },
-    // Arena contaminada (pedido "mais género Super Mario"): poças de ácido
-    // tóxico fixas no chão + vírus pequenos a flutuar — mecânica já
-    // construída e testada no motor (ver spawnToxicZones/spawnMiniViruses/
-    // bossEnterRage em dia-crianca.js) mas nunca antes ligada a nenhum boss.
-    // À boleia de bossEnterRage, escala como se fosse "lava a subir": mais
-    // zonas e maiores a cada fúria, obrigando a usar cada vez mais as
-    // 2 plataformas baixas para se manter em segurança — tal como um chão
-    // de lava de Bowser que cresce ao longo do combate. hazardType "acid"
-    // (verde tóxico) em vez de "lava" (vermelho) por ser tematicamente um
-    // vírus, não fogo.
-    contaminatedArena: {
-      hazardType: "acid",
-      virusBase: 2,                                  // vírus pequenos desde o início
-      zonesBase: [ {x:340,w:120}, {x:620,w:120} ],    // calmo — 2 poças estreitas, ainda dá para correr pelo chão principal
-      escalations: {
-        1: { zones: [ {x:300,w:160}, {x:600,w:160} ], virus: 3 },                  // 1ª fúria — poças maiores
-        2: { zones: [ {x:230,w:200}, {x:480,w:140}, {x:730,w:200} ], virus: 4 }    // fúria final — 3 poças, quase obriga a saltar de plataforma em plataforma
-      }
-    },
     // Arena do tamanho do ecrã (960x540, sem scroll) — chão principal +
     // 2 plataformas baixas, tal como o Monstro da Ignorância.
     arena: {
@@ -207,7 +188,11 @@ export const BOSSES = [
   },
   {
     id: "guardiao_sombras",
-    afterLevel: 14,          // aparece no fim do Mundo 3 — Fortaleza da Proteção (níveis 10-14)
+    afterLevel: 18,          // MOVIDO: era o boss do Mundo 3 (após o nível 14); passa a ser o
+                              // último boss, a fechar o pilar Participação (Níveis 16-19 —
+                              // participação, identidade, privacidade, expressão), com o
+                              // Nível 20 (Direitos Digitais) como epílogo depois dele, tal
+                              // como o Poluidor Mecânico tinha antes.
     name: "Guardião das Sombras",
     emoji: "🌑",
     color: 0x3a3a5c,
@@ -233,11 +218,15 @@ export const BOSSES = [
     // da Ignorância).
     signX: 220,
     intro: "Nas sombras, ninguém te protege!",
-    defeatLine: "A luz da proteção venceu! 🛡️✨",
-    quizTheme: "expressao", // era "protecao" — corrigido para bater com o Nível 15 (o último antes deste boss)
+    defeatLine: "A luz da tua voz venceu! 🗣️✨",
+    quizTheme: "expressao", // continua "expressao" — com a reordenação, o Nível 19 (o último antes deste boss) ainda é sobre expressão
     hp: 3,                     // 4→3: agora são sempre 3 saltos na cabeça
     themeIdx: 11,              // azul oceano noturno — fortaleza escura, sem exagerar no preto
-    rightRecovered: { emoji: "🛡️", name: "Direito à Proteção" },
+    // Recompensa atualizada de "Proteção" para "Expressão" — este boss deixou
+    // de fechar o pilar Proteção e passou a fechar o pilar Participação; o
+    // Nível 19 (o último antes dele) é sobre expressão, por isso a recompensa
+    // passa a refletir isso especificamente, em vez do pilar genérico.
+    rightRecovered: { emoji: "🗣️", name: "Direito à Expressão" },
     // Arena do tamanho do ecrã, tal como o Monstro — 3 pontos de teletransporte
     // (spawnSpots) ajustados à nova largura de 960px em vez de 1600px.
     arena: {
@@ -258,8 +247,10 @@ export const BOSSES = [
   },
   {
     id: "poluidor_mecanico",
-    afterLevel: 18,          // Mundo 4 — Cidade do Mundo Moderno (níveis 15-19); fica 1 nível
-                             // epílogo (Direitos Digitais) depois deste boss, como já era antes.
+    afterLevel: 14,          // MOVIDO: era o boss do Mundo 4; passa a ser o 3º boss, a fechar
+                             // o pilar Proteção (Níveis 10-15 — proteção, família, refugiados,
+                             // trabalho infantil, inclusão, ambiente). quizTheme/rightRecovered
+                             // já eram "ambiente", que continua a ser o último nível do bloco.
     name: "Poluidor Mecânico",
     emoji: "🏭",
     color: 0x7a8a5c,

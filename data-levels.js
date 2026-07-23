@@ -83,8 +83,8 @@ export const LEVELS = [
     malwares:[{x:1000,y:480,vx:0,pattern:"mini"},{x:1700,y:480,vx:-160,pattern:"patrol"},{x:2350,y:480,vx:155,pattern:"patrol"}]
   },
   {
-    name: "Nível 4 — O Direito à Participação",
-    artIdx:7, theme:7, quizTheme:"participacao", worldW:3300,
+    name: "Nível 4 — A UNICEF e os Direitos",
+    artIdx:9, theme:9, quizTheme:"unicef", worldW:3300,
     spawn:{x:480,y:460}, doorX:2950,
     // Layout: "trampolim central obrigatório" — vão largo a meio onde o trampolim é o único caminho
     platforms:[
@@ -105,8 +105,8 @@ export const LEVELS = [
     secrets:[{x:1190,y:355,kind:"estrela",points:25}]
   },
   {
-    name: "Nível 5 — O Direito à Educação",
-    artIdx:4, theme:4, quizTheme:"educacao", worldW:3100,
+    name: "Nível 5 — O Direito à Saúde",
+    artIdx:5, theme:5, quizTheme:"saude", worldW:3100,
     spawn:{x:480,y:460}, doorX:2950,
     platforms:[
       {x:520,y:520,w:1000,h:28},{x:880,y:450,w:220,h:22},{x:1160,y:380,w:220,h:22},
@@ -119,8 +119,8 @@ export const LEVELS = [
     secrets:[{x:740,y:470,kind:"estrela",points:20}]
   },
   {
-    name: "Nível 6 — O Direito à Saúde",
-    artIdx:5, theme:5, quizTheme:"saude", worldW:3100,
+    name: "Nível 6 — O Direito ao Brincar",
+    artIdx:3, theme:3, quizTheme:"brincar", worldW:3100,
     spawn:{x:480,y:460}, doorX:2700,
     // Layout: ilhas a alturas variadas — umas altas, outras baixas, sem padrão regular
     platforms:[
@@ -141,8 +141,8 @@ export const LEVELS = [
     secrets:[{x:2160,y:355,kind:"estrela",points:20}]
   },
   {
-    name: "Nível 7 — O Direito ao Brincar",
-    artIdx:3, theme:3, quizTheme:"brincar", worldW:2800,
+    name: "Nível 7 — O Futuro Sustentável",
+    artIdx:8, theme:8, quizTheme:"futuro", worldW:2800,
     spawn:{x:480,y:460}, doorX:2630,
     // signX: por defeito o letreiro/informação ficaria em spawn.x+240 (=720),
     // o que cai quase em cima do 1º trampolim (x:680) e a poucos passos do
@@ -185,8 +185,8 @@ export const LEVELS = [
     secrets:[{x:1060,y:415,kind:"estrela",points:20}]
   },
   {
-    name: "Nível 8 — O Futuro Sustentável",
-    artIdx:8, theme:8, quizTheme:"futuro", worldW:3400,
+    name: "Nível 8 — O Direito à Cultura",
+    artIdx:16, theme:16, quizTheme:"cultura", worldW:3400,
     spawn:{x:480,y:460}, doorX:3050,
     // Layout: "cascata de terraços" — desce e sobe de forma orgânica, com plataformas a alturas muito variadas
     platforms:[
@@ -209,8 +209,8 @@ export const LEVELS = [
     secrets:[{x:660,y:462,kind:"heart"}]
   },
   {
-    name: "Nível 9 — A UNICEF e os Direitos",
-    artIdx:9, theme:9, quizTheme:"unicef", worldW:3500,
+    name: "Nível 9 — O Direito à Educação",
+    artIdx:4, theme:4, quizTheme:"educacao", worldW:3500,
     spawn:{x:480,y:460}, doorX:3100,
     platforms:[
       {x:520,y:520,w:1000,h:28},{x:920,y:442,w:185,h:22},{x:1200,y:368,w:185,h:22},
@@ -228,8 +228,8 @@ export const LEVELS = [
     secrets:[{x:1150,y:430,kind:"heart"}]
   },
   {
-    name: "Nível 10 — O Direito à Identidade",
-    artIdx:10, theme:10, quizTheme:"identidade", worldW:3600,
+    name: "Nível 10 — O Direito à Proteção",
+    artIdx:6, theme:6, quizTheme:"protecao", worldW:3600,
     spawn:{x:480,y:460}, doorX:3200,
     // Layout: "escadinhas duplas" — dois picos com vale ao meio
     platforms:[
@@ -251,8 +251,8 @@ export const LEVELS = [
     secrets:[{x:1600,y:370,kind:"estrela",points:25}]
   },
   {
-    name: "Nível 11 — O Direito à Proteção",
-    artIdx:6, theme:6, quizTheme:"protecao", worldW:3200,
+    name: "Nível 11 — O Direito à Família",
+    artIdx:11, theme:11, quizTheme:"familia", worldW:3200,
     spawn:{x:480,y:460}, doorX:2850,
     // Layout: pirâmide central alta + plataformas laterais baixas
     platforms:[
@@ -272,8 +272,8 @@ export const LEVELS = [
     secrets:[{x:680,y:462,kind:"heart"}]
   },
   {
-    name: "Nível 12 — O Direito à Família",
-    artIdx:11, theme:11, quizTheme:"familia", worldW:3650,
+    name: "Nível 12 — Os Direitos dos Refugiados",
+    artIdx:12, theme:12, quizTheme:"refugiados", worldW:3650,
     spawn:{x:480,y:460}, doorX:3340,
     // Layout: "mini-mundos" — 3 grupos de plataformas isolados com vãos entre eles
     platforms:[
@@ -300,8 +300,8 @@ export const LEVELS = [
     secrets:[{x:3110,y:263,kind:"balao",points:15}]
   },
   {
-    name: "Nível 13 — Os Direitos dos Refugiados",
-    artIdx:12, theme:12, quizTheme:"refugiados", worldW:3700,
+    name: "Nível 13 — Contra o Trabalho Infantil",
+    artIdx:13, theme:13, quizTheme:"trabalho", worldW:3700,
     spawn:{x:480,y:460}, doorX:3300,
     // Layout: "labirinto horizontal" — plataformas em ziguezague apertado exige precisão
     platforms:[
@@ -326,8 +326,8 @@ export const LEVELS = [
     secrets:[{x:680,y:462,kind:"heart"}]
   },
   {
-    name: "Nível 14 — Contra o Trabalho Infantil",
-    artIdx:13, theme:13, quizTheme:"trabalho", worldW:3750,
+    name: "Nível 14 — O Direito à Inclusão",
+    artIdx:17, theme:17, quizTheme:"deficiencia", worldW:3750,
     spawn:{x:480,y:460}, doorX:3350,
     platforms:[
       {x:520,y:520,w:960,h:28},
@@ -363,8 +363,8 @@ export const LEVELS = [
     secrets:[{x:2960,y:390,kind:"estrela",points:30}]
   },
   {
-    name: "Nível 15 — O Direito à Expressão",
-    artIdx:14, theme:14, quizTheme:"expressao", worldW:3800,
+    name: "Nível 15 — O Direito ao Ambiente",
+    artIdx:18, theme:18, quizTheme:"ambiente", worldW:3800,
     spawn:{x:480,y:460}, doorX:3400,
     platforms:[
       {x:520,y:520,w:1000,h:28},{x:980,y:432,w:160,h:22},{x:1260,y:350,w:160,h:22},
@@ -383,8 +383,8 @@ export const LEVELS = [
     secrets:[{x:760,y:470,kind:"medalha"},{x:2820,y:262,kind:"estrela",points:30}]
   },
   {
-    name: "Nível 16 — O Direito à Privacidade",
-    artIdx:15, theme:15, quizTheme:"privacidade", worldW:3850,
+    name: "Nível 16 — O Direito à Participação",
+    artIdx:7, theme:7, quizTheme:"participacao", worldW:3850,
     spawn:{x:480,y:460}, doorX:3450,
     // Layout: "degraus duplos" — sobe dois andares, desce dois andares, plataformas estreitas
     platforms:[
@@ -411,8 +411,8 @@ export const LEVELS = [
     secrets:[{x:1100,y:273,kind:"estrela",points:25}]
   },
   {
-    name: "Nível 17 — O Direito à Cultura",
-    artIdx:16, theme:16, quizTheme:"cultura", worldW:3900,
+    name: "Nível 17 — O Direito à Identidade",
+    artIdx:10, theme:10, quizTheme:"identidade", worldW:3900,
     spawn:{x:480,y:460}, doorX:3500,
     // Layout: "cultura em círculos" — plataformas em grupos de 3 como constelações
     platforms:[
@@ -442,8 +442,8 @@ export const LEVELS = [
     secrets:[{x:2020,y:283,kind:"estrela",points:25}]
   },
   {
-    name: "Nível 18 — O Direito à Inclusão",
-    artIdx:17, theme:17, quizTheme:"deficiencia", worldW:3950,
+    name: "Nível 18 — O Direito à Privacidade",
+    artIdx:15, theme:15, quizTheme:"privacidade", worldW:3950,
     spawn:{x:480,y:460}, doorX:3550,
     // ══ MECÂNICA ESPECIAL: ESTEIRA — PLATAFORMAS TODAS EM MOVIMENTO ══
     // Todas as plataformas intermédias se movem. Umas horizontalmente (esq/dir),
@@ -486,8 +486,8 @@ export const LEVELS = [
     secrets:[{x:1820,y:263,kind:"estrela",points:30}]
   },
   {
-    name: "Nível 19 — O Direito ao Ambiente",
-    artIdx:18, theme:18, quizTheme:"ambiente", worldW:4000,
+    name: "Nível 19 — O Direito à Expressão",
+    artIdx:14, theme:14, quizTheme:"expressao", worldW:4000,
     spawn:{x:480,y:460}, doorX:3600,
     // Layout: "floresta" — muitas plataformas pequenas a alturas variadas, como ramos de árvores
     platforms:[
