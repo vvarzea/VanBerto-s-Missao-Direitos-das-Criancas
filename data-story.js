@@ -58,10 +58,10 @@ export const BOSS_INTRO_VB = {
 
 // Uma única fala de vitória por boss, ligada ao direito que acabou de ser recuperado.
 export const BOSS_VICTORY_VB = {
-  monstro_ignorancia: "Conseguimos! O direito à educação vai continuar a brilhar! 📚✨",
-  virus_gigante: "Vencemos! A saúde de todas as crianças está mais protegida! 💊",
-  guardiao_sombras: "A nossa voz venceu as sombras! Ninguém nos vai calar! 🗣️",
-  poluidor_mecanico: "O planeta agradece! Vamos continuar a cuidar dele juntos! 🌱"
+  monstro_ignorancia: "Conseguimos! O direito à educação vai continuar a brilhar!",
+  virus_gigante: "Vencemos! A saúde de todas as crianças está mais protegida!",
+  guardiao_sombras: "A nossa voz venceu as sombras! Ninguém nos vai calar!",
+  poluidor_mecanico: "O planeta agradece! Vamos continuar a cuidar dele juntos!"
 };
 
 // Frases curtas mostradas (sem parar o jogo, só um "floatie") sempre que se

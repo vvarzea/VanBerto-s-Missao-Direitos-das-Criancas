@@ -69,7 +69,7 @@ export const BOSSES = [
     // centro da sua plataforma baixa esquerda.
     signX: 230,
     intro: "Sem saber, não há poder! Vou apagar tudo o que aprendeste!",
-    defeatLine: "Nooo! O conhecimento é mais forte! 📚✨",
+    defeatLine: "Nãoo! O conhecimento é mais forte!",
     quizTheme: "educacao",
     hp: 3,
     // Tema próprio (em vez do índigo/roxo-noturno nº16, que se confundia
@@ -177,7 +177,7 @@ export const BOSSES = [
     // 400 daria 480 e cairia no vão aberto entre as plataformas).
     signX: 200,
     intro: "Vou espalhar-me por todo o lado!",
-    defeatLine: "Argh! Vacinado... derrotado! 💉",
+    defeatLine: "Argh! Vacinado... derrotado!",
     quizTheme: "saude", // voltou a "saude" — com a reordenação dos pilares, o Nível 5 (o último antes deste boss) é outra vez sobre saúde
     hp: 3,                     // 4→3: agora são sempre 3 saltos na cabeça, como os outros bosses "stomp"
     themeIdx: 13,              // teal escuro noturno — combina com o verde-água do boss
@@ -244,7 +244,7 @@ export const BOSSES = [
     // da Ignorância).
     signX: 220,
     intro: "Nas sombras, ninguém te protege!",
-    defeatLine: "A luz da tua voz venceu! 🗣️✨",
+    defeatLine: "A luz da tua voz venceu!",
     quizTheme: "expressao", // continua "expressao" — com a reordenação, o Nível 19 (o último antes deste boss) ainda é sobre expressão
     hp: 3,                     // 4→3: agora são sempre 3 saltos na cabeça
     themeIdx: 11,              // azul oceano noturno — fortaleza escura, sem exagerar no preto
@@ -309,7 +309,7 @@ export const BOSSES = [
     // da Ignorância).
     signX: 200,
     intro: "O planeta é meu para sujar!",
-    defeatLine: "O verde venceu o cinzento! 🌱",
+    defeatLine: "O verde venceu o cinzento!",
     quizTheme: "ambiente",
     hp: 3,                     // 5→3: agora são sempre 3 saltos na cabeça
     themeIdx: 9,                // âmbar dourado enevoado — céu poluído, ainda de dia

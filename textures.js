@@ -886,9 +886,27 @@ function makeBossTextures(scene){
     ctx.lineTo(C-30,C+24);
     ctx.closePath(); ctx.fill();
     ctx.strokeStyle="#000"; ctx.lineWidth=2; ctx.stroke();
+    // Melhoria de leitura (pedido: "melhora a imagem dos bosses") — antes
+    // a capa era só um triângulo escuro liso, difícil de destacar do fundo
+    // também escuro deste nível. Duas camadas novas, sem mudar a silhueta:
+    // 1) brilho de contorno ciano ténue à volta de toda a capa, ecoando a
+    // cor dos olhos, para se destacar de fundos escuros;
+    ctx.save();
+    ctx.strokeStyle="rgba(127,224,255,0.45)"; ctx.lineWidth=1.4;
+    ctx.shadowColor="rgba(127,224,255,0.5)"; ctx.shadowBlur=6;
+    ctx.stroke();
+    ctx.restore();
+    // 2) duas linhas de "bordado" a brilhar, a descer pela capa — dão
+    // textura/profundidade onde antes era uma só cor plana.
+    ctx.strokeStyle="rgba(150,150,200,0.55)"; ctx.lineWidth=1.4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(C-9,C-6); ctx.quadraticCurveTo(C-12,C+16,C-11,S-20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(C+9,C-6); ctx.quadraticCurveTo(C+12,C+16,C+11,S-20); ctx.stroke();
     // capuz — sombra mais escura no topo
     ctx.fillStyle="#08081a";
     ctx.beginPath(); ctx.ellipse(C,C-18,17,20,0,0,Math.PI*2); ctx.fill();
+    // borda do capuz a brilhar ligeiramente — separa a cara do resto da capa
+    ctx.strokeStyle="rgba(127,224,255,0.3)"; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.ellipse(C,C-18,17,20,0,0,Math.PI*2); ctx.stroke();
   }
   // Mangas fantasmagóricas a sair da capa — "wave" levantadas (como a
   // invocar sombras), "rest" a pender junto ao corpo. Reaproveita o mesmo
@@ -929,8 +947,8 @@ function makeBossTextures(scene){
   // capuz, em vez do brilho cheio — a mesma ideia do piscar do Monstro.
   function drawGuardiaoFace(ctx, eyesOpen){
     if (eyesOpen) {
-      glowEye(ctx, C-7, C-18, 4.2, "#7fe0ff");
-      glowEye(ctx, C+7, C-18, 4.2, "#7fe0ff");
+      glowEye(ctx, C-7, C-18, 5, "#8ee8ff");
+      glowEye(ctx, C+7, C-18, 5, "#8ee8ff");
     } else {
       ctx.strokeStyle="#7fe0ff"; ctx.lineWidth=2; ctx.lineCap="round";
       ctx.shadowColor="#7fe0ff"; ctx.shadowBlur=6;
@@ -1001,31 +1019,60 @@ function makeBossTextures(scene){
     tex.refresh();
   }
 
-  // ── 4) Poluidor Mecânico — robô industrial enferrujado, com chaminé ─
+  // ── 4) Poluidor Mecânico — redesenho (pedido: "esteticamente pode ser
+  // muito melhor" + expressões "mais vincadas") ──────────────────────────
+  // Antes: um só LED vermelho ao centro mudava de forma ligeiramente entre
+  // TODOS os estados (normal/riso/zangado/triste/choque) — daí serem quase
+  // impossíveis de distinguir. Agora tem uma cara a sério, com a mesma
+  // gramática visual legível dos outros 3 bosses (sobrancelhas + 2 olhos +
+  // boca), só que em versão mecânica: duas lentes num visor escuro
+  // embutido, sobrancelhas em forma de placas de metal articuladas, e uma
+  // boca-grelha cuja FORMA muda por completo por estado (não só o brilho).
+  // O corpo também ganhou mais detalhe/leitura: faixa de perigo
+  // amarela/preta, manchas de ferrugem, e uma base de lagartas/rodas para
+  // deixar de parecer que flutua — agora está mesmo "pousado" no chão,
+  // como convém a um robô industrial pesado.
   function drawPoluidorBody(ctx){
     bossShadow(ctx);
-    // fumo estático por cima da chaminé
-    ctx.fillStyle="rgba(120,120,110,0.45)";
-    [[C-2,C-46,7],[C+3,C-54,9],[C-4,C-62,7]].forEach(([x,y,r])=>{
+    // fumo — penacho maior, várias camadas com opacidade a esbater
+    [[C-2,C-46,8,0.5],[C+4,C-56,10,0.4],[C-5,C-66,8,0.28],[C+1,C-75,6,0.18]].forEach(([x,y,r,a])=>{
+      ctx.fillStyle=`rgba(130,130,120,${a})`;
       ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
     });
-    // chaminé
+    // chaminé com aro no topo
     ctx.fillStyle="#5a5a4a";
     ctx.fillRect(C-6,C-40,12,20);
     ctx.strokeStyle="#2a2a20"; ctx.lineWidth=1.5; ctx.strokeRect(C-6,C-40,12,20);
-    // corpo — caixa metálica com gradiente oliva/ferrugem
+    ctx.fillStyle="#3a3a2e"; ctx.fillRect(C-8,C-42,16,4);
+    // corpo — caixa metálica, gradiente oliva/ferrugem com mais contraste
     const gr=ctx.createLinearGradient(C-30,C-22,C+30,C+26);
-    gr.addColorStop(0,"#9aa878"); gr.addColorStop(0.5,"#7a8a5c"); gr.addColorStop(1,"#5a6440");
+    gr.addColorStop(0,"#a8b686"); gr.addColorStop(0.5,"#7a8a5c"); gr.addColorStop(1,"#4a5432");
     ctx.fillStyle=gr;
-    rrPath(ctx,C-30,C-22,60,48,8); ctx.fill();
-    ctx.strokeStyle="#3a4028"; ctx.lineWidth=2.5; ctx.stroke();
+    rrPath(ctx,C-30,C-22,60,44,8); ctx.fill();
+    ctx.strokeStyle="#2a2e1c"; ctx.lineWidth=2.5; ctx.stroke();
+    // faixa de perigo amarela/preta — nova, ao longo da base do corpo
+    ctx.save();
+    rrPath(ctx,C-30,C+10,60,12,3); ctx.clip();
+    ctx.fillStyle="#22241a"; ctx.fillRect(C-30,C+10,60,12);
+    ctx.fillStyle="#e8c73c";
+    for(let x=-36;x<40;x+=10){
+      ctx.save(); ctx.translate(C+x,C+16); ctx.rotate(Math.PI/4);
+      ctx.fillRect(-3,-11,6,22);
+      ctx.restore();
+    }
+    ctx.restore();
+    // manchas de ferrugem — decorativas, baixa opacidade
+    ctx.fillStyle="rgba(120,60,20,0.35)";
+    [[C-23,C-12,5],[C+21,C+2,4],[C-15,C+1,3]].forEach(([x,y,r])=>{
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    });
     // rebites
     ctx.fillStyle="#2f3320";
-    [[-24,-16],[24,-16],[-24,20],[24,20]].forEach(([dx,dy])=>{
+    [[-25,-17],[25,-17],[-25,-3],[25,-3]].forEach(([dx,dy])=>{
       ctx.beginPath(); ctx.arc(C+dx,C+dy,2.2,0,Math.PI*2); ctx.fill();
     });
     // engrenagens nos ombros
-    [[-30,-2],[30,-2]].forEach(([dx,dy])=>{
+    [[-30,-4],[30,-4]].forEach(([dx,dy])=>{
       const gx=C+dx, gy=C+dy;
       ctx.fillStyle="#4a4a3a";
       for(let i=0;i<8;i++){
@@ -1037,107 +1084,168 @@ function makeBossTextures(scene){
       ctx.beginPath(); ctx.arc(gx,gy,7,0,Math.PI*2); ctx.fill();
       ctx.fillStyle="#8a8a70"; ctx.beginPath(); ctx.arc(gx,gy,3,0,Math.PI*2); ctx.fill();
     });
-    // grelha/boca de ventilação
-    ctx.strokeStyle="#2f3320"; ctx.lineWidth=2;
-    for(let i=0;i<3;i++){
-      ctx.beginPath(); ctx.moveTo(C-10,C+14+i*4); ctx.lineTo(C+10,C+14+i*4); ctx.stroke();
-    }
+    // base de lagartas/rodas — deixa de parecer que flutua
+    ctx.fillStyle="#22241a";
+    rrPath(ctx,C-28,C+22,56,13,4); ctx.fill();
+    ctx.strokeStyle="#12130d"; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle="#4a4a3a";
+    [-20,-7,7,20].forEach(dx=>{
+      ctx.beginPath(); ctx.arc(C+dx,C+28,4.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#7a7a64"; ctx.beginPath(); ctx.arc(C+dx,C+28,1.6,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#4a4a3a";
+    });
+    // visor — painel escuro embutido onde entram os olhos+sobrancelhas+boca
+    ctx.fillStyle="#1c1e14";
+    rrPath(ctx,C-23,C-19,46,30,5); ctx.fill();
+    ctx.strokeStyle="#0e0f0a"; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle="#4a4a3a";
+    [[-20,-16],[20,-16],[-20,8],[20,8]].forEach(([dx,dy])=>{
+      ctx.beginPath(); ctx.arc(C+dx,C+dy,1.6,0,Math.PI*2); ctx.fill();
+    });
   }
-  // Braços-garra mecânicos a sair de junto das engrenagens dos ombros —
-  // "wave" levantados/abertos (a ameaçar), "rest" pousados ao longo do corpo.
+  // Braços-garra mecânicos — "wave" levantados/abertos (a ameaçar), "rest"
+  // pousados ao longo do corpo.
   function drawPoluidorArms(ctx, mood){
     ctx.fillStyle="#7a8a5c"; ctx.strokeStyle="#3a4028"; ctx.lineWidth=2.5;
     if (mood === "wave") {
       [-1,1].forEach(side=>{
-        const sx=C+side*30, sy=C-2;
+        const sx=C+side*30, sy=C-4;
         ctx.beginPath(); ctx.ellipse(sx+side*11, sy-15, 7,14, side*0.45,0,Math.PI*2); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(sx+side*15, sy-27); ctx.lineTo(sx+side*24, sy-33); ctx.lineTo(sx+side*17, sy-23); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(sx+side*15, sy-21); ctx.lineTo(sx+side*25, sy-21); ctx.lineTo(sx+side*17, sy-15); ctx.closePath(); ctx.fill(); ctx.stroke();
       });
     } else {
       [-1,1].forEach(side=>{
-        const sx=C+side*30, sy=C-2;
+        const sx=C+side*30, sy=C-4;
         ctx.beginPath(); ctx.ellipse(sx+side*7, sy+16, 7,14, -side*0.28,0,Math.PI*2); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.arc(sx+side*11, sy+31, 6, 0, Math.PI*2); ctx.fill(); ctx.stroke();
       });
     }
   }
-  // eyesOpen=false: o olho vermelho encolhe para um traço fino apagado —
-  // "piscar" mecânico, como uma luz LED a desligar por instantes.
-  function drawPoluidorFace(ctx, eyesOpen){
-    if (eyesOpen) {
-      glowEye(ctx, C, C-2, 7, "#ff4030");
-    } else {
-      ctx.strokeStyle="#ff4030"; ctx.lineWidth=3; ctx.lineCap="round";
-      ctx.shadowColor="#ff4030"; ctx.shadowBlur=6;
-      ctx.beginPath(); ctx.moveTo(C-6,C-2); ctx.lineTo(C+6,C-2); ctx.stroke();
+  // Sobrancelhas mecânicas — placas de metal articuladas, uma por estado,
+  // com um rebite no ponto de fixação. Ângulos bem diferentes entre si
+  // (pedido: "mais vincado") para se lerem à distância.
+  function drawPoluidorBrow(ctx, mood){
+    ctx.strokeStyle="#1c1e14"; ctx.lineWidth=5; ctx.lineCap="round";
+    const VT = C-19; // borda de cima do visor — as sobrancelhas ficam mesmo por cima
+    const shapes = {
+      normal:  [[C-21,VT-6,C-7,VT-4],[C+7,VT-4,C+21,VT-6]],
+      laugh:   [[C-21,VT-9,C-6,VT-5],[C+6,VT-5,C+21,VT-9]],
+      angry:   [[C-21,VT-10,C-6,VT+2],[C+6,VT+2,C+21,VT-10]],
+      sad:     [[C-21,VT+0,C-6,VT-7],[C+6,VT-7,C+21,VT+0]],
+      ouch:    [[C-22,VT-12,C-5,VT-10],[C+5,VT-10,C+22,VT-12]],
+    };
+    (shapes[mood]||shapes.normal).forEach(([x1,y1,x2,y2])=>{
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    });
+    ctx.fillStyle="#4a4a3a";
+    [-14,14].forEach(dx=>{ ctx.beginPath(); ctx.arc(C+dx,VT-6,2,0,Math.PI*2); ctx.fill(); });
+  }
+  // Duas lentes (em vez de um LED central só) — cor/tamanho variam por
+  // estado. "blink" fecha-as como um obturador mecânico.
+  function drawPoluidorEyes(ctx, mood){
+    const pos=[[-10,-6],[10,-6]];
+    if (mood==="blink"){
+      ctx.strokeStyle="#ff4030"; ctx.lineWidth=2.5; ctx.lineCap="round";
+      ctx.shadowColor="#ff4030"; ctx.shadowBlur=5;
+      pos.forEach(([dx,dy])=>{ ctx.beginPath(); ctx.moveTo(C+dx-4,C+dy); ctx.lineTo(C+dx+4,C+dy); ctx.stroke(); });
       ctx.shadowBlur=0;
+      return;
     }
+    let r=5.5, color="#ff4030", dyAdj=0;
+    if (mood==="angry"){ r=6.5; color="#ff2010"; }
+    if (mood==="laugh"){ r=5;   color="#ff6030"; }
+    if (mood==="ouch"){  r=7;   color="#ffffff"; }
+    if (mood==="sad"){   r=4;   color="#ff8070"; dyAdj=3; }
+    pos.forEach(([dx,dy])=>{ glowEye(ctx, C+dx, C+dy+dyAdj, r, color); });
+  }
+  // Boca-grelha — a peça que mais muda de FORMA (não só de cor) entre
+  // estados, para as expressões ficarem mesmo "vincadas": grelha reta
+  // (normal), grelha larga e aberta a rir (laugh), fenda descaída (sad),
+  // grelha em zigue-zague cerrada (angry), grelha ovalada bem aberta em
+  // choque (ouch).
+  function drawPoluidorMouth(ctx, mood){
+    const cy=C+1; // dentro do visor (que vai até C+11) — antes ultrapassava a borda de baixo
+    if (mood==="laugh"){
+      ctx.fillStyle="#12130d"; ctx.strokeStyle="#0e0f0a"; ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(C-15,cy-3); ctx.quadraticCurveTo(C, cy+7, C+15, cy-3);
+      ctx.quadraticCurveTo(C, cy+1, C-15, cy-3);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle="#ffe85c"; ctx.lineWidth=1.2;
+      for(let i=0;i<2;i++){ ctx.beginPath(); ctx.moveTo(C-9,cy+i*2.2); ctx.lineTo(C+9,cy+i*2.2); ctx.stroke(); }
+    } else if (mood==="sad"){
+      ctx.strokeStyle="#3a4028"; ctx.lineWidth=2.5; ctx.lineCap="round";
+      ctx.beginPath(); ctx.moveTo(C-10,cy+3); ctx.quadraticCurveTo(C, cy-5, C+10, cy+3); ctx.stroke();
+    } else if (mood==="angry"){
+      ctx.strokeStyle="#0e0f0a"; ctx.lineWidth=3; ctx.lineCap="round"; ctx.lineJoin="round";
+      ctx.beginPath();
+      ctx.moveTo(C-13,cy-1);
+      for(let i=0;i<4;i++){ ctx.lineTo(C-13+(i+1)*6.5, cy-1+(i%2===0?4:-4)); }
+      ctx.stroke();
+    } else if (mood==="ouch"){
+      ctx.fillStyle="#0e0f0a";
+      ctx.beginPath(); ctx.ellipse(C,cy+1,6.5,6.5,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#ffe85c"; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(C-4,cy+1); ctx.lineTo(C+4,cy+1); ctx.stroke();
+    } else {
+      ctx.strokeStyle="#12130d"; ctx.lineWidth=2;
+      for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(C-9,cy-4+i*3.4); ctx.lineTo(C+9,cy-4+i*3.4); ctx.stroke(); }
+    }
+  }
+  // Reúne sobrancelhas + olhos + boca — um só ponto de entrada por estado,
+  // reaproveitado pelos 7 blocos de textura abaixo.
+  function drawPoluidorFace(ctx, mood){
+    drawPoluidorBrow(ctx, mood);
+    drawPoluidorEyes(ctx, mood);
+    drawPoluidorMouth(ctx, mood);
   }
   if(!scene.textures.exists("boss_poluidor_mecanico")){
     const tex=scene.textures.createCanvas("boss_poluidor_mecanico",S,S), ctx=tex.getContext();
-    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave"); drawPoluidorFace(ctx,true);
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave"); drawPoluidorFace(ctx,"normal");
     tex.refresh();
   }
   if(!scene.textures.exists("boss_poluidor_mecanico_armsdown")){
     const tex=scene.textures.createCanvas("boss_poluidor_mecanico_armsdown",S,S), ctx=tex.getContext();
-    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest"); drawPoluidorFace(ctx,true);
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest"); drawPoluidorFace(ctx,"normal");
     tex.refresh();
   }
   if(!scene.textures.exists("boss_poluidor_mecanico_blink")){
     const tex=scene.textures.createCanvas("boss_poluidor_mecanico_blink",S,S), ctx=tex.getContext();
-    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave"); drawPoluidorFace(ctx,false);
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave"); drawPoluidorFace(ctx,"blink");
     tex.refresh();
   }
-  // "ouch": olho a piscar em sobrecarga (branco, não vermelho) + faíscas +
-  // garras em repouso — o mesmo choque exagerado dos outros bosses.
+  // "ouch" — sobrancelhas esbugalhadas, olhos brancos de sobrecarga, boca
+  // ovalada bem aberta + faíscas dos cantos do visor.
   if(!scene.textures.exists("boss_poluidor_mecanico_ouch")){
     const tex=scene.textures.createCanvas("boss_poluidor_mecanico_ouch",S,S), ctx=tex.getContext();
-    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest");
-    glowEye(ctx, C, C-2, 8, "#ffffff");
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest"); drawPoluidorFace(ctx,"ouch");
     ctx.strokeStyle="#ffe85c"; ctx.lineWidth=2; ctx.lineCap="round";
-    [[C-20,C-14,C-28,C-24],[C+20,C-14,C+28,C-24],[C-16,C+10,C-24,C+18]].forEach(([x1,y1,x2,y2])=>{
+    [[C-21,C-12,C-29,C-22],[C+21,C-12,C+29,C-22],[C-17,C+12,C-25,C+20]].forEach(([x1,y1,x2,y2])=>{
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
     });
     tex.refresh();
   }
-
-  // Estado "riso maléfico" — entrada em combate: o olho brilha de gozo com
-  // pequenas faíscas douradas, como uma gargalhada mecânica.
+  // "riso maléfico" — entrada em combate: sobrancelhas trocistas erguidas
+  // nas pontas, lentes com brilho quente, boca-grelha bem aberta a rir.
   if(!scene.textures.exists("boss_poluidor_mecanico_laugh")){
     const tex=scene.textures.createCanvas("boss_poluidor_mecanico_laugh",S,S), ctx=tex.getContext();
-    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave");
-    ctx.strokeStyle="#ff4030"; ctx.lineWidth=3; ctx.lineCap="round";
-    ctx.shadowColor="#ff4030"; ctx.shadowBlur=8;
-    ctx.beginPath(); ctx.arc(C,C-2,7,Math.PI*1.1,Math.PI*1.9); ctx.stroke();
-    ctx.shadowBlur=0;
-    ctx.strokeStyle="#ffe85c"; ctx.lineWidth=2;
-    [[C-16,C-12,C-22,C-18],[C+16,C-12,C+22,C-18]].forEach(([x1,y1,x2,y2])=>{
-      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-    });
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave"); drawPoluidorFace(ctx,"laugh");
     tex.refresh();
   }
-  // Estado "zangado" (vermelho) — o LED central fica maior e mais intenso
-  // durante a escalada de fúria; o motor de jogo aplica também um tint por
-  // cima deste estado.
+  // "zangado" (vermelho) — sobrancelhas em V bem carregado, lentes maiores
+  // e mais intensas, boca em grelha cerrada/dentada. O motor de jogo
+  // aplica também um tint por cima deste estado.
   if(!scene.textures.exists("boss_poluidor_mecanico_angry")){
     const tex=scene.textures.createCanvas("boss_poluidor_mecanico_angry",S,S), ctx=tex.getContext();
-    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave");
-    glowEye(ctx, C, C-2, 10, "#ff4030");
-    ctx.strokeStyle="#3a4028"; ctx.lineWidth=3; ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(C-14,C-16); ctx.lineTo(C-4,C-10); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(C+4,C-10); ctx.lineTo(C+14,C-16); ctx.stroke();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"wave"); drawPoluidorFace(ctx,"angry");
     tex.refresh();
   }
-  // Estado "triste" — derrota: o LED apaga-se quase todo antes do robô se
-  // desligar e fugir a coxear.
+  // "triste" — derrota: sobrancelhas preocupadas (caídas para dentro),
+  // lentes pequenas e baças, boca-grelha descaída, antes de fugir a coxear.
   if(!scene.textures.exists("boss_poluidor_mecanico_sad")){
     const tex=scene.textures.createCanvas("boss_poluidor_mecanico_sad",S,S), ctx=tex.getContext();
-    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest");
-    ctx.strokeStyle="#ff8070"; ctx.lineWidth=2; ctx.lineCap="round";
-    ctx.beginPath(); ctx.moveTo(C-5,C-2); ctx.lineTo(C+5,C-2); ctx.stroke();
-    ctx.strokeStyle="#3a4028"; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(C-10,C+14); ctx.lineTo(C-2,C+18); ctx.lineTo(C+10,C+12); ctx.stroke();
+    drawPoluidorBody(ctx); drawPoluidorArms(ctx,"rest"); drawPoluidorFace(ctx,"sad");
     tex.refresh();
   }
 
