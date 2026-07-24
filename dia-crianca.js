@@ -4216,7 +4216,17 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!scene.textures.exists(blinkKey)) return;
     const restoreKey = b.texture.key; // volta ao estado (braços) em que estava antes de piscar
     b.setTexture(blinkKey);
-    scene.time.delayedCall(140, () => {
+    // NOVO (pedido: "não vejo... mexer os olhos") — 140ms era rápido demais
+    // para se notar durante o jogo; passa a 230ms. O pequeno "pop" de escala
+    // (leve aumento e volta) ajuda o olho a apanhar o instante da troca,
+    // que de outra forma passa despercebido num sprite pequeno em movimento.
+    const baseScaleY = b.scaleY, baseScaleX = b.scaleX;
+    scene.tweens.add({
+      targets: b, scaleY: baseScaleY * 1.08, scaleX: baseScaleX * 1.04,
+      duration: 90, yoyo: true, ease: "Sine.easeOut",
+      onComplete: () => { if (b.active) { b.scaleY = baseScaleY; b.scaleX = baseScaleX; } }
+    });
+    scene.time.delayedCall(230, () => {
       if (b.active && bossState && !bossState.squishing && scene.textures.exists(restoreKey)) b.setTexture(restoreKey);
     });
   }
@@ -4242,12 +4252,17 @@ window.addEventListener("DOMContentLoaded", () => {
     // com o squash — dá a sensação de choque/dor, não só de ser espremido.
     scene.tweens.add({
       targets: b, x: baseX - 6, angle: baseAngle - 5,
-      duration: 45, yoyo: true, repeat: 3, ease: "Sine.easeInOut",
+      duration: 55, yoyo: true, repeat: 3, ease: "Sine.easeInOut",
       onComplete: () => { if (b.active) { b.x = baseX; b.angle = baseAngle; } }
     });
+    // NOVO (pedido: "não vejo os bosses a bufar") — antes durava só 130ms
+    // (260ms com o yoyo) E vinha muito distorcido (scaleY 0.55/scaleX 1.2),
+    // o suficiente para a cara "_ouch" nunca chegar a ler-se a tempo. Mais
+    // lento (200ms → 400ms ao todo) e menos esmagado, para a criança
+    // conseguir mesmo ver a cara de dor antes de voltar ao normal.
     scene.tweens.add({
-      targets: b, scaleY: baseScaleY * 0.55, scaleX: baseScaleX * 1.2,
-      duration: 130, yoyo: true, ease: "Quad.easeOut",
+      targets: b, scaleY: baseScaleY * 0.7, scaleX: baseScaleX * 1.12,
+      duration: 200, yoyo: true, ease: "Quad.easeOut",
       onComplete: () => {
         if (b.active && scene.textures.exists(normalTex)) b.setTexture(normalTex);
         if (b.active) { b.scaleY = baseScaleY; b.scaleX = baseScaleX; }
@@ -4536,6 +4551,17 @@ window.addEventListener("DOMContentLoaded", () => {
       const angryKey = "boss_" + def.id + "_angry";
       if (scene.textures.exists(angryKey)) b.setTexture(angryKey);
       b.setTint(level === 1 ? 0xffb0a0 : 0xff6a5c);
+      // NOVO (pedido: "não vejo... mudar o sorriso") — o tint vermelho por
+      // si só chamava a atenção, mas escondia que a CARA também tinha
+      // mudado de forma. Um pequeno solavanco de escala no instante exato
+      // da troca ajuda a marcar essa mudança como um momento visível, não
+      // só uma alteração de cor.
+      const baseScaleY = b.scaleY, baseScaleX = b.scaleX;
+      scene.tweens.add({
+        targets: b, scaleY: baseScaleY * 1.18, scaleX: baseScaleX * 1.1,
+        duration: 130, yoyo: true, ease: "Back.easeOut",
+        onComplete: () => { if (b.active) { b.scaleY = baseScaleY; b.scaleX = baseScaleX; } }
+      });
     }
 
     // O ícone flutuante 😠/😡 que existia aqui foi removido (pedido: nada de
