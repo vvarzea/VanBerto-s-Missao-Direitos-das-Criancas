@@ -15,8 +15,7 @@ export const PAUSE_TIPS = [
   "❤️ <b>Coração:</b> Apanha-o para ganhar +1 vida (máximo 5 ao mesmo tempo).",
   "🦘 <b>Nível dos Trampolins:</b> Os vãos são intransponíveis sem trampolim — procura-os no chão!",
   "🔥 <b>Nível da Lava:</b> O chão queima! Mantém-te sempre em cima das plataformas.",
-  "🏃 <b>Nível da Esteira:</b> Todas as plataformas se movem — observa o ritmo antes de saltar!",
-  "🎪 <b>Arco secreto:</b> Alguns níveis escondem um arco de festa — agacha-te por baixo para descobrires uma salinha bónus!"
+  "🏃 <b>Nível da Esteira:</b> Todas as plataformas se movem — observa o ritmo antes de saltar!"
 ];
 
 export const LEVEL_ENTRY_PHRASES = [

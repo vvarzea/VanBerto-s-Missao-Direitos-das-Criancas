@@ -45,9 +45,26 @@ export const LEVELS = [
       // criança uma boa distância de corrida livre antes do 1º obstáculo.
       {x:950,y:461,w:200,h:22},
       {x:1340,y:450,w:300,h:22},{x:1680,y:380,w:270,h:22},
-      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28}
+      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28},
+      // Plataforma secreta (pedido: "canos/túneis à Mario para atalhos ou
+      // áreas secretas") — só se chega aqui pelo cano abaixo; não está ao
+      // alcance de nenhum salto normal a partir do chão principal.
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"}],
+    // NOVO — 1º par de canos do jogo, de demonstração. Entra-se parando em
+    // cima e carregando em baixo/S (a mesma tecla de agachar). O cano de
+    // volta manda para x:750 (não para cima do próprio cano de entrada,
+    // em 650) para não disparar logo outra vez ao aterrar.
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},   // no chão principal → sobe até à plataforma secreta
+      {x:700,y:167,w:56,h:44,toX:750,toY:460} // na plataforma secreta → volta ao chão principal
+    ],
+    // Curiosidade da sala secreta (pedido: "cada cano leva a uma sala com uma
+    // curiosidade que ainda não aparece no Sabias que...? desse nível").
+    secretFact: { x:695, y:190, emoji:"🏛️",
+      text:"Sabias que a ideia de um dia mundial dedicado às crianças nasceu em 1925, numa conferência em Genebra, na Suíça?" },
+    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"},
+      {x:650,y:160,kind:"estrela"}],
     // Vilões empurrados para a direita, na mesma proporção do resto do nível
     // (era x:1500/1960) — o 1º só aparece bem depois do túnel e do 2º item,
     // dando à criança um troço inicial bem mais longo e calmo.
@@ -60,19 +77,22 @@ export const LEVELS = [
     platforms:[
       {x:520,y:520,w:980,h:28},{x:900,y:450,w:240,h:22},{x:1180,y:380,w:240,h:22},
       {x:1460,y:310,w:240,h:22},{x:1740,y:380,w:240,h:22},{x:2020,y:450,w:240,h:22},
-      {x:2380,y:520,w:980,h:28}
+      {x:2380,y:520,w:980,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:900,y:400,kind:"balao"},{x:1460,y:260,kind:"medalha"},{x:1740,y:330,kind:"estrela"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"📋",
+      text:"Sabias que a Declaração de 1959 tem 10 princípios, ao contrário da Convenção de 1989, que já tem artigos?" },
+    items:[{x:900,y:400,kind:"balao"},{x:1460,y:260,kind:"medalha"},{x:1740,y:330,kind:"estrela"},{x:650,y:165,kind:"medalha"}],
     malwares:[{x:1320,y:480,vx:0,pattern:"mini"},{x:2140,y:480,vx:-155,pattern:"patrol"}]
   },
   {
     name: "Nível 3 — A Convenção de 1989",
     artIdx:2, theme:2, quizTheme:"convencao", worldW:2900,
     spawn:{x:480,y:460}, doorX:2500,
-    // Arco-cortina de festa — entrada da sala secreta (ver SECRET_ROOMS,
-    // data-secretrooms.js). x:280 confirmado sem sobreposição com o coração
-    // (x:560), o letreiro (signX:630) nem o vilão (x:1000).
-    secretArch:{x:280,y:486},
     // signX: por defeito o letreiro/informação ficaria em spawn.x+240 (=720), que
     // cai mesmo debaixo da plataforma elevada {x:840,y:460,w:240} (720-960).
     // Movido para a esquerda, para zona livre entre o coração (x:560) e essa
@@ -81,9 +101,16 @@ export const LEVELS = [
     platforms:[
       {x:520,y:520,w:1040,h:28},{x:840,y:460,w:240,h:22},{x:1180,y:390,w:240,h:22},
       {x:1520,y:320,w:240,h:22},{x:1860,y:390,w:240,h:22},{x:2200,y:460,w:240,h:22},
-      {x:2480,y:520,w:1040,h:28}
+      {x:2480,y:520,w:1040,h:28},
+      {x:610,y:200,w:160,h:22}
     ],
-    items:[{x:840,y:220,kind:"estrela"},{x:1520,y:270,kind:"medalha"},{x:2200,y:410,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:610,y:474,toX:610,toY:143},
+      {x:560,y:167,w:56,h:44,toX:520,toY:460}
+    ],
+    secretFact: { x:655, y:190, emoji:"🌍",
+      text:"Sabias que a Convenção sobre os Direitos da Criança é o tratado de direitos humanos mais aceite do mundo?" },
+    items:[{x:840,y:220,kind:"estrela"},{x:1520,y:270,kind:"medalha"},{x:2200,y:410,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:610,y:165,kind:"brinquedo"}],
     malwares:[{x:1000,y:480,vx:0,pattern:"mini"},{x:1700,y:480,vx:-160,pattern:"patrol"},{x:2350,y:480,vx:155,pattern:"patrol"}]
   },
   {
@@ -101,9 +128,16 @@ export const LEVELS = [
       {x:2100,y:360,w:200,h:22},
       {x:2340,y:440,w:200,h:22},
       {x:2580,y:360,w:200,h:22},
-      {x:2980,y:520,w:1000,h:28}
+      {x:2980,y:520,w:1000,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:840,y:390,kind:"brinquedo"},{x:1080,y:310,kind:"estrela"},{x:1600,y:330,kind:"duplosalto"},{x:2100,y:310,kind:"balao"},{x:2580,y:310,kind:"medalha"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"🕊️",
+      text:"Sabias que a UNICEF foi criada em 1946 para ajudar crianças na Europa depois da Segunda Guerra Mundial?" },
+    items:[{x:840,y:390,kind:"brinquedo"},{x:1080,y:310,kind:"estrela"},{x:1600,y:330,kind:"duplosalto"},{x:2100,y:310,kind:"balao"},{x:2580,y:310,kind:"medalha"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"balao"}],
     malwares:[{x:980,y:480,vx:180,pattern:"patrol"},{x:1580,y:480,vx:-183,pattern:"jumper"},{x:2040,y:480,vx:182,pattern:"jumper"},{x:2450,y:480,vx:-179,pattern:"jumper"},{x:2780,y:480,vx:177}],
     trampolines:[{x:1600,y:462}],
     secrets:[{x:1190,y:355,kind:"estrela",points:25}]
@@ -115,9 +149,16 @@ export const LEVELS = [
     platforms:[
       {x:520,y:520,w:1000,h:28},{x:880,y:450,w:220,h:22},{x:1160,y:380,w:220,h:22},
       {x:1460,y:310,w:220,h:22},{x:1760,y:380,w:220,h:22},{x:2060,y:450,w:220,h:22},
-      {x:2360,y:380,w:220,h:22},{x:2660,y:520,w:1000,h:28}
+      {x:2360,y:380,w:220,h:22},{x:2660,y:520,w:1000,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:880,y:230,kind:"estrela"},{x:1460,y:260,kind:"brinquedo"},{x:2060,y:400,kind:"balao"},{x:2360,y:330,kind:"medalha"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"🧼",
+      text:"Sabias que lavar bem as mãos é uma das formas mais simples de evitar doenças?" },
+    items:[{x:880,y:230,kind:"estrela"},{x:1460,y:260,kind:"brinquedo"},{x:2060,y:400,kind:"balao"},{x:2360,y:330,kind:"medalha"},{x:650,y:165,kind:"heart"}],
     malwares:[{x:1020,y:480,vx:165},{x:1620,y:480,vx:-170},{x:2220,y:480,vx:165},{x:2820,y:480,vx:-160}],
     trampolines:[{x:1310,y:462},{x:2210,y:462}],
     secrets:[{x:740,y:470,kind:"estrela",points:20}]
@@ -137,9 +178,16 @@ export const LEVELS = [
       {x:2050,y:340,w:160,h:22},
       {x:2260,y:450,w:190,h:22},
       {x:2500,y:370,w:170,h:22},
-      {x:2720,y:520,w:960,h:28}
+      {x:2720,y:520,w:960,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:860,y:380,kind:"medalha"},{x:1100,y:290,kind:"duplosalto"},{x:1560,y:260,kind:"estrela"},{x:2050,y:290,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"🧠",
+      text:"Sabias que brincar ajuda o cérebro a crescer e a aprender a resolver problemas?" },
+    items:[{x:860,y:380,kind:"medalha"},{x:1100,y:290,kind:"duplosalto"},{x:1560,y:260,kind:"estrela"},{x:2050,y:290,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"estrela"}],
     malwares:[{x:1010,y:480,vx:170},{x:1480,y:480,vx:-170},{x:1940,y:480,vx:172},{x:2400,y:480,vx:-168},{x:2720,y:480,vx:165}],
     trampolines:[{x:1220,y:462}],
     secrets:[{x:2160,y:355,kind:"estrela",points:20}]
@@ -204,9 +252,16 @@ export const LEVELS = [
       {x:2270,y:340,w:170,h:22},
       {x:2500,y:420,w:160,h:22},
       {x:2720,y:310,w:170,h:22},
-      {x:3080,y:520,w:960,h:28}
+      {x:3080,y:520,w:960,h:28},
+      {x:610,y:200,w:160,h:22}
     ],
-    items:[{x:800,y:220,kind:"estrela"},{x:980,y:280,kind:"balao"},{x:1600,y:220,kind:"medalha"},{x:2270,y:290,kind:"brinquedo"},{x:2720,y:260,kind:"duplosalto"}],
+    pipes:[
+      {x:610,y:474,toX:610,toY:143},
+      {x:560,y:167,w:56,h:44,toX:520,toY:460}
+    ],
+    secretFact: { x:655, y:190, emoji:"🎨",
+      text:"Sabias que tens o direito de participar na vida cultural e artística à tua maneira — música, dança ou teatro?" },
+    items:[{x:800,y:220,kind:"estrela"},{x:980,y:280,kind:"balao"},{x:1600,y:220,kind:"medalha"},{x:2270,y:290,kind:"brinquedo"},{x:2720,y:260,kind:"duplosalto"},{x:610,y:165,kind:"medalha"}],
     malwares:[{x:940,y:480,vx:185,pattern:"jumper"},{x:1490,y:480,vx:-188,pattern:"jumper"},{x:1960,y:480,vx:186,pattern:"jumper"},{x:2400,y:480,vx:-184,pattern:"jumper"},{x:2830,y:480,vx:182,pattern:"patrol"}],
     movingPlatforms:[{x:1380,y:340,w:150,h:22,rangeX:0,rangeY:70,speed:55}],
     trampolines:[{x:2160,y:462}],
@@ -216,16 +271,20 @@ export const LEVELS = [
     name: "Nível 9 — O Direito à Educação",
     artIdx:4, theme:4, quizTheme:"educacao", worldW:3500,
     spawn:{x:480,y:460}, doorX:3100,
-    // Arco-cortina de festa — entrada da sala secreta. x:280 confirmado sem
-    // sobreposição com o coração (x:560) nem o letreiro (spawn.x+240=720).
-    secretArch:{x:280,y:486},
     platforms:[
       {x:520,y:520,w:1000,h:28},{x:920,y:442,w:185,h:22},{x:1200,y:368,w:185,h:22},
       {x:1480,y:298,w:185,h:22},{x:1760,y:368,w:185,h:22},{x:2040,y:442,w:185,h:22},
       {x:2320,y:368,w:185,h:22},{x:2600,y:442,w:185,h:22},
-      {x:3150,y:520,w:1100,h:28}
+      {x:3150,y:520,w:1100,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:920,y:342,kind:"estrela"},{x:1480,y:248,kind:"medalha"},{x:2040,y:392,kind:"balao"},{x:2600,y:392,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"🎒",
+      text:"Sabias que, no mundo, ainda há milhões de crianças que não conseguem ir à escola?" },
+    items:[{x:920,y:342,kind:"estrela"},{x:1480,y:248,kind:"medalha"},{x:2040,y:392,kind:"balao"},{x:2600,y:392,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"brinquedo"}],
     malwares:[{x:1060,y:480,vx:190,pattern:"jumper"},{x:1660,y:480,vx:-195,pattern:"jumper"},{x:2260,y:480,vx:190,pattern:"jumper"},{x:2860,y:480,vx:-185,pattern:"jumper"},{x:3200,y:480,vx:188,pattern:"jumper"}],
     movingPlatforms:[
       {x:1640,y:360,w:140,h:22,rangeX:200,rangeY:0,speed:90},
@@ -251,9 +310,16 @@ export const LEVELS = [
       {x:2400,y:360,w:160,h:22},
       {x:2640,y:440,w:170,h:22},
       {x:2900,y:360,w:160,h:22},
-      {x:3250,y:520,w:960,h:28}
+      {x:3250,y:520,w:960,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:820,y:360,kind:"estrela"},{x:1260,y:230,kind:"duplosalto"},{x:1700,y:410,kind:"balao"},{x:2160,y:230,kind:"medalha"},{x:2640,y:390,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"📞",
+      text:"Sabias que existe uma linha telefónica europeia grátis, o 116 111, para crianças pedirem ajuda?" },
+    items:[{x:820,y:360,kind:"estrela"},{x:1260,y:230,kind:"duplosalto"},{x:1700,y:410,kind:"balao"},{x:2160,y:230,kind:"medalha"},{x:2640,y:390,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"balao"}],
     malwares:[{x:940,y:480,vx:192,pattern:"patrol"},{x:1420,y:480,vx:-196,pattern:"jumper"},{x:1830,y:480,vx:194,pattern:"jumper"},{x:2300,y:480,vx:-192,pattern:"patrol"},{x:2760,y:480,vx:190,pattern:"jumper"}],
     secrets:[{x:1600,y:370,kind:"estrela",points:25}]
   },
@@ -272,9 +338,16 @@ export const LEVELS = [
       {x:2020,y:390,w:180,h:22},
       {x:2260,y:450,w:180,h:22},
       {x:2500,y:380,w:160,h:22},
-      {x:2870,y:520,w:960,h:28}
+      {x:2870,y:520,w:960,h:28},
+      {x:610,y:200,w:160,h:22}
     ],
-    items:[{x:820,y:220,kind:"estrela"},{x:1300,y:280,kind:"balao"},{x:1540,y:210,kind:"medalha"},{x:2020,y:340,kind:"brinquedo"},{x:2500,y:330,kind:"duplosalto"}],
+    pipes:[
+      {x:610,y:474,toX:610,toY:143},
+      {x:560,y:167,w:56,h:44,toX:520,toY:460}
+    ],
+    secretFact: { x:655, y:190, emoji:"👨‍👩‍👧",
+      text:"Sabias que tens direito a manter contacto com os teus pais mesmo que vivam separados?" },
+    items:[{x:820,y:220,kind:"estrela"},{x:1300,y:280,kind:"balao"},{x:1540,y:210,kind:"medalha"},{x:2020,y:340,kind:"brinquedo"},{x:2500,y:330,kind:"duplosalto"},{x:610,y:165,kind:"heart"}],
     malwares:[{x:970,y:480,vx:175,pattern:"patrol"},{x:1450,y:480,vx:-178,pattern:"patrol"},{x:1920,y:480,vx:177,pattern:"jumper"},{x:2360,y:480,vx:-175,pattern:"jumper"},{x:2720,y:480,vx:172}],
     secrets:[{x:680,y:462,kind:"heart"}]
   },
@@ -299,9 +372,16 @@ export const LEVELS = [
       // grupo C
       {x:2780,y:440,w:170,h:22},
       {x:3000,y:350,w:160,h:22},
-      {x:3370,y:520,w:960,h:28}
+      {x:3370,y:520,w:960,h:28},
+      {x:610,y:200,w:160,h:22}
     ],
-    items:[{x:820,y:380,kind:"balao"},{x:1040,y:290,kind:"estrela"},{x:1640,y:300,kind:"duplosalto"},{x:2320,y:220,kind:"medalha"},{x:2780,y:390,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:610,y:474,toX:610,toY:143},
+      {x:560,y:167,w:56,h:44,toX:520,toY:460}
+    ],
+    secretFact: { x:655, y:190, emoji:"🎒",
+      text:"Sabias que há dezenas de milhões de crianças no mundo obrigadas a fugir das suas casas?" },
+    items:[{x:820,y:380,kind:"balao"},{x:1040,y:290,kind:"estrela"},{x:1640,y:300,kind:"duplosalto"},{x:2320,y:220,kind:"medalha"},{x:2780,y:390,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:610,y:165,kind:"estrela"}],
     malwares:[{x:950,y:480,vx:194,pattern:"patrol"},{x:1530,y:480,vx:-198,pattern:"jumper"},{x:1980,y:480,vx:196,pattern:"jumper"},{x:2440,y:480,vx:-194,pattern:"patrol"},{x:2880,y:480,vx:192,pattern:"jumper"}],
     trampolines:[{x:1440,y:462}],
     secrets:[{x:3110,y:263,kind:"balao",points:15}]
@@ -310,9 +390,6 @@ export const LEVELS = [
     name: "Nível 13 — Contra o Trabalho Infantil",
     artIdx:13, theme:13, quizTheme:"trabalho", worldW:3700,
     spawn:{x:480,y:460}, doorX:3300,
-    // Arco-cortina de festa — entrada da sala secreta. x:280 confirmado sem
-    // sobreposição com o segredo (x:680) nem o letreiro (spawn.x+240=720).
-    secretArch:{x:280,y:486},
     // Layout: "labirinto horizontal" — plataformas em ziguezague apertado exige precisão
     platforms:[
       {x:520,y:520,w:960,h:28},
@@ -328,9 +405,16 @@ export const LEVELS = [
       {x:2650,y:310,w:150,h:22},
       {x:2880,y:410,w:140,h:22},
       {x:3070,y:320,w:150,h:22},
-      {x:3360,y:520,w:960,h:28}
+      {x:3360,y:520,w:960,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:820,y:210,kind:"estrela"},{x:1010,y:260,kind:"balao"},{x:1760,y:250,kind:"duplosalto"},{x:2200,y:280,kind:"medalha"},{x:2650,y:260,kind:"brinquedo"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"⏰",
+      text:"Sabias que ainda há muitas crianças no mundo obrigadas a trabalhar, em vez de estudar e brincar?" },
+    items:[{x:820,y:210,kind:"estrela"},{x:1010,y:260,kind:"balao"},{x:1760,y:250,kind:"duplosalto"},{x:2200,y:280,kind:"medalha"},{x:2650,y:260,kind:"brinquedo"},{x:650,y:165,kind:"medalha"}],
     malwares:[{x:1100,y:480,vx:196,pattern:"patrol"},{x:1660,y:480,vx:-200,pattern:"jumper"},{x:2100,y:480,vx:196,pattern:"patrol"},{x:2540,y:480,vx:-192,pattern:"jumper"},{x:2980,y:480,vx:194,pattern:"patrol"}],
     movingPlatforms:[{x:1560,y:370,w:120,h:22,rangeX:100,rangeY:0,speed:95}],
     secrets:[{x:680,y:462,kind:"heart"}]
@@ -350,8 +434,15 @@ export const LEVELS = [
       {x:2440,y:440,w:200,h:22},
       {x:2700,y:350,w:180,h:22},
       {x:2960,y:440,w:200,h:22},
-      {x:3430,y:520,w:960,h:28}
+      {x:3430,y:520,w:960,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"♿",
+      text:"Sabias que uma rampa, a língua gestual ou um livro em braille ajudam TODAS as crianças a participar?" },
     movingPlatforms:[
       {x:1270,y:400,w:130,h:22,rangeX:120,rangeY:0,speed:80},
       {x:1790,y:380,w:130,h:22,rangeX:0,rangeY:80,speed:65},
@@ -361,7 +452,8 @@ export const LEVELS = [
     items:[
       {x:880,y:390,kind:"balao"},{x:1140,y:310,kind:"estrela"},
       {x:1660,y:300,kind:"duplosalto"},{x:2180,y:310,kind:"medalha"},
-      {x:2700,y:300,kind:"brinquedo"},{x:560,y:470,kind:"heart"}
+      {x:2700,y:300,kind:"brinquedo"},{x:560,y:470,kind:"heart"},
+      {x:650,y:165,kind:"brinquedo"}
     ],
     malwares:[
       {x:980,y:480,vx:190,pattern:"patrol"},
@@ -380,9 +472,16 @@ export const LEVELS = [
       {x:520,y:520,w:1000,h:28},{x:980,y:432,w:160,h:22},{x:1260,y:350,w:160,h:22},
       {x:1540,y:274,w:160,h:22},{x:1820,y:350,w:160,h:22},{x:2100,y:432,w:160,h:22},
       {x:2380,y:350,w:160,h:22},{x:2660,y:270,w:160,h:22},{x:2940,y:350,w:160,h:22},
-      {x:3220,y:432,w:160,h:22},{x:3480,y:520,w:1100,h:28}
+      {x:3220,y:432,w:160,h:22},{x:3480,y:520,w:1100,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:980,y:382,kind:"estrela"},{x:1540,y:224,kind:"balao"},{x:2100,y:382,kind:"brinquedo"},{x:2660,y:220,kind:"medalha"},{x:3220,y:382,kind:"duplosalto"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"🌬️",
+      text:"Sabias que a poluição do ar afeta ainda mais as crianças, porque os pulmões delas ainda estão a crescer?" },
+    items:[{x:980,y:382,kind:"estrela"},{x:1540,y:224,kind:"balao"},{x:2100,y:382,kind:"brinquedo"},{x:2660,y:220,kind:"medalha"},{x:3220,y:382,kind:"duplosalto"},{x:650,y:165,kind:"balao"}],
     malwares:[{x:1130,y:480,vx:200,pattern:"patrol"},{x:1760,y:480,vx:-204,pattern:"jumper"},{x:2360,y:480,vx:200,pattern:"patrol"},{x:2960,y:480,vx:-196,pattern:"jumper"},{x:3380,y:480,vx:-198,pattern:"patrol"}],
     movingPlatforms:[
       {x:1410,y:340,w:130,h:22,rangeX:190,rangeY:0,speed:110},
@@ -412,9 +511,16 @@ export const LEVELS = [
       {x:2860,y:290,w:140,h:22},
       {x:3080,y:390,w:150,h:22},
       {x:3300,y:450,w:150,h:22},
-      {x:3530,y:520,w:960,h:28}
+      {x:3530,y:520,w:960,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:820,y:390,kind:"balao"},{x:1380,y:150,kind:"duplosalto"},{x:1780,y:330,kind:"estrela"},{x:2440,y:230,kind:"medalha"},{x:2640,y:140,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"🏛️",
+      text:"Sabias que há Parlamentos de Jovens em várias cidades, onde podes propor ideias a quem manda?" },
+    items:[{x:820,y:390,kind:"balao"},{x:1380,y:150,kind:"duplosalto"},{x:1780,y:330,kind:"estrela"},{x:2440,y:230,kind:"medalha"},{x:2640,y:140,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"heart"}],
     malwares:[{x:940,y:480,vx:202,pattern:"patrol"},{x:1680,y:480,vx:-205,pattern:"jumper"},{x:2100,y:480,vx:202,pattern:"jumper"},{x:2760,y:480,vx:-200,pattern:"jumper"},{x:3180,y:480,vx:198,pattern:"patrol"}],
     movingPlatforms:[{x:2000,y:430,w:120,h:22,rangeX:120,rangeY:0,speed:100}],
     trampolines:[{x:1480,y:462}],
@@ -441,9 +547,16 @@ export const LEVELS = [
       {x:2620,y:440,w:140,h:22},
       // constelação D
       {x:3080,y:270,w:155,h:22},
-      {x:3540,y:520,w:960,h:28}
+      {x:3540,y:520,w:960,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:820,y:220,kind:"estrela"},{x:1020,y:280,kind:"balao"},{x:1720,y:220,kind:"duplosalto"},{x:2420,y:290,kind:"medalha"},{x:3080,y:220,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"🌐",
+      text:"Sabias que todas as crianças têm direito a uma nacionalidade logo que nascem?" },
+    items:[{x:820,y:220,kind:"estrela"},{x:1020,y:280,kind:"balao"},{x:1720,y:220,kind:"duplosalto"},{x:2420,y:290,kind:"medalha"},{x:3080,y:220,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"estrela"}],
     malwares:[{x:950,y:480,vx:204,pattern:"patrol"},{x:1620,y:480,vx:-208,pattern:"jumper"},{x:2120,y:480,vx:204,pattern:"patrol"},{x:2720,y:480,vx:-200,pattern:"jumper"},{x:3180,y:480,vx:-202,pattern:"patrol"}],
     movingPlatforms:[
       {x:1520,y:330,w:130,h:22,rangeX:140,rangeY:0,speed:105},
@@ -462,8 +575,15 @@ export const LEVELS = [
     // Tematicamente: inclusão requer adaptação contínua — nada está fixo.
     platforms:[
       {x:520,y:520,w:960,h:28},     // arranque fixo
-      {x:3590,y:520,w:960,h:28}     // chegada fixa
+      {x:3590,y:520,w:960,h:28},    // chegada fixa
+      {x:650,y:200,w:160,h:22}
     ],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"🚪",
+      text:"Sabias que até os teus pais devem respeitar a tua privacidade, como bater à porta antes de entrar no teu quarto?" },
     // Todas as plataformas intermédias são móveis
     movingPlatforms:[
       // Grupo 1 — balancins horizontais lentos
@@ -485,7 +605,8 @@ export const LEVELS = [
     items:[
       {x:860,y:370,kind:"balao"},{x:1320,y:230,kind:"estrela"},
       {x:1520,y:180,kind:"duplosalto"},{x:2360,y:150,kind:"medalha"},
-      {x:3040,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"}
+      {x:3040,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"},
+      {x:650,y:165,kind:"medalha"}
     ],
     malwares:[
       {x:980,y:480,vx:206,pattern:"patrol"},{x:1620,y:480,vx:-210,pattern:"jumper"},
@@ -515,9 +636,16 @@ export const LEVELS = [
       {x:2920,y:340,w:130,h:22},
       {x:3120,y:430,w:130,h:22},
       {x:3340,y:340,w:130,h:22},
-      {x:3630,y:520,w:960,h:28}
+      {x:3630,y:520,w:960,h:28},
+      {x:610,y:200,w:160,h:22}
     ],
-    items:[{x:800,y:220,kind:"estrela"},{x:1520,y:230,kind:"balao"},{x:1920,y:220,kind:"duplosalto"},{x:2720,y:210,kind:"medalha"},{x:3120,y:380,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:610,y:474,toX:610,toY:143},
+      {x:560,y:167,w:56,h:44,toX:520,toY:460}
+    ],
+    secretFact: { x:655, y:190, emoji:"🎭",
+      text:"Sabias que liberdade de expressão também quer dizer que podes desenhar, escrever ou cantar aquilo que sentes?" },
+    items:[{x:800,y:220,kind:"estrela"},{x:1520,y:230,kind:"balao"},{x:1920,y:220,kind:"duplosalto"},{x:2720,y:210,kind:"medalha"},{x:3120,y:380,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:610,y:165,kind:"brinquedo"}],
     malwares:[{x:880,y:480,vx:208,pattern:"patrol"},{x:1440,y:480,vx:-212,pattern:"jumper"},{x:2020,y:480,vx:208,pattern:"jumper"},{x:2620,y:480,vx:-204,pattern:"jumper"},{x:3220,y:480,vx:-206,pattern:"patrol"}],
     movingPlatforms:[
       {x:1340,y:330,w:110,h:22,rangeX:80,rangeY:0,speed:90},
@@ -531,9 +659,6 @@ export const LEVELS = [
     name: "Nível 20 — Os Direitos Digitais",
     artIdx:19, theme:19, quizTheme:"digital", worldW:4100,
     spawn:{x:480,y:460}, doorX:3700,
-    // Arco-cortina de festa — entrada da sala secreta. x:280 confirmado sem
-    // sobreposição com o coração (x:560) nem os vilões (x:950/1100).
-    secretArch:{x:280,y:486},
     // Layout: "circuito digital" — plataformas em padrão de circuito impresso: retas longas com viragens bruscas
     platforms:[
       {x:520,y:520,w:960,h:28},
@@ -543,9 +668,16 @@ export const LEVELS = [
       {x:2100,y:440,w:300,h:22},   // bloco longo
       {x:2700,y:260,w:300,h:22},   // bloco longo no topo
       {x:3300,y:430,w:300,h:22},   // reta final
-      {x:3680,y:520,w:1100,h:28}
+      {x:3680,y:520,w:1100,h:28},
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:1000,y:390,kind:"balao"},{x:1320,y:310,kind:"estrela"},{x:1650,y:230,kind:"duplosalto"},{x:2200,y:390,kind:"medalha"},{x:2800,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+    ],
+    secretFact: { x:695, y:190, emoji:"📵",
+      text:"Sabias que também tens direito a desligar-te dos ecrãs e descansar — o chamado 'descanso digital'?" },
+    items:[{x:1000,y:390,kind:"balao"},{x:1320,y:310,kind:"estrela"},{x:1650,y:230,kind:"duplosalto"},{x:2200,y:390,kind:"medalha"},{x:2800,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"balao"}],
     malwares:[
       {x:950,y:420,vx:130,pattern:"patrol"},{x:1100,y:420,vx:-130,pattern:"patrol"},
       {x:1580,y:260,vx:125,pattern:"patrol"},{x:1730,y:260,vx:-125,pattern:"patrol"},
