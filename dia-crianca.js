@@ -24,7 +24,7 @@ import { BOSS_BY_LEVEL } from "./data-bosses.js";
 import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS, BOSS_HP_TAUNTS } from "./data-story.js";
 import { playTitleCard, playCinematic } from "./cinematics.js";
 import { loadNamespace, saveNamespace } from "./storage.js";
-import { makeTextures, makePlatformTextureThemed, makePipeTexture } from "./textures.js";
+import { makeTextures, makePlatformTextureThemed, makeTunnelTexture } from "./textures.js";
 import { initBackground, applyBackground, drawSun, drawStars, drawCloud,
          updateTrail, updateFootsteps, updateDoorGlow, updatePlatformDecor,
          spawnPlatformDecor, resetDoorGlow, clearPlatformDecor, hideDoorGlow,
@@ -822,7 +822,7 @@ window.addEventListener("DOMContentLoaded", () => {
   //     pista visual discreta (ver loop de criação em loadLevel).
   //   - nem fact nem decorative → cano-atalho: funciona normalmente (leva a
   //     uma plataforma/área secreta), mas sem sala de curiosidade — só prémio.
-  let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
+  let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false, tunnelFx=[];
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let secretSigns = []; // curiosidades dentro das salas dos canos — ver clearSecretSigns/spawnSecretSign
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
@@ -2153,7 +2153,8 @@ window.addEventListener("DOMContentLoaded", () => {
     itemsCollected = 0;
     itemCountText.setText(`⭐ Itens: ${itemsCollected}/${itemsTotal}`);
     const keyMap = { estrela:"item_estrela", balao:"item_chupachupa", brinquedo:"item_brinquedo",
-                     medalha:"item_medalha", heart:"item_heart", duplosalto:"item_duplosalto" };
+                     medalha:"item_medalha", heart:"item_heart", duplosalto:"item_duplosalto",
+                     balaofesta:"item_balao_2" };
     LEVELS[currentLevel].items.forEach((it, idx) => {
       const exists = itemsGroup.getChildren().some(o => o.getData("itemIdx") === idx);
       if (exists) return;
@@ -2479,27 +2480,45 @@ window.addEventListener("DOMContentLoaded", () => {
       if(plat.body){plat.body.checkCollision.left=false;plat.body.checkCollision.right=false;}
     });
 
-    // Canos à Mario (opcional, ver L.pipes em data-levels.js) — sólidos
-    // (entram no grupo "platforms", por isso o jogador já colide com eles
-    // como qualquer chão), mais o registo em "pipes" com o destino do
-    // salto, usado por tryEnterPipe() no update().
+    // Túneis tecnológicos (opcional, ver L.pipes em data-levels.js) —
+    // sólidos (entram no grupo "platforms", por isso o jogador já colide
+    // com eles como qualquer chão), mais o registo em "pipes" com o destino
+    // do salto, usado por tryEnterPipe() no update(). Posição, quantidade
+    // (0, 1 ou 2 pares) e destino (sala de curiosidade / atalho / apenas
+    // decorativo) variam de nível para nível — ver comentário no topo de
+    // data-levels.js junto a LEVELS.
     pipes = [];
+    tunnelFx.forEach(t=>{ try{t.destroy();}catch{} });
+    tunnelFx = [];
     (L.pipes||[]).forEach(p=>{
-      if(!scene.textures.exists("pipe_mario")) makePipeTexture(scene);
+      if(!scene.textures.exists("tunnel_portal")) makeTunnelTexture(scene);
       const w = p.w||64, h = p.h||64;
-      const spr = platforms.create(p.x, p.y, "pipe_mario");
+      const spr = platforms.create(p.x, p.y, "tunnel_portal");
       spr.displayWidth = w; spr.displayHeight = h; spr.refreshBody();
       if(spr.body){spr.body.checkCollision.left=false;spr.body.checkCollision.right=false;}
+      spr.setDepth(2);
+      // Pulso/brilho constante — "aspeto colorido, divertido e tecnológico,
+      // incentivando a exploração" — dá vida ao portal mesmo parado.
+      scene.tweens.add({ targets:spr, scaleX:spr.scaleX*1.06, scaleY:spr.scaleY*1.06,
+        duration:640, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
       if (p.decorative) {
-        // Cano falso (pedido: "nem todos os túneis são de entrar") — fica só
+        // Túnel falso (pedido: "nem todos os túneis são de entrar") — fica só
         // como obstáculo/plataforma; por não entrar no array "pipes" abaixo,
         // tryEnterPipe() nunca o reconhece, mesmo que o jogador carregue em
-        // baixo em cima dele. Tint subtil (esverdeado mais baço/acinzentado)
-        // — pista discreta para quem reparar, sem ser óbvia à distância.
-        spr.setTint(0x9fb89f);
+        // baixo em cima dele. Tint acinzentado — pista discreta (portal
+        // "desligado") para quem reparar, sem ser óbvia à distância.
+        spr.setTint(0x9098a8);
       } else {
         pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
-        // Cano de curiosidade (tem "fact") vs. cano-atalho (não tem, só prémio).
+        // Pequenas faíscas orbitando o portal — reforça o ar "tecnológico"
+        // só nos túneis realmente entráveis (os decorativos ficam "apagados").
+        const fx = scene.add.particles(0,0,"spark_item",{
+          x:p.x, y:p.y, quantity:1, frequency:260, lifespan:900,
+          speed:{min:6,max:16}, angle:{min:0,max:360}, scale:{start:0.5,end:0},
+          tint:[0xff5fa8,0x40e0ff,0xffd23f]
+        }).setDepth(3);
+        tunnelFx.push(fx);
+        // Túnel de curiosidade (tem "fact") vs. túnel-atalho (não tem, só prémio).
         if (p.fact) spawnSecretSign(scene, p.fact.x, p.fact.y, p.fact.emoji, p.fact.text);
       }
     });
@@ -2528,7 +2547,8 @@ window.addEventListener("DOMContentLoaded", () => {
       estrela:"item_estrela",
       balao:"item_chupachupa",
       brinquedo:"item_brinquedo",medalha:"item_medalha",heart:"item_heart",
-      duplosalto:"item_duplosalto"
+      duplosalto:"item_duplosalto",
+      balaofesta:"item_balao_2"
     };
     // Velocidade de rotação por tipo de item — removida (itens ficam fixos)
     const rotSpeeds={};
@@ -2906,34 +2926,62 @@ window.addEventListener("DOMContentLoaded", () => {
     const p = pipes.find(pp => Math.abs(player.x - pp.x) <= (pp.w/2 - 6));
     if (p) enterPipe(scene, p);
   }
-  // enterPipe: encolhe o VanBerto's para dentro do cano, teletransporta-o
-  // para o destino (toX/toY) já lá dentro (a câmara "salta" com ele, sem
-  // fazer pan pelo nível todo), e volta a crescer do lado de lá. Usa
-  // body.moves=false enquanto dura para a física não interferir a meio
-  // (gravidade, colisões) — ver o guard "!_pipeWarping" no update() para
-  // as outras partes do código (escala, esquerda/direita) que também
+  // enterPipe: animação de teletransporte RÁPIDA (pedido: "0,4s"), o
+  // VanBerto's encolhe para dentro do túnel, "salta" para o destino
+  // (toX/toY) já lá dentro (a câmara acompanha sem fazer pan pelo nível
+  // todo) e volta a crescer do lado de lá, com um pequeno impulso a
+  // reaparecer. Fica invulnerável desde o 1º instante (mesmo ainda a
+  // entrar) até um pouco depois de reaparecer, para nunca poder ser
+  // atingido a meio da viagem nem mesmo aterrar em cima de um vilão.
+  // Usa body.moves=false enquanto dura para a física não interferir a
+  // meio (gravidade, colisões) — ver o guard "!_pipeWarping" no update()
+  // para as outras partes do código (escala, esquerda/direita) que também
   // dão prioridade a esta animação enquanto ela corre.
+  const TUNNEL_WARP_MS = 200; // 200ms a entrar + 200ms a sair = 0,4s no total
   function enterPipe(scene, p){
     if (_pipeWarping || !player?.body) return;
     _pipeWarping = true;
     exitCrouch();
-    ensureAudio(); beep({ freq: 440, dur: 0.12, type: "square", vol: 0.05, slideTo: 180 });
+    ensureAudio(); beep({ freq: 480, dur: 0.09, type: "square", vol: 0.05, slideTo: 220 });
     player.body.moves = false;
+    // Invulnerável já a partir do instante em que entra — cobre toda a
+    // viagem (0,4s) mais uma pequena margem extra ao sair.
+    setInvuln(scene, TUNNEL_WARP_MS*2 + 500);
+    // Pequeno "sugar" de partículas no ponto de entrada (reforça o ar tecnológico)
+    const inFx = scene.add.particles(0,0,"spark_item",{
+      x:p.x, y:p.y, speed:{min:60,max:160}, angle:{min:0,max:360},
+      lifespan:220, quantity:12, scale:{start:0.9,end:0}, gravityY:0,
+      tint:[0xff5fa8,0x40e0ff,0xffd23f]
+    });
+    scene.time.delayedCall(240,()=>inFx.destroy());
     const startScaleX = player.scaleX, startScaleY = player.scaleY;
     scene.tweens.add({
-      targets: player, y: player.y + 22, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
-      duration: 260, ease: "Quad.easeIn",
+      targets: player, y: player.y + 20, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
+      angle: 360, duration: TUNNEL_WARP_MS, ease: "Quad.easeIn",
       onComplete: () => {
-        player.x = p.toX; player.y = p.toY - 26;
+        player.x = p.toX; player.y = p.toY - 18;
+        player.setAngle(0);
         scene.cameras.main.startFollow(player, true, 1.0, 1.0);
-        scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
-        ensureAudio(); beep({ freq: 180, dur: 0.12, type: "square", vol: 0.05, slideTo: 440 });
+        scene.time.delayedCall(40, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
+        ensureAudio(); beep({ freq: 220, dur: 0.09, type: "square", vol: 0.05, slideTo: 480 });
+        // Faíscas de chegada, no ponto de destino
+        const outFx = scene.add.particles(0,0,"spark_item",{
+          x:p.toX, y:p.toY, speed:{min:70,max:190}, angle:{min:0,max:360},
+          lifespan:260, quantity:14, scale:{start:1,end:0}, gravityY:120,
+          tint:[0xff5fa8,0x40e0ff,0xffd23f,0xffffff]
+        });
+        scene.time.delayedCall(300,()=>outFx.destroy());
         scene.tweens.add({
           targets: player, y: p.toY, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
-          duration: 260, ease: "Quad.easeOut",
+          duration: TUNNEL_WARP_MS, ease: "Back.easeOut",
           onComplete: () => {
             player.body.moves = true;
-            setInvuln(scene, 500); // meio segundo de proteção ao sair — evita apanhar dano em cima da saída
+            // Pequeno impulso ao reaparecer — "salta" ligeiramente para fora
+            // do túnel em vez de simplesmente reaparecer parado.
+            if (player.body) {
+              player.body.setVelocityY(-140);
+              player.body.setVelocityX((player.flipX ? -1 : 1) * 90);
+            }
             _pipeWarping = false;
           }
         });
@@ -5830,7 +5878,8 @@ window.addEventListener("DOMContentLoaded", () => {
     brinquedo:  {label:"🧸 Brinquedo +10",      color:"#a050ff"},
     medalha:    {label:"🛡️ Escudo! PROTEGIDO",  color:"#ffd700"},
     duplosalto: {label:"🦅 Duplo Salto! 10s",   color:"#80d0ff"},
-    heart:      {label:"❤️ +1 Vida!",           color:"#e84d10"}
+    heart:      {label:"❤️ +1 Vida!",           color:"#e84d10"},
+    balaofesta: {label:"🎈 Balão da Festa +10", color:"#1a90e0"}
   };
 
   // Cores das partículas por tipo de item
@@ -5840,7 +5889,8 @@ window.addEventListener("DOMContentLoaded", () => {
     brinquedo:  [0xa050ff, 0xff80c0, 0xffd700, 0xffffff],
     medalha:    [0xffd700, 0xffe980, 0xffffff, 0xff9500],
     duplosalto: [0x80d0ff, 0xffffff, 0xffd700, 0xa0e8ff],
-    heart:      [0xff2040, 0xff6080, 0xffffff, 0xe84d10]
+    heart:      [0xff2040, 0xff6080, 0xffffff, 0xe84d10],
+    balaofesta: [0x1a90e0, 0x90d0ff, 0xffffff, 0xffd700]
   };
 
   function onCollectItem(playerObj,itemObj){
