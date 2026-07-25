@@ -811,6 +811,17 @@ window.addEventListener("DOMContentLoaded", () => {
   // opcionalmente ter L.pipes: [{x,y,w,toX,toY}]. O jogador entra parando
   // em cima e carregando em baixo/S (a mesma tecla de agachar). Ver
   // tryEnterPipe/enterPipe mais abaixo.
+  // Desde a variante "tipo Mario" (pedido: posições variadas, nem todos os
+  // canos com sala, nem todos os canos de entrar), cada entrada em L.pipes
+  // pode ainda ter:
+  //   - fact:{x,y,emoji,text}  → cano de curiosidade: ao entrar, a sala de
+  //     destino tem um letreiro de "Sabias que...?" (spawnSecretSign).
+  //   - decorative:true        → cano falso: sólido (dá para subir/ficar em
+  //     cima), mas NUNCA entra no array "pipes" usado por tryEnterPipe(), logo
+  //     carregar em baixo não faz nada. Recebe um tint subtil para dar uma
+  //     pista visual discreta (ver loop de criação em loadLevel).
+  //   - nem fact nem decorative → cano-atalho: funciona normalmente (leva a
+  //     uma plataforma/área secreta), mas sem sala de curiosidade — só prémio.
   let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let secretSigns = []; // curiosidades dentro das salas dos canos — ver clearSecretSigns/spawnSecretSign
@@ -2438,8 +2449,7 @@ window.addEventListener("DOMContentLoaded", () => {
                             // ficavam órfãos no ecrã depois de se vencer o boss
     if(door){door.destroy();door=null;}
     spawnLevelSign(scene, L, idx);
-    clearSecretSigns();
-    if (L.secretFact) spawnSecretSign(scene, L.secretFact.x, L.secretFact.y, L.secretFact.emoji, L.secretFact.text);
+    clearSecretSigns(); // as curiosidades são (re)criadas mais abaixo, uma por cada L.pipes[].fact
 
     // Recriar HUD de orbes (profundidade sobrevive ao clear das plataformas)
     createArtOrbs(scene);
@@ -2480,7 +2490,18 @@ window.addEventListener("DOMContentLoaded", () => {
       const spr = platforms.create(p.x, p.y, "pipe_mario");
       spr.displayWidth = w; spr.displayHeight = h; spr.refreshBody();
       if(spr.body){spr.body.checkCollision.left=false;spr.body.checkCollision.right=false;}
-      pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
+      if (p.decorative) {
+        // Cano falso (pedido: "nem todos os túneis são de entrar") — fica só
+        // como obstáculo/plataforma; por não entrar no array "pipes" abaixo,
+        // tryEnterPipe() nunca o reconhece, mesmo que o jogador carregue em
+        // baixo em cima dele. Tint subtil (esverdeado mais baço/acinzentado)
+        // — pista discreta para quem reparar, sem ser óbvia à distância.
+        spr.setTint(0x9fb89f);
+      } else {
+        pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
+        // Cano de curiosidade (tem "fact") vs. cano-atalho (não tem, só prémio).
+        if (p.fact) spawnSecretSign(scene, p.fact.x, p.fact.y, p.fact.emoji, p.fact.text);
+      }
     });
 
     door=scene.physics.add.staticSprite(L.doorX,448,"door_party").setDisplaySize(88,104);

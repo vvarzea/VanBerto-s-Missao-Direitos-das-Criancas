@@ -25,6 +25,15 @@ export const THEMES = [
   { skyTop:0xff6a1a, skyBot:0xffe39a, hillColor:0xe0871a, grassTop:0x5ec85a }, // 19 · Nível 20 — FINAL festivo pôr-do-sol dourado
 ];
 
+// ── Canos/túneis (pedido: posições variadas, nem todos com sala, nem todos ──
+// entráveis — "tipo Mario"). Cada entrada em L.pipes[] pode ser:
+//   • Cano de curiosidade: {x,y,toX,toY, fact:{x,y,emoji,text}} — o par de
+//     volta (dentro da sala) é uma 2ª entrada normal {x,y,w,h,toX,toY}.
+//   • Cano-atalho: igual, mas sem "fact" — leva a uma plataforma/prémio,
+//     sem sala de curiosidade.
+//   • Cano decorativo: {x,y,decorative:true} — não entra, é só obstáculo/
+//     mistério (tint subtil aplicado automaticamente no motor).
+// Ver comentário completo em dia-crianca.js junto a "let pipes=[]".
 export const LEVELS = [
   {
     name: "Nível 1 — O Dia da Criança",
@@ -49,22 +58,25 @@ export const LEVELS = [
       // Plataforma secreta (pedido: "canos/túneis à Mario para atalhos ou
       // áreas secretas") — só se chega aqui pelo cano abaixo; não está ao
       // alcance de nenhum salto normal a partir do chão principal.
-      {x:650,y:200,w:160,h:22}
+      // Posição movida de x:650 para x:570 (pedido: "não quero que os túneis
+      // estejam sempre no mesmo sítio") — ainda bem antes do túnel baixo
+      // (850) e do letreiro de dica (800), dando espaço de sobra.
+      {x:570,y:200,w:160,h:22}
     ],
-    // NOVO — 1º par de canos do jogo, de demonstração. Entra-se parando em
-    // cima e carregando em baixo/S (a mesma tecla de agachar). O cano de
-    // volta manda para x:750 (não para cima do próprio cano de entrada,
-    // em 650) para não disparar logo outra vez ao aterrar.
+    // 1º par de canos do jogo, de demonstração. Entra-se parando em cima e
+    // carregando em baixo/S (a mesma tecla de agachar). O cano de volta manda
+    // para x:670 (não para cima do próprio cano de entrada) para não disparar
+    // logo outra vez ao aterrar.
     pipes:[
-      {x:650,y:474,toX:650,toY:143},   // no chão principal → sobe até à plataforma secreta
-      {x:700,y:167,w:56,h:44,toX:750,toY:460} // na plataforma secreta → volta ao chão principal
+      {x:570,y:474,toX:570,toY:143,   // no chão principal → sobe até à plataforma secreta
+        // Curiosidade da sala secreta (pedido: "cada cano leva a uma sala com
+        // uma curiosidade que ainda não aparece no Sabias que...? desse nível").
+        fact:{ x:615, y:190, emoji:"🏛️",
+          text:"Sabias que a ideia de um dia mundial dedicado às crianças nasceu em 1925, numa conferência em Genebra, na Suíça?" }},
+      {x:620,y:167,w:56,h:44,toX:670,toY:460} // na plataforma secreta → volta ao chão principal
     ],
-    // Curiosidade da sala secreta (pedido: "cada cano leva a uma sala com uma
-    // curiosidade que ainda não aparece no Sabias que...? desse nível").
-    secretFact: { x:695, y:190, emoji:"🏛️",
-      text:"Sabias que a ideia de um dia mundial dedicado às crianças nasceu em 1925, numa conferência em Genebra, na Suíça?" },
     items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"},
-      {x:650,y:160,kind:"estrela"}],
+      {x:570,y:160,kind:"estrela"}],
     // Vilões empurrados para a direita, na mesma proporção do resto do nível
     // (era x:1500/1960) — o 1º só aparece bem depois do túnel e do 2º item,
     // dando à criança um troço inicial bem mais longo e calmo.
@@ -102,15 +114,21 @@ export const LEVELS = [
       {x:520,y:520,w:1040,h:28},{x:840,y:460,w:240,h:22},{x:1180,y:390,w:240,h:22},
       {x:1520,y:320,w:240,h:22},{x:1860,y:390,w:240,h:22},{x:2200,y:460,w:240,h:22},
       {x:2480,y:520,w:1040,h:28},
-      {x:610,y:200,w:160,h:22}
+      // Posição movida de x:610 para x:540 (variedade entre níveis).
+      {x:540,y:200,w:150,h:22}
     ],
     pipes:[
-      {x:610,y:474,toX:610,toY:143},
-      {x:560,y:167,w:56,h:44,toX:520,toY:460}
+      {x:540,y:474,toX:540,toY:143,
+        fact:{ x:580, y:190, emoji:"🌍",
+          text:"Sabias que a Convenção sobre os Direitos da Criança é o tratado de direitos humanos mais aceite do mundo?" }},
+      {x:575,y:167,w:56,h:44,toX:520,toY:460},
+      // Cano decorativo (pedido: "nem todos os túneis são de entrar") — dá
+      // para ficar em cima, mas carregar em baixo não faz nada. Fica a 140px
+      // do cano real, antes da 1ª plataforma elevada (720), sem atrapalhar o
+      // letreiro de dica em signX:630.
+      {x:680,y:474,decorative:true}
     ],
-    secretFact: { x:655, y:190, emoji:"🌍",
-      text:"Sabias que a Convenção sobre os Direitos da Criança é o tratado de direitos humanos mais aceite do mundo?" },
-    items:[{x:840,y:220,kind:"estrela"},{x:1520,y:270,kind:"medalha"},{x:2200,y:410,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:610,y:165,kind:"brinquedo"}],
+    items:[{x:840,y:220,kind:"estrela"},{x:1520,y:270,kind:"medalha"},{x:2200,y:410,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:540,y:165,kind:"brinquedo"}],
     malwares:[{x:1000,y:480,vx:0,pattern:"mini"},{x:1700,y:480,vx:-160,pattern:"patrol"},{x:2350,y:480,vx:155,pattern:"patrol"}]
   },
   {
@@ -276,15 +294,24 @@ export const LEVELS = [
       {x:1480,y:298,w:185,h:22},{x:1760,y:368,w:185,h:22},{x:2040,y:442,w:185,h:22},
       {x:2320,y:368,w:185,h:22},{x:2600,y:442,w:185,h:22},
       {x:3150,y:520,w:1100,h:28},
-      {x:650,y:200,w:160,h:22}
+      // Posição movida de x:650 para x:560 (variedade entre níveis).
+      {x:560,y:200,w:160,h:22},
+      // Plataforma do cano-atalho (ver pipes abaixo) — só um prémio lá em
+      // cima, sem sala/curiosidade. "Alguns túneis podem ser só para subir
+      // e apanhar prémios em plataformas altas" (pedido).
+      {x:820,y:270,w:140,h:22}
     ],
     pipes:[
-      {x:650,y:474,toX:650,toY:143},
-      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+      {x:560,y:474,toX:560,toY:143,
+        fact:{ x:605, y:190, emoji:"🎒",
+          text:"Sabias que, no mundo, ainda há milhões de crianças que não conseguem ir à escola?" }},
+      {x:610,y:167,w:56,h:44,toX:660,toY:460},
+      // Cano-atalho: sem "fact" → só leva ao prémio na plataforma acima, sem
+      // curiosidade nenhuma.
+      {x:820,y:474,toX:820,toY:213},
+      {x:770,y:243,w:56,h:44,toX:900,toY:460}
     ],
-    secretFact: { x:695, y:190, emoji:"🎒",
-      text:"Sabias que, no mundo, ainda há milhões de crianças que não conseguem ir à escola?" },
-    items:[{x:920,y:342,kind:"estrela"},{x:1480,y:248,kind:"medalha"},{x:2040,y:392,kind:"balao"},{x:2600,y:392,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"brinquedo"}],
+    items:[{x:920,y:342,kind:"estrela"},{x:1480,y:248,kind:"medalha"},{x:2040,y:392,kind:"balao"},{x:2600,y:392,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:560,y:165,kind:"brinquedo"},{x:820,y:225,kind:"estrela"}],
     malwares:[{x:1060,y:480,vx:190,pattern:"jumper"},{x:1660,y:480,vx:-195,pattern:"jumper"},{x:2260,y:480,vx:190,pattern:"jumper"},{x:2860,y:480,vx:-185,pattern:"jumper"},{x:3200,y:480,vx:188,pattern:"jumper"}],
     movingPlatforms:[
       {x:1640,y:360,w:140,h:22,rangeX:200,rangeY:0,speed:90},
@@ -512,15 +539,18 @@ export const LEVELS = [
       {x:3080,y:390,w:150,h:22},
       {x:3300,y:450,w:150,h:22},
       {x:3530,y:520,w:960,h:28},
-      {x:650,y:200,w:160,h:22}
+      // Posição movida de x:650 para x:580 (variedade entre níveis).
+      {x:580,y:200,w:160,h:22}
     ],
     pipes:[
-      {x:650,y:474,toX:650,toY:143},
-      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+      {x:580,y:474,toX:580,toY:143,
+        fact:{ x:625, y:190, emoji:"🏛️",
+          text:"Sabias que há Parlamentos de Jovens em várias cidades, onde podes propor ideias a quem manda?" }},
+      {x:630,y:167,w:56,h:44,toX:680,toY:460},
+      // Cano decorativo — antes da 1ª plataforma elevada (820).
+      {x:750,y:474,decorative:true}
     ],
-    secretFact: { x:695, y:190, emoji:"🏛️",
-      text:"Sabias que há Parlamentos de Jovens em várias cidades, onde podes propor ideias a quem manda?" },
-    items:[{x:820,y:390,kind:"balao"},{x:1380,y:150,kind:"duplosalto"},{x:1780,y:330,kind:"estrela"},{x:2440,y:230,kind:"medalha"},{x:2640,y:140,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"heart"}],
+    items:[{x:820,y:390,kind:"balao"},{x:1380,y:150,kind:"duplosalto"},{x:1780,y:330,kind:"estrela"},{x:2440,y:230,kind:"medalha"},{x:2640,y:140,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:580,y:165,kind:"heart"}],
     malwares:[{x:940,y:480,vx:202,pattern:"patrol"},{x:1680,y:480,vx:-205,pattern:"jumper"},{x:2100,y:480,vx:202,pattern:"jumper"},{x:2760,y:480,vx:-200,pattern:"jumper"},{x:3180,y:480,vx:198,pattern:"patrol"}],
     movingPlatforms:[{x:2000,y:430,w:120,h:22,rangeX:120,rangeY:0,speed:100}],
     trampolines:[{x:1480,y:462}],
@@ -669,15 +699,24 @@ export const LEVELS = [
       {x:2700,y:260,w:300,h:22},   // bloco longo no topo
       {x:3300,y:430,w:300,h:22},   // reta final
       {x:3680,y:520,w:1100,h:28},
-      {x:650,y:200,w:160,h:22}
+      // Posição movida de x:650 para x:560 (variedade entre níveis).
+      {x:560,y:200,w:150,h:22},
+      // Plataforma do cano-atalho — prémio, sem curiosidade.
+      {x:760,y:230,w:130,h:22}
     ],
+    // Nível final: os 3 tipos de cano juntos — curiosidade, atalho e
+    // decorativo — como despedida da mecânica ao longo do jogo.
     pipes:[
-      {x:650,y:474,toX:650,toY:143},
-      {x:600,y:167,w:56,h:44,toX:560,toY:460}
+      {x:560,y:474,toX:560,toY:143,
+        fact:{ x:600, y:190, emoji:"📵",
+          text:"Sabias que também tens direito a desligar-te dos ecrãs e descansar — o chamado 'descanso digital'?" }},
+      {x:600,y:167,w:56,h:44,toX:650,toY:460},
+      {x:760,y:474,toX:760,toY:173},
+      {x:710,y:203,w:56,h:44,toX:700,toY:460},
+      // Cano decorativo — antes da zona de vilões (950).
+      {x:860,y:474,decorative:true}
     ],
-    secretFact: { x:695, y:190, emoji:"📵",
-      text:"Sabias que também tens direito a desligar-te dos ecrãs e descansar — o chamado 'descanso digital'?" },
-    items:[{x:1000,y:390,kind:"balao"},{x:1320,y:310,kind:"estrela"},{x:1650,y:230,kind:"duplosalto"},{x:2200,y:390,kind:"medalha"},{x:2800,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"balao"}],
+    items:[{x:1000,y:390,kind:"balao"},{x:1320,y:310,kind:"estrela"},{x:1650,y:230,kind:"duplosalto"},{x:2200,y:390,kind:"medalha"},{x:2800,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:560,y:165,kind:"balao"},{x:760,y:185,kind:"medalha"}],
     malwares:[
       {x:950,y:420,vx:130,pattern:"patrol"},{x:1100,y:420,vx:-130,pattern:"patrol"},
       {x:1580,y:260,vx:125,pattern:"patrol"},{x:1730,y:260,vx:-125,pattern:"patrol"},
