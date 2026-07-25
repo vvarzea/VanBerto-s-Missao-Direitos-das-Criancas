@@ -45,9 +45,22 @@ export const LEVELS = [
       // criança uma boa distância de corrida livre antes do 1º obstáculo.
       {x:950,y:461,w:200,h:22},
       {x:1340,y:450,w:300,h:22},{x:1680,y:380,w:270,h:22},
-      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28}
+      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28},
+      // Plataforma secreta (pedido: "canos/túneis à Mario para atalhos ou
+      // áreas secretas") — só se chega aqui pelo cano abaixo; não está ao
+      // alcance de nenhum salto normal a partir do chão principal.
+      {x:650,y:200,w:160,h:22}
     ],
-    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"}],
+    // NOVO — 1º par de canos do jogo, de demonstração. Entra-se parando em
+    // cima e carregando em baixo/S (a mesma tecla de agachar). O cano de
+    // volta manda para x:750 (não para cima do próprio cano de entrada,
+    // em 650) para não disparar logo outra vez ao aterrar.
+    pipes:[
+      {x:650,y:474,toX:650,toY:143},   // no chão principal → sobe até à plataforma secreta
+      {x:700,y:167,w:56,h:44,toX:750,toY:460} // na plataforma secreta → volta ao chão principal
+    ],
+    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"},
+      {x:650,y:160,kind:"estrela"}],
     // Vilões empurrados para a direita, na mesma proporção do resto do nível
     // (era x:1500/1960) — o 1º só aparece bem depois do túnel e do 2º item,
     // dando à criança um troço inicial bem mais longo e calmo.

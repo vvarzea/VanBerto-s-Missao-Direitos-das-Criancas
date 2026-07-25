@@ -42,6 +42,29 @@ function makePlatformTexture(scene){
   makePlatformTextureThemed(scene,"platform_grass",0);
 }
 
+// Cano à Mario (pedido: "atalhos ou áreas secretas") — rebordo largo em
+// cima + corpo mais estreito a descer, em verde, ao estilo clássico.
+export function makePipeTexture(scene){
+  if (scene.textures.exists("pipe_mario")) return;
+  const RIMW=76, RIMH=20, BODYW=64, BODYH=44;
+  const totalW=RIMW, totalH=RIMH+BODYH;
+  const bx=(RIMW-BODYW)/2;
+  const g=scene.make.graphics({x:0,y:0,add:false});
+  // corpo
+  g.fillStyle(0x0d5c1e,1); g.fillRect(bx,RIMH,BODYW,BODYH);
+  g.fillStyle(0x1e8c34,1); g.fillRect(bx+7,RIMH,BODYW-14,BODYH);
+  g.fillStyle(0x5cd873,0.55); g.fillRect(bx+10,RIMH+3,7,BODYH-6);
+  // rebordo (mais largo, dá o aspeto de "boca" do cano)
+  g.fillStyle(0x0d5c1e,1); g.fillRoundedRect(0,0,RIMW,RIMH+8,6);
+  g.fillStyle(0x1e8c34,1); g.fillRoundedRect(4,3,RIMW-8,RIMH,5);
+  g.fillStyle(0x5cd873,0.6); g.fillRoundedRect(8,4,RIMW-16,5,3);
+  // contornos
+  g.lineStyle(3,0x063610,1);
+  g.strokeRoundedRect(0,0,RIMW,RIMH+8,6);
+  g.strokeRect(bx,RIMH,BODYW,BODYH);
+  g.generateTexture("pipe_mario",totalW,totalH); g.destroy();
+}
+
 // Gera uma textura de plataforma para cada tema
 const PLAT_COLORS=[
   [0x0d3878,0x1e5cb8,0x6aa8ff], // tema0 azul rico

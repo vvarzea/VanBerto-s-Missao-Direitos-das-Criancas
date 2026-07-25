@@ -24,7 +24,7 @@ import { BOSS_BY_LEVEL } from "./data-bosses.js";
 import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS, BOSS_HP_TAUNTS } from "./data-story.js";
 import { playTitleCard, playCinematic } from "./cinematics.js";
 import { loadNamespace, saveNamespace } from "./storage.js";
-import { makeTextures, makePlatformTextureThemed } from "./textures.js";
+import { makeTextures, makePlatformTextureThemed, makePipeTexture } from "./textures.js";
 import { initBackground, applyBackground, drawSun, drawStars, drawCloud,
          updateTrail, updateFootsteps, updateDoorGlow, updatePlatformDecor,
          spawnPlatformDecor, resetDoorGlow, clearPlatformDecor, hideDoorGlow,
@@ -807,6 +807,11 @@ window.addEventListener("DOMContentLoaded", () => {
   let balloons=[], critters=[], enemyTimers=[];
   let bossTimers=[];
   let movingPlatforms=[], trampolines=[], secretDoors=[], hazards=[];
+  // Canos à Mario (pedido: "atalhos ou áreas secretas") — cada nível pode
+  // opcionalmente ter L.pipes: [{x,y,w,toX,toY}]. O jogador entra parando
+  // em cima e carregando em baixo/S (a mesma tecla de agachar). Ver
+  // tryEnterPipe/enterPipe mais abaixo.
+  let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
   // Janela (timestamp de scene.time.now) durante a qual applyVanBertoTexture() não deve
@@ -1375,14 +1380,28 @@ window.addEventListener("DOMContentLoaded", () => {
     isCrouching = !!downHeld && !awaitingQuiz && !awaitingStory;
     if (isCrouching !== wasCrouching) setCrouchHitbox(player, isCrouching);
 
+    // Entrar num cano (pedido: "atalhos ou áreas secretas") — mesma tecla
+    // de agachar (↓/S/toque), mas só dispara no INSTANTE em que se carrega
+    // (não enquanto se mantém premido) e só se o jogador estiver mesmo em
+    // cima de um, parado no chão. Ver tryEnterPipe/enterPipe mais abaixo.
+    if (downHeld && !_pipeDownWasHeld && !awaitingQuiz && !awaitingStory && !_pipeWarping
+        && player.body && player.body.blocked.down && pipes.length) {
+      tryEnterPipe(sceneRef);
+    }
+    _pipeDownWasHeld = downHeld;
+
     let speed=powered?320:280;
     if (isCrouching) speed *= 0.55;
 
-    if (leftDown&&!rightDown) { player.setVelocityX(-speed); player.setFlipX(true);  player.setAngle(-2); }
+    if (_pipeWarping) {
+      player.setVelocityX(0);
+    } else if (leftDown&&!rightDown) { player.setVelocityX(-speed); player.setFlipX(true);  player.setAngle(-2); }
     else if (rightDown&&!leftDown) { player.setVelocityX(speed); player.setFlipX(false); player.setAngle(2); }
     else { player.setVelocityX(0); player.setAngle(0); }
-    // Só aplica escala se não estiver a piscar (invuln) para não interromper o tween de alpha
-    if(!invuln){
+    // Só aplica escala se não estiver a piscar (invuln) nem a entrar num
+    // cano (_pipeWarping) — caso contrário este bloco, que corre todos os
+    // frames, sobrepunha-se de imediato à animação de encolher no cano.
+    if(!invuln && !_pipeWarping){
       if(player.getData("usingPng")){
         const ps = powered ? 72*1.18 : 72;
         if (isCrouching) player.setDisplaySize(ps*1.08, ps*0.6);
@@ -2423,6 +2442,20 @@ window.addEventListener("DOMContentLoaded", () => {
       if(plat.body){plat.body.checkCollision.left=false;plat.body.checkCollision.right=false;}
     });
 
+    // Canos à Mario (opcional, ver L.pipes em data-levels.js) — sólidos
+    // (entram no grupo "platforms", por isso o jogador já colide com eles
+    // como qualquer chão), mais o registo em "pipes" com o destino do
+    // salto, usado por tryEnterPipe() no update().
+    pipes = [];
+    (L.pipes||[]).forEach(p=>{
+      if(!scene.textures.exists("pipe_mario")) makePipeTexture(scene);
+      const w = p.w||64, h = p.h||64;
+      const spr = platforms.create(p.x, p.y, "pipe_mario");
+      spr.displayWidth = w; spr.displayHeight = h; spr.refreshBody();
+      if(spr.body){spr.body.checkCollision.left=false;spr.body.checkCollision.right=false;}
+      pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
+    });
+
     door=scene.physics.add.staticSprite(L.doorX,448,"door_party").setDisplaySize(88,104);
     door.refreshBody(); // sincronizar hitbox físico com o tamanho visual (setDisplaySize não o faz automaticamente)
     door.clearTint();
@@ -2815,6 +2848,49 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!isCrouching) return;
     isCrouching = false;
     if (player) { setCrouchHitbox(player, false); player.setScale(1); }
+  }
+
+  // Canos à Mario (pedido: "atalhos ou áreas secretas") ──────────────────
+  // tryEnterPipe: vê se o jogador está mesmo em cima de algum cano deste
+  // nível (só compara X — já sabemos que está no chão e a carregar em
+  // baixo, ver o chamador no update()) e, se estiver, arranca a animação.
+  function tryEnterPipe(scene){
+    const p = pipes.find(pp => Math.abs(player.x - pp.x) <= (pp.w/2 - 6));
+    if (p) enterPipe(scene, p);
+  }
+  // enterPipe: encolhe o VanBerto's para dentro do cano, teletransporta-o
+  // para o destino (toX/toY) já lá dentro (a câmara "salta" com ele, sem
+  // fazer pan pelo nível todo), e volta a crescer do lado de lá. Usa
+  // body.moves=false enquanto dura para a física não interferir a meio
+  // (gravidade, colisões) — ver o guard "!_pipeWarping" no update() para
+  // as outras partes do código (escala, esquerda/direita) que também
+  // dão prioridade a esta animação enquanto ela corre.
+  function enterPipe(scene, p){
+    if (_pipeWarping || !player?.body) return;
+    _pipeWarping = true;
+    exitCrouch();
+    ensureAudio(); beep({ freq: 440, dur: 0.12, type: "square", vol: 0.05, slideTo: 180 });
+    player.body.moves = false;
+    const startScaleX = player.scaleX, startScaleY = player.scaleY;
+    scene.tweens.add({
+      targets: player, y: player.y + 22, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
+      duration: 260, ease: "Quad.easeIn",
+      onComplete: () => {
+        player.x = p.toX; player.y = p.toY - 26;
+        scene.cameras.main.startFollow(player, true, 1.0, 1.0);
+        scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
+        ensureAudio(); beep({ freq: 180, dur: 0.12, type: "square", vol: 0.05, slideTo: 440 });
+        scene.tweens.add({
+          targets: player, y: p.toY, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
+          duration: 260, ease: "Quad.easeOut",
+          onComplete: () => {
+            player.body.moves = true;
+            setInvuln(scene, 500); // meio segundo de proteção ao sair — evita apanhar dano em cima da saída
+            _pipeWarping = false;
+          }
+        });
+      }
+    });
   }
 
   function snapPlayerToGround(){
