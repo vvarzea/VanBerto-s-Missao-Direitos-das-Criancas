@@ -42,65 +42,27 @@ function makePlatformTexture(scene){
   makePlatformTextureThemed(scene,"platform_grass",0);
 }
 
-// Túnel tecnológico (pedido: "aspeto colorido, divertido e tecnológico,
-// incentivando a exploração") — um portal circular estilo sci-fi, com anéis
-// néon coloridos e um vórtice a "respirar" no centro, em vez do antigo cano
-// verde à Mario. Desenhado em Canvas (não Graphics) para poder usar
-// gradientes radiais, tal como o portal da porta (makeDoorTexture).
-export function makeTunnelTexture(scene){
-  if (scene.textures.exists("tunnel_portal")) return;
-  const W=84, H=84, cx=W/2, cy=H/2;
-  const tex=scene.textures.createCanvas("tunnel_portal",W,H), ctx=tex.getContext();
-
-  // Base metálica exterior (moldura tecnológica escura)
-  const baseGr=ctx.createRadialGradient(cx,cy,26,cx,cy,40);
-  baseGr.addColorStop(0,"#1a1030"); baseGr.addColorStop(1,"#050208");
-  ctx.fillStyle=baseGr;
-  ctx.beginPath(); ctx.arc(cx,cy,40,0,Math.PI*2); ctx.fill();
-
-  // Anel néon exterior (rosa/laranja)
-  ctx.lineWidth=5; ctx.strokeStyle="#ff5fa8";
-  ctx.beginPath(); ctx.arc(cx,cy,37,0,Math.PI*2); ctx.stroke();
-  // Anel néon médio (ciano)
-  ctx.lineWidth=4; ctx.strokeStyle="#40e0ff";
-  ctx.beginPath(); ctx.arc(cx,cy,31,0,Math.PI*2); ctx.stroke();
-  // Anel néon interior (amarelo-dourado)
-  ctx.lineWidth=3; ctx.strokeStyle="#ffd23f";
-  ctx.beginPath(); ctx.arc(cx,cy,25,0,Math.PI*2); ctx.stroke();
-
-  // "Parafusos"/luzes tecnológicas à volta do rebordo — 8 pontinhos brilhantes
-  for(let i=0;i<8;i++){
-    const a=(Math.PI*2*i)/8;
-    const bx2=cx+Math.cos(a)*37.5, by2=cy+Math.sin(a)*37.5;
-    ctx.fillStyle = i%2===0 ? "#ffffff" : "#40e0ff";
-    ctx.beginPath(); ctx.arc(bx2,by2,2.6,0,Math.PI*2); ctx.fill();
-  }
-
-  // Vórtice interior — gradiente radial escuro→roxo→ciano, sugere um túnel
-  // sem fundo (profundidade), coerente com o portal do fim de nível.
-  const vGr=ctx.createRadialGradient(cx,cy,2,cx,cy,23);
-  vGr.addColorStop(0,"#ffffff");
-  vGr.addColorStop(0.18,"#a0f0ff");
-  vGr.addColorStop(0.45,"#7040e0");
-  vGr.addColorStop(0.8,"#2a0850");
-  vGr.addColorStop(1,"#0a0218");
-  ctx.fillStyle=vGr;
-  ctx.beginPath(); ctx.arc(cx,cy,23,0,Math.PI*2); ctx.fill();
-
-  // Espiral do vórtice — pequenos arcos para dar sensação de rotação/energia
-  ctx.strokeStyle="rgba(255,255,255,0.55)"; ctx.lineWidth=1.6;
-  for(let i=0;i<3;i++){
-    const r=8+i*5;
-    ctx.beginPath();
-    ctx.arc(cx,cy,r,0.4+i*1.3,2.6+i*1.3);
-    ctx.stroke();
-  }
-
-  // Brilho superior (dá volume 3D à moldura)
-  ctx.fillStyle="rgba(255,255,255,0.28)";
-  ctx.beginPath(); ctx.ellipse(cx-9,cy-16,12,6,-0.4,0,Math.PI*2); ctx.fill();
-
-  tex.refresh();
+// Cano à Mario (pedido: "atalhos ou áreas secretas") — rebordo largo em
+// cima + corpo mais estreito a descer, em verde, ao estilo clássico.
+export function makePipeTexture(scene){
+  if (scene.textures.exists("pipe_mario")) return;
+  const RIMW=76, RIMH=20, BODYW=64, BODYH=44;
+  const totalW=RIMW, totalH=RIMH+BODYH;
+  const bx=(RIMW-BODYW)/2;
+  const g=scene.make.graphics({x:0,y:0,add:false});
+  // corpo
+  g.fillStyle(0x0d5c1e,1); g.fillRect(bx,RIMH,BODYW,BODYH);
+  g.fillStyle(0x1e8c34,1); g.fillRect(bx+7,RIMH,BODYW-14,BODYH);
+  g.fillStyle(0x5cd873,0.55); g.fillRect(bx+10,RIMH+3,7,BODYH-6);
+  // rebordo (mais largo, dá o aspeto de "boca" do cano)
+  g.fillStyle(0x0d5c1e,1); g.fillRoundedRect(0,0,RIMW,RIMH+8,6);
+  g.fillStyle(0x1e8c34,1); g.fillRoundedRect(4,3,RIMW-8,RIMH,5);
+  g.fillStyle(0x5cd873,0.6); g.fillRoundedRect(8,4,RIMW-16,5,3);
+  // contornos
+  g.lineStyle(3,0x063610,1);
+  g.strokeRoundedRect(0,0,RIMW,RIMH+8,6);
+  g.strokeRect(bx,RIMH,BODYW,BODYH);
+  g.generateTexture("pipe_mario",totalW,totalH); g.destroy();
 }
 
 // Gera uma textura de plataforma para cada tema

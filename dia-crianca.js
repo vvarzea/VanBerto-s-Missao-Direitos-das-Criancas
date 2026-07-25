@@ -24,7 +24,7 @@ import { BOSS_BY_LEVEL } from "./data-bosses.js";
 import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS, BOSS_HP_TAUNTS } from "./data-story.js";
 import { playTitleCard, playCinematic } from "./cinematics.js";
 import { loadNamespace, saveNamespace } from "./storage.js";
-import { makeTextures, makePlatformTextureThemed, makeTunnelTexture } from "./textures.js";
+import { makeTextures, makePlatformTextureThemed, makePipeTexture } from "./textures.js";
 import { initBackground, applyBackground, drawSun, drawStars, drawCloud,
          updateTrail, updateFootsteps, updateDoorGlow, updatePlatformDecor,
          spawnPlatformDecor, resetDoorGlow, clearPlatformDecor, hideDoorGlow,
@@ -811,18 +811,15 @@ window.addEventListener("DOMContentLoaded", () => {
   // opcionalmente ter L.pipes: [{x,y,w,toX,toY}]. O jogador entra parando
   // em cima e carregando em baixo/S (a mesma tecla de agachar). Ver
   // tryEnterPipe/enterPipe mais abaixo.
-  // Desde a variante "tipo Mario" (pedido: posições variadas, nem todos os
-  // canos com sala, nem todos os canos de entrar), cada entrada em L.pipes
-  // pode ainda ter:
-  //   - fact:{x,y,emoji,text}  → cano de curiosidade: ao entrar, a sala de
-  //     destino tem um letreiro de "Sabias que...?" (spawnSecretSign).
-  //   - decorative:true        → cano falso: sólido (dá para subir/ficar em
+  // Posições variadas, nem todos os canos de entrar: cada entrada em
+  // L.pipes pode ainda ter:
+  //   - decorative:true → cano falso: sólido (dá para subir/ficar em
   //     cima), mas NUNCA entra no array "pipes" usado por tryEnterPipe(), logo
   //     carregar em baixo não faz nada. Recebe um tint subtil para dar uma
   //     pista visual discreta (ver loop de criação em loadLevel).
-  //   - nem fact nem decorative → cano-atalho: funciona normalmente (leva a
-  //     uma plataforma/área secreta), mas sem sala de curiosidade — só prémio.
-  let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false, tunnelFx=[];
+  //   - caso contrário → cano normal: leva a uma plataforma/área secreta com
+  //     uma recompensa (item), sem placas nem texto.
+  let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let secretSigns = []; // curiosidades dentro das salas dos canos — ver clearSecretSigns/spawnSecretSign
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
@@ -2480,46 +2477,29 @@ window.addEventListener("DOMContentLoaded", () => {
       if(plat.body){plat.body.checkCollision.left=false;plat.body.checkCollision.right=false;}
     });
 
-    // Túneis tecnológicos (opcional, ver L.pipes em data-levels.js) —
-    // sólidos (entram no grupo "platforms", por isso o jogador já colide
-    // com eles como qualquer chão), mais o registo em "pipes" com o destino
-    // do salto, usado por tryEnterPipe() no update(). Posição, quantidade
-    // (0, 1 ou 2 pares) e destino (sala de curiosidade / atalho / apenas
-    // decorativo) variam de nível para nível — ver comentário no topo de
-    // data-levels.js junto a LEVELS.
+    // Canos à Mario (opcional, ver L.pipes em data-levels.js) — sólidos
+    // (entram no grupo "platforms", por isso o jogador já colide com eles
+    // como qualquer chão), mais o registo em "pipes" com o destino do
+    // salto, usado por tryEnterPipe() no update(). Posição e quantidade (0,
+    // 1 ou 2 pares) variam de nível para nível — ver comentário no topo de
+    // data-levels.js junto a LEVELS. Sem placas/texto — só o cano e, do
+    // outro lado, uma recompensa (item).
     pipes = [];
-    tunnelFx.forEach(t=>{ try{t.destroy();}catch{} });
-    tunnelFx = [];
     (L.pipes||[]).forEach(p=>{
-      if(!scene.textures.exists("tunnel_portal")) makeTunnelTexture(scene);
+      if(!scene.textures.exists("pipe_mario")) makePipeTexture(scene);
       const w = p.w||64, h = p.h||64;
-      const spr = platforms.create(p.x, p.y, "tunnel_portal");
+      const spr = platforms.create(p.x, p.y, "pipe_mario");
       spr.displayWidth = w; spr.displayHeight = h; spr.refreshBody();
       if(spr.body){spr.body.checkCollision.left=false;spr.body.checkCollision.right=false;}
-      spr.setDepth(2);
-      // Pulso/brilho constante — "aspeto colorido, divertido e tecnológico,
-      // incentivando a exploração" — dá vida ao portal mesmo parado.
-      scene.tweens.add({ targets:spr, scaleX:spr.scaleX*1.06, scaleY:spr.scaleY*1.06,
-        duration:640, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
       if (p.decorative) {
-        // Túnel falso (pedido: "nem todos os túneis são de entrar") — fica só
+        // Cano falso (pedido: "nem todos os túneis são de entrar") — fica só
         // como obstáculo/plataforma; por não entrar no array "pipes" abaixo,
         // tryEnterPipe() nunca o reconhece, mesmo que o jogador carregue em
-        // baixo em cima dele. Tint acinzentado — pista discreta (portal
-        // "desligado") para quem reparar, sem ser óbvia à distância.
-        spr.setTint(0x9098a8);
+        // baixo em cima dele. Tint subtil (esverdeado mais baço/acinzentado)
+        // — pista discreta para quem reparar, sem ser óbvia à distância.
+        spr.setTint(0x9fb89f);
       } else {
         pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
-        // Pequenas faíscas orbitando o portal — reforça o ar "tecnológico"
-        // só nos túneis realmente entráveis (os decorativos ficam "apagados").
-        const fx = scene.add.particles(0,0,"spark_item",{
-          x:p.x, y:p.y, quantity:1, frequency:260, lifespan:900,
-          speed:{min:6,max:16}, angle:{min:0,max:360}, scale:{start:0.5,end:0},
-          tint:[0xff5fa8,0x40e0ff,0xffd23f]
-        }).setDepth(3);
-        tunnelFx.push(fx);
-        // Túnel de curiosidade (tem "fact") vs. túnel-atalho (não tem, só prémio).
-        if (p.fact) spawnSecretSign(scene, p.fact.x, p.fact.y, p.fact.emoji, p.fact.text);
       }
     });
 
@@ -2927,12 +2907,12 @@ window.addEventListener("DOMContentLoaded", () => {
     if (p) enterPipe(scene, p);
   }
   // enterPipe: animação de teletransporte RÁPIDA (pedido: "0,4s"), o
-  // VanBerto's encolhe para dentro do túnel, "salta" para o destino
-  // (toX/toY) já lá dentro (a câmara acompanha sem fazer pan pelo nível
-  // todo) e volta a crescer do lado de lá, com um pequeno impulso a
-  // reaparecer. Fica invulnerável desde o 1º instante (mesmo ainda a
-  // entrar) até um pouco depois de reaparecer, para nunca poder ser
-  // atingido a meio da viagem nem mesmo aterrar em cima de um vilão.
+  // VanBerto's encolhe para dentro do cano, "salta" para o destino (toX/toY)
+  // já lá dentro (a câmara acompanha sem fazer pan pelo nível todo) e volta
+  // a crescer do lado de lá, com um pequeno impulso a reaparecer. Fica
+  // invulnerável desde o 1º instante (mesmo ainda a entrar) até um pouco
+  // depois de reaparecer, para nunca poder ser atingido a meio da viagem
+  // nem mesmo aterrar em cima de um vilão.
   // Usa body.moves=false enquanto dura para a física não interferir a
   // meio (gravidade, colisões) — ver o guard "!_pipeWarping" no update()
   // para as outras partes do código (escala, esquerda/direita) que também
@@ -2947,30 +2927,15 @@ window.addEventListener("DOMContentLoaded", () => {
     // Invulnerável já a partir do instante em que entra — cobre toda a
     // viagem (0,4s) mais uma pequena margem extra ao sair.
     setInvuln(scene, TUNNEL_WARP_MS*2 + 500);
-    // Pequeno "sugar" de partículas no ponto de entrada (reforça o ar tecnológico)
-    const inFx = scene.add.particles(0,0,"spark_item",{
-      x:p.x, y:p.y, speed:{min:60,max:160}, angle:{min:0,max:360},
-      lifespan:220, quantity:12, scale:{start:0.9,end:0}, gravityY:0,
-      tint:[0xff5fa8,0x40e0ff,0xffd23f]
-    });
-    scene.time.delayedCall(240,()=>inFx.destroy());
     const startScaleX = player.scaleX, startScaleY = player.scaleY;
     scene.tweens.add({
       targets: player, y: player.y + 20, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
-      angle: 360, duration: TUNNEL_WARP_MS, ease: "Quad.easeIn",
+      duration: TUNNEL_WARP_MS, ease: "Quad.easeIn",
       onComplete: () => {
         player.x = p.toX; player.y = p.toY - 18;
-        player.setAngle(0);
         scene.cameras.main.startFollow(player, true, 1.0, 1.0);
         scene.time.delayedCall(40, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
         ensureAudio(); beep({ freq: 220, dur: 0.09, type: "square", vol: 0.05, slideTo: 480 });
-        // Faíscas de chegada, no ponto de destino
-        const outFx = scene.add.particles(0,0,"spark_item",{
-          x:p.toX, y:p.toY, speed:{min:70,max:190}, angle:{min:0,max:360},
-          lifespan:260, quantity:14, scale:{start:1,end:0}, gravityY:120,
-          tint:[0xff5fa8,0x40e0ff,0xffd23f,0xffffff]
-        });
-        scene.time.delayedCall(300,()=>outFx.destroy());
         scene.tweens.add({
           targets: player, y: p.toY, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
           duration: TUNNEL_WARP_MS, ease: "Back.easeOut",

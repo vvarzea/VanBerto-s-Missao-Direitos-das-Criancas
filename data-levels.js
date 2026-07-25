@@ -25,12 +25,11 @@ export const THEMES = [
   { skyTop:0xff6a1a, skyBot:0xffe39a, hillColor:0xe0871a, grassTop:0x5ec85a }, // 19 · Nível 20 — FINAL festivo pôr-do-sol dourado
 ];
 
-// ── Canos/túneis (pedido: posições variadas, nem todos com sala, nem todos ──
-// entráveis — "tipo Mario"). Cada entrada em L.pipes[] pode ser:
-//   • Cano de curiosidade: {x,y,toX,toY, fact:{x,y,emoji,text}} — o par de
-//     volta (dentro da sala) é uma 2ª entrada normal {x,y,w,h,toX,toY}.
-//   • Cano-atalho: igual, mas sem "fact" — leva a uma plataforma/prémio,
-//     sem sala de curiosidade.
+// ── Canos (pedido: posições variadas, nem todos entráveis — "tipo Mario"). ──
+// Cada entrada em L.pipes[] pode ser:
+//   • Cano normal: {x,y,toX,toY} — o par de volta (dentro da sala/plataforma
+//     secreta) é uma 2ª entrada normal {x,y,w,h,toX,toY}. Sem placas nem
+//     texto — só o cano e, do outro lado, a recompensa (item).
 //   • Cano decorativo: {x,y,decorative:true} — não entra, é só obstáculo/
 //     mistério (tint subtil aplicado automaticamente no motor).
 // Ver comentário completo em dia-crianca.js junto a "let pipes=[]".
@@ -68,11 +67,7 @@ export const LEVELS = [
     // para x:670 (não para cima do próprio cano de entrada) para não disparar
     // logo outra vez ao aterrar.
     pipes:[
-      {x:570,y:474,toX:570,toY:143,   // no chão principal → sobe até à plataforma secreta
-        // Curiosidade da sala secreta (pedido: "cada cano leva a uma sala com
-        // uma curiosidade que ainda não aparece no Sabias que...? desse nível").
-        fact:{ x:615, y:190, emoji:"🏛️",
-          text:"Sabias que a ideia de um dia mundial dedicado às crianças nasceu em 1925, numa conferência em Genebra, na Suíça?" }},
+      {x:570,y:474,toX:570,toY:143}, // no chão principal → sobe até à plataforma secreta
       {x:620,y:167,w:56,h:44,toX:670,toY:460} // na plataforma secreta → volta ao chão principal
     ],
     items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"},
@@ -96,9 +91,7 @@ export const LEVELS = [
     ],
     // 1 par, a meio do nível, com sala de curiosidade — recompensa: ❤️ vida extra.
     pipes:[
-      {x:1180,y:337,toX:1180,toY:150,
-        fact:{ x:1225,y:180,emoji:"📋",
-          text:"Sabias que a Declaração de 1959 tem 10 princípios, ao contrário da Convenção de 1989, que já tem artigos?" }},
+      {x:1180,y:337,toX:1180,toY:150},
       {x:1230,y:167,w:56,h:44,toX:1280,toY:360}
     ],
     items:[{x:900,y:400,kind:"balao"},{x:1460,y:260,kind:"medalha"},{x:1740,y:330,kind:"estrela"},{x:1180,y:175,kind:"heart"}],
@@ -151,9 +144,7 @@ export const LEVELS = [
     // por cima do vão — um atalho divertido que salta o vão sem precisar do
     // trampolim (não obrigatório, só um bónus para quem explorar).
     pipes:[
-      {x:650,y:474,toX:650,toY:143,
-        fact:{ x:695, y:190, emoji:"🕊️",
-          text:"Sabias que a UNICEF foi criada em 1946 para ajudar crianças na Europa depois da Segunda Guerra Mundial?" }},
+      {x:650,y:474,toX:650,toY:143},
       {x:600,y:167,w:56,h:44,toX:560,toY:460},
       {x:1320,y:417,toX:1600,toY:210},
       {x:1600,y:217,w:56,h:44,toX:1880,toY:440}
@@ -176,9 +167,7 @@ export const LEVELS = [
     ],
     // 1 par, em cima de uma plataforma a meio do nível — recompensa: 🎈 balão da festa.
     pipes:[
-      {x:1760,y:337,toX:1760,toY:150,
-        fact:{ x:1805,y:180,emoji:"🧼",
-          text:"Sabias que lavar bem as mãos é uma das formas mais simples de evitar doenças?" }},
+      {x:1760,y:337,toX:1760,toY:150},
       {x:1810,y:167,w:56,h:44,toX:1860,toY:360}
     ],
     items:[{x:880,y:230,kind:"estrela"},{x:1460,y:260,kind:"brinquedo"},{x:2060,y:400,kind:"balao"},{x:2360,y:330,kind:"medalha"},{x:1760,y:175,kind:"balaofesta"}],
@@ -207,9 +196,7 @@ export const LEVELS = [
     ],
     // 1 par, perto do fim do nível — recompensa: 🛡️ escudo.
     pipes:[
-      {x:2260,y:407,toX:2260,toY:180,
-        fact:{ x:2305,y:210,emoji:"🧠",
-          text:"Sabias que brincar ajuda o cérebro a crescer e a aprender a resolver problemas?" }},
+      {x:2260,y:407,toX:2260,toY:180},
       {x:2310,y:197,w:56,h:44,toX:2360,toY:430}
     ],
     items:[{x:860,y:380,kind:"medalha"},{x:1100,y:290,kind:"duplosalto"},{x:1560,y:260,kind:"estrela"},{x:2050,y:290,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:2260,y:205,kind:"medalha"}],
@@ -286,9 +273,7 @@ export const LEVELS = [
     // nível — um atalho sem sinal informativo, só com recompensa (nem todos
     // os túneis levam a uma "sala"; alguns são só um mimo rápido).
     pipes:[
-      {x:500,y:474,toX:500,toY:143,
-        fact:{ x:545, y:190, emoji:"🎨",
-          text:"Sabias que tens o direito de participar na vida cultural e artística à tua maneira — música, dança ou teatro?" }},
+      {x:500,y:474,toX:500,toY:143},
       {x:450,y:167,w:56,h:44,toX:410,toY:460},
       {x:1820,y:327,toX:1820,toY:180},
       {x:1870,y:177,w:56,h:44,toX:1920,toY:340}
@@ -316,9 +301,7 @@ export const LEVELS = [
       {x:2320,y:150,w:140,h:22}
     ],
     pipes:[
-      {x:1760,y:325,toX:1760,toY:160,
-        fact:{ x:1805, y:180, emoji:"🎒",
-          text:"Sabias que, no mundo, ainda há milhões de crianças que não conseguem ir à escola?" }},
+      {x:1760,y:325,toX:1760,toY:160},
       {x:1810,y:157,w:56,h:44,toX:1860,toY:350},
       // Túnel-atalho: sem "fact" → só leva ao prémio na plataforma acima, sem
       // curiosidade nenhuma.
@@ -379,9 +362,7 @@ export const LEVELS = [
       {x:2260,y:200,w:150,h:22}
     ],
     pipes:[
-      {x:2260,y:407,toX:2260,toY:170,
-        fact:{ x:2305, y:190, emoji:"👨‍👩‍👧",
-          text:"Sabias que tens direito a manter contacto com os teus pais mesmo que vivam separados?" }},
+      {x:2260,y:407,toX:2260,toY:170},
       {x:2310,y:167,w:56,h:44,toX:2360,toY:430}
     ],
     items:[{x:820,y:220,kind:"estrela"},{x:1300,y:280,kind:"balao"},{x:1540,y:210,kind:"medalha"},{x:2020,y:340,kind:"brinquedo"},{x:2500,y:330,kind:"duplosalto"},{x:2260,y:175,kind:"heart"}],
@@ -414,9 +395,7 @@ export const LEVELS = [
       {x:2100,y:170,w:150,h:22}
     ],
     pipes:[
-      {x:2100,y:307,toX:2100,toY:140,
-        fact:{ x:2145, y:160, emoji:"🎒",
-          text:"Sabias que há dezenas de milhões de crianças no mundo obrigadas a fugir das suas casas?" }},
+      {x:2100,y:307,toX:2100,toY:140},
       {x:2150,y:137,w:56,h:44,toX:2200,toY:330}
     ],
     items:[{x:820,y:380,kind:"balao"},{x:1040,y:290,kind:"estrela"},{x:1640,y:300,kind:"duplosalto"},{x:2320,y:220,kind:"medalha"},{x:2780,y:390,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:2100,y:145,kind:"medalha"}],
@@ -473,9 +452,7 @@ export const LEVELS = [
     ],
     // 2 pares: sala de curiosidade a meio do nível + atalho (sem fact) perto do fim.
     pipes:[
-      {x:1400,y:397,toX:1400,toY:210,
-        fact:{ x:1445, y:230, emoji:"♿",
-          text:"Sabias que uma rampa, a língua gestual ou um livro em braille ajudam TODAS as crianças a participar?" }},
+      {x:1400,y:397,toX:1400,toY:210},
       {x:1450,y:197,w:56,h:44,toX:1500,toY:420},
       {x:2960,y:397,toX:2960,toY:210},
       {x:3010,y:197,w:56,h:44,toX:3060,toY:420}
@@ -514,9 +491,7 @@ export const LEVELS = [
       {x:1260,y:170,w:150,h:22}
     ],
     pipes:[
-      {x:1260,y:307,toX:1260,toY:140,
-        fact:{ x:1305, y:160, emoji:"🌬️",
-          text:"Sabias que a poluição do ar afeta ainda mais as crianças, porque os pulmões delas ainda estão a crescer?" }},
+      {x:1260,y:307,toX:1260,toY:140},
       {x:1310,y:137,w:56,h:44,toX:1360,toY:330}
     ],
     items:[{x:980,y:382,kind:"estrela"},{x:1540,y:224,kind:"balao"},{x:2100,y:382,kind:"brinquedo"},{x:2660,y:220,kind:"medalha"},{x:3220,y:382,kind:"duplosalto"},{x:1260,y:145,kind:"estrela"}],
@@ -554,9 +529,7 @@ export const LEVELS = [
       {x:2860,y:110,w:150,h:22}
     ],
     pipes:[
-      {x:2860,y:247,toX:2860,toY:80,
-        fact:{ x:2905, y:100, emoji:"🏛️",
-          text:"Sabias que há Parlamentos de Jovens em várias cidades, onde podes propor ideias a quem manda?" }},
+      {x:2860,y:247,toX:2860,toY:80},
       {x:2910,y:77,w:56,h:44,toX:2960,toY:270},
       // Túnel decorativo — mantido perto do início (variedade: nem todos os
       // túneis de um nível ficam juntos).
@@ -617,9 +590,7 @@ export const LEVELS = [
       {x:3400,y:200,w:150,h:22}
     ],
     pipes:[
-      {x:3400,y:474,toX:3400,toY:143,
-        fact:{ x:3445, y:190, emoji:"🚪",
-          text:"Sabias que até os teus pais devem respeitar a tua privacidade, como bater à porta antes de entrar no teu quarto?" }},
+      {x:3400,y:474,toX:3400,toY:143},
       {x:3450,y:167,w:56,h:44,toX:3500,toY:460}
     ],
     // Todas as plataformas intermédias são móveis
@@ -679,9 +650,7 @@ export const LEVELS = [
       {x:2920,y:170,w:130,h:22}
     ],
     pipes:[
-      {x:1160,y:397,toX:1160,toY:210,
-        fact:{ x:1205, y:230, emoji:"🎭",
-          text:"Sabias que liberdade de expressão também quer dizer que podes desenhar, escrever ou cantar aquilo que sentes?" }},
+      {x:1160,y:397,toX:1160,toY:210},
       {x:1210,y:197,w:56,h:44,toX:1260,toY:420},
       {x:2920,y:297,toX:2920,toY:140},
       {x:2970,y:137,w:56,h:44,toX:3020,toY:320}
@@ -719,9 +688,7 @@ export const LEVELS = [
     // decorativo — como despedida da mecânica ao longo do jogo, agora
     // espalhados por posições bem diferentes do habitual "logo no início".
     pipes:[
-      {x:1920,y:317,toX:1920,toY:120,
-        fact:{ x:1965, y:140, emoji:"📵",
-          text:"Sabias que também tens direito a desligar-te dos ecrãs e descansar — o chamado 'descanso digital'?" }},
+      {x:1920,y:317,toX:1920,toY:120},
       {x:1970,y:117,w:56,h:44,toX:2020,toY:340},
       {x:3300,y:387,toX:3300,toY:190},
       {x:3350,y:187,w:56,h:44,toX:3400,toY:410},
