@@ -1028,6 +1028,27 @@ window.addEventListener("DOMContentLoaded", () => {
       };
     }
 
+    // exitToMainMenu: fecha tudo o que possa estar aberto (quiz, história,
+    // pausa) e volta ao ecrã principal — a meio de um nível, no ecrã de
+    // vitória/derrota ou onde quer que o jogador esteja. Usada pelo botão
+    // "🚪 Sair para o Menu" do menu suspenso.
+    function exitToMainMenu() {
+      if (!sceneRef) return;
+      try { sceneRef.physics.pause(); } catch {}
+      try { sceneRef.tweens.killAll(); } catch {}
+      _doorAnimRunning = false;
+      touch.left = touch.right = touch.jump = touch.crouch = false;
+      pausedByTeacher = false; if (btnPause) btnPause.textContent = "⏸ Pausa"; showPauseScreen(false);
+      quizOverlay.classList.add("hidden"); btnCloseQuiz.classList.add("hidden");
+      historyOverlay.classList.add("hidden");
+      gameOverOverlay.classList.add("hidden");
+      winOverlay.classList.add("hidden"); document.getElementById("confetti")?.classList.add("hidden");
+      document.getElementById("mapOverlay")?.classList.add("hidden");
+      lives = 3; score = 0; resetQuizStats(); livesLostThisLevel = 0;
+      startOverlay.classList.remove("hidden");
+      saveGame();
+    }
+
     if (btnRestartGame) {
       btnRestartGame.onclick = () => {
         if (!sceneRef) return;
@@ -1189,6 +1210,20 @@ window.addEventListener("DOMContentLoaded", () => {
       mirror("mBtnLevel",      "btnRestartLevel");
       mirror("mBtnGoToLevel",  "btnGoToLevel");
       mirror("mBtnRestart",    "btnRestartGame");
+
+      // Botão "Sair para o Menu" — permite acabar o jogo a qualquer momento,
+      // mesmo a meio de um nível (pedido: "falta o botão sair, para quando
+      // quiserem possam acabar o jogo"). Pede confirmação (mesmo padrão do
+      // "Reiniciar nível"/"Limpar estatísticas") porque o progresso deste
+      // nível em curso não fica guardado.
+      const mBtnExit = document.getElementById("mBtnExit");
+      if (mBtnExit) {
+        mBtnExit.onclick = () => {
+          if (!confirm("🚪 Sair para o menu principal?\nO progresso deste nível ainda não guardado perde-se.")) return;
+          teacherMenuPanel.classList.remove("open");
+          exitToMainMenu();
+        };
+      }
 
       // Botões de acesso rápido — chamam diretamente as funções expostas
       const _panelBtn = (id, fn) => {
@@ -2490,7 +2525,10 @@ window.addEventListener("DOMContentLoaded", () => {
       const w = p.w||64, h = p.h||64;
       const spr = platforms.create(p.x, p.y, "pipe_mario");
       spr.displayWidth = w; spr.displayHeight = h; spr.refreshBody();
-      if(spr.body){spr.body.checkCollision.left=false;spr.body.checkCollision.right=false;}
+      // Sólido nos 4 lados (pedido: "não pode passar pela frente, tem de se
+      // saltar") — tanto o VanBerto's como os vilões (malwareGroup também
+      // colide com "platforms", ver linha ~977) batem de lado e são
+      // travados/viram para trás, tendo mesmo de saltar por cima.
       if (p.decorative) {
         // Cano falso (pedido: "nem todos os túneis são de entrar") — fica só
         // como obstáculo/plataforma; por não entrar no array "pipes" abaixo,

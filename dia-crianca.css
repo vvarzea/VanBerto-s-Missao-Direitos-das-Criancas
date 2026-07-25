@@ -1723,6 +1723,12 @@ body.hc-mode .album-card-desc { color:#fff !important; }
   color: #ffb0b0 !important;
   font-size: 12px !important;
 }
+.tmenu-exit-btn {
+  background: linear-gradient(180deg,#3a1010 0%,#220808 100%) !important;
+  border-color: #c04040 !important;
+  color: #ffb0b0 !important;
+}
+body.hc-mode .tmenu-exit-btn { background:#220808 !important; border-color:#ff5555 !important; color:#ffcccc !important; }
 body.hc-mode .stats-item { background:#111 !important; border-color:#555 !important; }
 body.hc-mode .stats-item-label { color:#ffff00 !important; }
 body.hc-mode .stats-item-value { color:#fff !important; }
