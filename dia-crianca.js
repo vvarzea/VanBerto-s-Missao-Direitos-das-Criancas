@@ -24,7 +24,8 @@ import { BOSS_BY_LEVEL } from "./data-bosses.js";
 import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS, BOSS_HP_TAUNTS } from "./data-story.js";
 import { playTitleCard, playCinematic } from "./cinematics.js";
 import { loadNamespace, saveNamespace } from "./storage.js";
-import { makeTextures, makePlatformTextureThemed, makePipeTexture } from "./textures.js";
+import { makeTextures, makePlatformTextureThemed, makeFestiveArchTexture } from "./textures.js";
+import { SECRET_ROOMS } from "./data-secretrooms.js";
 import { initBackground, applyBackground, drawSun, drawStars, drawCloud,
          updateTrail, updateFootsteps, updateDoorGlow, updatePlatformDecor,
          spawnPlatformDecor, resetDoorGlow, clearPlatformDecor, hideDoorGlow,
@@ -807,12 +808,20 @@ window.addEventListener("DOMContentLoaded", () => {
   let balloons=[], critters=[], enemyTimers=[];
   let bossTimers=[];
   let movingPlatforms=[], trampolines=[], secretDoors=[], hazards=[];
-  // Canos à Mario (pedido: "atalhos ou áreas secretas") — cada nível pode
-  // opcionalmente ter L.pipes: [{x,y,w,toX,toY}]. O jogador entra parando
-  // em cima e carregando em baixo/S (a mesma tecla de agachar). Ver
-  // tryEnterPipe/enterPipe mais abaixo.
-  let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
+  // ===== Salas secretas (arco-cortina de festa) — ver data-secretrooms.js =====
+  // Técnica: mesma usada nas arenas de boss (trocar mundo/câmara/plataformas
+  // num offset de coordenadas bem longe de qualquer nível), mas SEM nunca
+  // destruir os objetos do nível principal — por isso não é preciso guardar
+  // nem repor itens já apanhados/vilões já derrotados, eles ficam tal e qual.
+  const SECRET_ROOM_OFFSET_X = 200000;
+  let secretArchObj = null;       // { x,y,obj } — arco no nível principal
+  let inSecretRoom = false;       // true enquanto o jogador está dentro da sala
+  let secretRoomExitArch = null;  // { x,y,obj } — arco de saída, dentro da sala
+  let secretRoomSign = null;      // letreiro com a curiosidade, dentro da sala
+  let secretRoomObjs = [];        // plataformas/itens da sala, a destruir na saída
+  let secretRoomReturn = null;    // {x,y} no nível principal, para onde volta
+  let _archCooldownUntil = 0;     // evita re-disparo imediato durante a transição
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
   // Janela (timestamp de scene.time.now) durante a qual applyVanBertoTexture() não deve
   // substituir a textura — usada pelo piscar de olhos idle e pelo pisca-olho ao toque,
@@ -1304,6 +1313,7 @@ window.addEventListener("DOMContentLoaded", () => {
       updateSecrets(sceneRef);
       updateHazards(sceneRef);
       updateSigns();
+      updateSecretArch(sceneRef);
       if (inBossFight) updateBossFight(sceneRef);
     }
     updateMovingPlatforms(sceneRef);
@@ -1380,28 +1390,14 @@ window.addEventListener("DOMContentLoaded", () => {
     isCrouching = !!downHeld && !awaitingQuiz && !awaitingStory;
     if (isCrouching !== wasCrouching) setCrouchHitbox(player, isCrouching);
 
-    // Entrar num cano (pedido: "atalhos ou áreas secretas") — mesma tecla
-    // de agachar (↓/S/toque), mas só dispara no INSTANTE em que se carrega
-    // (não enquanto se mantém premido) e só se o jogador estiver mesmo em
-    // cima de um, parado no chão. Ver tryEnterPipe/enterPipe mais abaixo.
-    if (downHeld && !_pipeDownWasHeld && !awaitingQuiz && !awaitingStory && !_pipeWarping
-        && player.body && player.body.blocked.down && pipes.length) {
-      tryEnterPipe(sceneRef);
-    }
-    _pipeDownWasHeld = downHeld;
-
     let speed=powered?320:280;
     if (isCrouching) speed *= 0.55;
 
-    if (_pipeWarping) {
-      player.setVelocityX(0);
-    } else if (leftDown&&!rightDown) { player.setVelocityX(-speed); player.setFlipX(true);  player.setAngle(-2); }
+    if (leftDown&&!rightDown) { player.setVelocityX(-speed); player.setFlipX(true);  player.setAngle(-2); }
     else if (rightDown&&!leftDown) { player.setVelocityX(speed); player.setFlipX(false); player.setAngle(2); }
     else { player.setVelocityX(0); player.setAngle(0); }
-    // Só aplica escala se não estiver a piscar (invuln) nem a entrar num
-    // cano (_pipeWarping) — caso contrário este bloco, que corre todos os
-    // frames, sobrepunha-se de imediato à animação de encolher no cano.
-    if(!invuln && !_pipeWarping){
+    // Só aplica escala se não estiver a piscar (invuln) para não interromper o tween de alpha
+    if(!invuln){
       if(player.getData("usingPng")){
         const ps = powered ? 72*1.18 : 72;
         if (isCrouching) player.setDisplaySize(ps*1.08, ps*0.6);
@@ -2307,6 +2303,146 @@ window.addEventListener("DOMContentLoaded", () => {
     secretDoors = [];
   }
 
+  // ===== Salas secretas (arco-cortina de festa) =====
+  function clearSecretArch() {
+    if (secretArchObj) { try{ secretArchObj.obj?.destroy(); }catch{} secretArchObj=null; }
+  }
+  function clearSecretRoomContents() {
+    secretRoomObjs.forEach(o => { try{ o.destroy(); }catch{} });
+    secretRoomObjs = [];
+    if (secretRoomExitArch) { try{ secretRoomExitArch.obj?.destroy(); }catch{} secretRoomExitArch=null; }
+    if (secretRoomSign) {
+      try{ secretRoomSign.obj?.destroy(); }catch{}
+      try{ secretRoomSign.badge?.destroy(); }catch{}
+      try{ secretRoomSign.activeLbl?.destroy(); }catch{}
+      secretRoomSign=null;
+    }
+  }
+  // Chamada sempre que se carrega um nível novo ou se começa um combate de
+  // boss — garante que nenhuma sala secreta fica "pendurada" nesses casos.
+  function resetSecretRoomState() {
+    clearSecretArch();
+    clearSecretRoomContents();
+    inSecretRoom = false;
+    secretRoomReturn = null;
+  }
+
+  function spawnSecretArch(scene, L, idx) {
+    clearSecretArch();
+    if (!L.secretArch || !SECRET_ROOMS[idx]) return;
+    if (!scene.textures.exists("festive_arch")) makeFestiveArchTexture(scene);
+    const { x, y } = L.secretArch;
+    const obj = scene.add.image(x, y, "festive_arch").setOrigin(0.5, 0.86).setDepth(2);
+    scene.tweens.add({ targets:obj, scaleX:{from:1,to:1.04}, scaleY:{from:1,to:1.04},
+      duration:900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+    secretArchObj = { x, y, obj };
+  }
+
+  // Chamada a cada frame (fora de overlays) — deteta a aproximação ao arco
+  // (dentro ou fora da sala) e dispara a entrada/saída ao agachar por baixo.
+  function updateSecretArch(scene) {
+    if (!player || !player.body) return;
+    // Letreiro da curiosidade dentro da sala — mesma lógica de proximidade
+    // do updateSigns() normal (aproximar para "ler", sem pausar o jogo).
+    if (inSecretRoom && secretRoomSign) {
+      const sdx = Math.abs(player.x - secretRoomSign.x), sdy = Math.abs(player.y - secretRoomSign.y);
+      const sNear = sdx <= 130 && sdy <= 170;
+      if (sNear && !secretRoomSign.wasNear) { secretRoomSign.wasNear = true; showSignMessage(secretRoomSign); }
+      else if (!sNear) { secretRoomSign.wasNear = false; }
+    }
+    if (scene.time.now < _archCooldownUntil) return;
+    if (!inSecretRoom) {
+      if (!secretArchObj) return;
+      const dx = Math.abs(player.x - secretArchObj.x), dy = Math.abs(player.y - secretArchObj.y);
+      if (dx <= 34 && dy <= 60 && isCrouching) enterSecretRoom(scene);
+    } else {
+      if (!secretRoomExitArch) return;
+      const dx = Math.abs(player.x - secretRoomExitArch.x), dy = Math.abs(player.y - secretRoomExitArch.y);
+      if (dx <= 34 && dy <= 60 && isCrouching) exitSecretRoom(scene);
+    }
+  }
+
+  function enterSecretRoom(scene) {
+    const room = SECRET_ROOMS[currentLevel];
+    if (!room || inSecretRoom) return;
+    _archCooldownUntil = scene.time.now + 1500;
+    secretRoomReturn = { x: player.x, y: player.y };
+    scene.physics.pause();
+    scene.cameras.main.fadeOut(260, 0, 0, 0);
+    scene.cameras.main.once("camerafadeoutcomplete", () => {
+      inSecretRoom = true;
+      const OX = SECRET_ROOM_OFFSET_X;
+      scene.physics.world.setBounds(OX, 0, room.worldW, room.worldH || 514);
+      scene.cameras.main.setBounds(OX, 0, room.worldW, 540);
+
+      // Plataformas do quarto (mesma textura temática do nível principal)
+      const themeIdx = LEVELS[currentLevel].theme % THEMES.length;
+      const platKey = "platform_t"+themeIdx;
+      if(!scene.textures.exists(platKey)) makePlatformTextureThemed(scene, platKey, themeIdx);
+      room.platforms.forEach(p=>{
+        const plat = platforms.create(OX+p.x, p.y, platKey);
+        plat.displayWidth=p.w; plat.displayHeight=p.h; plat.refreshBody();
+        if(plat.body){ plat.body.checkCollision.left=false; plat.body.checkCollision.right=false; }
+        secretRoomObjs.push(plat);
+      });
+      // Itens bónus (itemIdx:-99, tal como os segredos — não conta para
+      // collectedItemIndices, mas soma normalmente a itemsTotal/itemsCollected)
+      const keyMap={ estrela:"item_estrela", balao:"item_chupachupa", brinquedo:"item_brinquedo",
+        medalha:"item_medalha", heart:"item_heart", duplosalto:"item_duplosalto" };
+      room.items.forEach(it=>{
+        const obj = itemsGroup.create(OX+it.x, it.y, keyMap[it.kind]||"item_estrela");
+        obj.setDepth(2); obj.setData("kind", it.kind); obj.setData("itemIdx", -99);
+        scene.tweens.add({targets:obj, y:obj.y-8, duration:940, yoyo:true, repeat:-1, ease:"Sine.easeInOut"});
+        if (it.kind !== "heart") {
+          itemsTotal += 1;
+          if (itemCountText) itemCountText.setText(`⭐ Itens: ${itemsCollected}/${itemsTotal}`);
+        }
+        secretRoomObjs.push(obj);
+      });
+      // Arco de saída
+      const exitObj = scene.add.image(OX+room.exitArch.x, room.exitArch.y, "festive_arch")
+        .setOrigin(0.5, 0.86).setDepth(2);
+      scene.tweens.add({ targets:exitObj, scaleX:{from:1,to:1.04}, scaleY:{from:1,to:1.04},
+        duration:900, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      secretRoomExitArch = { x: OX+room.exitArch.x, y: room.exitArch.y, obj: exitObj };
+      // Letreiro com a curiosidade (mesmo sistema visual dos letreiros normais)
+      secretRoomSign = _createSignAt(scene, OX+room.worldW/2, 486, room.curiosity.emoji, room.curiosity.text);
+
+      player.setVelocity(0,0);
+      player.setPosition(OX+room.spawnX, room.spawnY);
+      scene.cameras.main.startFollow(player, true, 1.0, 1.0);
+      scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
+
+      scene.physics.resume();
+      scene.cameras.main.fadeIn(260, 0, 0, 0);
+      _archCooldownUntil = scene.time.now + 1500;
+    });
+  }
+
+  function exitSecretRoom(scene) {
+    if (!inSecretRoom) return;
+    const returnPos = secretRoomReturn || { x: LEVELS[currentLevel].spawn.x, y: LEVELS[currentLevel].spawn.y };
+    _archCooldownUntil = scene.time.now + 1500;
+    scene.physics.pause();
+    scene.cameras.main.fadeOut(260, 0, 0, 0);
+    scene.cameras.main.once("camerafadeoutcomplete", () => {
+      const L = LEVELS[currentLevel];
+      clearSecretRoomContents();
+      inSecretRoom = false;
+      secretRoomReturn = null;
+      scene.physics.world.setBounds(0, 0, L.worldW, 514);
+      scene.cameras.main.setBounds(0, 0, L.worldW, 540);
+      player.setVelocity(0,0);
+      player.setPosition(returnPos.x, returnPos.y);
+      scene.cameras.main.startFollow(player, true, 1.0, 1.0);
+      scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
+
+      scene.physics.resume();
+      scene.cameras.main.fadeIn(260, 0, 0, 0);
+      _archCooldownUntil = scene.time.now + 1500;
+    });
+  }
+
   // ===== Letreiros/NPCs — Fase "Mundo Vivo" =====
   // Um pequeno elemento por nível normal (não em arenas de boss). O jogador
   // só precisa de caminhar perto para o "ler" — sem menu, sem pausa forçada.
@@ -2402,6 +2538,11 @@ window.addEventListener("DOMContentLoaded", () => {
     const L=LEVELS[currentLevel];
     const T=THEMES[L.theme%THEMES.length];
 
+    // Segurança: se por algum motivo o nível mudar enquanto o jogador ainda
+    // estava dentro de uma sala secreta, isto garante que nada fica "preso"
+    // lá dentro (bounds errados, arco/letreiro órfãos, etc.).
+    resetSecretRoomState();
+
     scene.physics.world.setBounds(0,0,L.worldW,514);
     scene.cameras.main.setBounds(0,0,L.worldW,540);
 
@@ -2440,20 +2581,6 @@ window.addEventListener("DOMContentLoaded", () => {
       const plat=platforms.create(p.x,p.y,platKey);
       plat.displayWidth=p.w; plat.displayHeight=p.h; plat.refreshBody();
       if(plat.body){plat.body.checkCollision.left=false;plat.body.checkCollision.right=false;}
-    });
-
-    // Canos à Mario (opcional, ver L.pipes em data-levels.js) — sólidos
-    // (entram no grupo "platforms", por isso o jogador já colide com eles
-    // como qualquer chão), mais o registo em "pipes" com o destino do
-    // salto, usado por tryEnterPipe() no update().
-    pipes = [];
-    (L.pipes||[]).forEach(p=>{
-      if(!scene.textures.exists("pipe_mario")) makePipeTexture(scene);
-      const w = p.w||64, h = p.h||64;
-      const spr = platforms.create(p.x, p.y, "pipe_mario");
-      spr.displayWidth = w; spr.displayHeight = h; spr.refreshBody();
-      if(spr.body){spr.body.checkCollision.left=false;spr.body.checkCollision.right=false;}
-      pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
     });
 
     door=scene.physics.add.staticSprite(L.doorX,448,"door_party").setDisplaySize(88,104);
@@ -2540,6 +2667,7 @@ window.addEventListener("DOMContentLoaded", () => {
     clearTrampolines();     spawnTrampolines(scene,L);
     clearSecrets();         spawnSecrets(scene,L);
     clearHazards();         spawnHazards(scene,L);
+    spawnSecretArch(scene,L,idx);
 
     player.setAlpha(0); player.setAngle(0); player.setFlipX(false); player.setOrigin(0.5,0.5); player.setDepth(3);
     // Importante: manter o tamanho NORMAL aqui (não o "achatado" do pop de
@@ -2848,49 +2976,6 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!isCrouching) return;
     isCrouching = false;
     if (player) { setCrouchHitbox(player, false); player.setScale(1); }
-  }
-
-  // Canos à Mario (pedido: "atalhos ou áreas secretas") ──────────────────
-  // tryEnterPipe: vê se o jogador está mesmo em cima de algum cano deste
-  // nível (só compara X — já sabemos que está no chão e a carregar em
-  // baixo, ver o chamador no update()) e, se estiver, arranca a animação.
-  function tryEnterPipe(scene){
-    const p = pipes.find(pp => Math.abs(player.x - pp.x) <= (pp.w/2 - 6));
-    if (p) enterPipe(scene, p);
-  }
-  // enterPipe: encolhe o VanBerto's para dentro do cano, teletransporta-o
-  // para o destino (toX/toY) já lá dentro (a câmara "salta" com ele, sem
-  // fazer pan pelo nível todo), e volta a crescer do lado de lá. Usa
-  // body.moves=false enquanto dura para a física não interferir a meio
-  // (gravidade, colisões) — ver o guard "!_pipeWarping" no update() para
-  // as outras partes do código (escala, esquerda/direita) que também
-  // dão prioridade a esta animação enquanto ela corre.
-  function enterPipe(scene, p){
-    if (_pipeWarping || !player?.body) return;
-    _pipeWarping = true;
-    exitCrouch();
-    ensureAudio(); beep({ freq: 440, dur: 0.12, type: "square", vol: 0.05, slideTo: 180 });
-    player.body.moves = false;
-    const startScaleX = player.scaleX, startScaleY = player.scaleY;
-    scene.tweens.add({
-      targets: player, y: player.y + 22, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
-      duration: 260, ease: "Quad.easeIn",
-      onComplete: () => {
-        player.x = p.toX; player.y = p.toY - 26;
-        scene.cameras.main.startFollow(player, true, 1.0, 1.0);
-        scene.time.delayedCall(50, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
-        ensureAudio(); beep({ freq: 180, dur: 0.12, type: "square", vol: 0.05, slideTo: 440 });
-        scene.tweens.add({
-          targets: player, y: p.toY, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
-          duration: 260, ease: "Quad.easeOut",
-          onComplete: () => {
-            player.body.moves = true;
-            setInvuln(scene, 500); // meio segundo de proteção ao sair — evita apanhar dano em cima da saída
-            _pipeWarping = false;
-          }
-        });
-      }
-    });
   }
 
   function snapPlayerToGround(){
@@ -3279,6 +3364,11 @@ window.addEventListener("DOMContentLoaded", () => {
   function startBossFight(scene, levelJustCompleted, onComplete) {
     const def = BOSS_BY_LEVEL[levelJustCompleted];
     if (!def) { onComplete(); return; } // sem boss neste ponto — segue o fluxo normal
+
+    // Segurança: nunca entrar num combate de boss com uma sala secreta ainda
+    // "aberta" (o jogador só chega à porta de saída no nível principal, por
+    // isso isto não deveria disparar na prática — é só uma rede de segurança).
+    resetSecretRoomState();
 
     inBossFight = true;
     controlsInvertedUntil = 0;

@@ -2,11 +2,16 @@
 // Extraído de dia-crianca.js. Ficheiro 100% autocontido: cada função só
 // depende do parâmetro `scene` (instância Phaser) e de constantes locais.
 // Não lê nem escreve nenhum estado partilhado do jogo (score, player, etc.).
-// Só makeTextures() e makePlatformTextureThemed() são chamadas a partir de
-// dia-crianca.js — as restantes (makePlatformTexture, makeDoorTexture,
-// makeVilaosTextures, makeBossTextures, makeSparkTexture, makeItemTextures,
-// makeVanBertoTexture, rrPath, rrVan, cVan, cfVan, lVan) são de uso interno
-// deste módulo, por isso não são exportadas.
+// Só makeTextures(), makePlatformTextureThemed() e makeFestiveArchTexture()
+// são chamadas a partir de dia-crianca.js — as restantes (makePlatformTexture,
+// makeDoorTexture, makeVilaosTextures, makeBossTextures, makeSparkTexture,
+// makeItemTextures, makeVanBertoTexture, rrPath, rrVan, cVan, cfVan, lVan)
+// são de uso interno deste módulo, por isso não são exportadas.
+//
+// makeFestiveArchTexture() desenha o "arco-cortina de festa" usado pelas
+// salas secretas (ver SECRET_ROOMS em data-secretrooms.js) — a alternativa
+// escolhida a um cano estilo Super Mário, para encaixar na estética de festa
+// do VanBerto's (a mesma família visual da porta_party).
 
 // ===== TEXTURAS =====
 
@@ -40,29 +45,6 @@ export function makeTextures(scene){
 function makePlatformTexture(scene){
   if(scene.textures.exists("platform_grass")) return;
   makePlatformTextureThemed(scene,"platform_grass",0);
-}
-
-// Cano à Mario (pedido: "atalhos ou áreas secretas") — rebordo largo em
-// cima + corpo mais estreito a descer, em verde, ao estilo clássico.
-export function makePipeTexture(scene){
-  if (scene.textures.exists("pipe_mario")) return;
-  const RIMW=76, RIMH=20, BODYW=64, BODYH=44;
-  const totalW=RIMW, totalH=RIMH+BODYH;
-  const bx=(RIMW-BODYW)/2;
-  const g=scene.make.graphics({x:0,y:0,add:false});
-  // corpo
-  g.fillStyle(0x0d5c1e,1); g.fillRect(bx,RIMH,BODYW,BODYH);
-  g.fillStyle(0x1e8c34,1); g.fillRect(bx+7,RIMH,BODYW-14,BODYH);
-  g.fillStyle(0x5cd873,0.55); g.fillRect(bx+10,RIMH+3,7,BODYH-6);
-  // rebordo (mais largo, dá o aspeto de "boca" do cano)
-  g.fillStyle(0x0d5c1e,1); g.fillRoundedRect(0,0,RIMW,RIMH+8,6);
-  g.fillStyle(0x1e8c34,1); g.fillRoundedRect(4,3,RIMW-8,RIMH,5);
-  g.fillStyle(0x5cd873,0.6); g.fillRoundedRect(8,4,RIMW-16,5,3);
-  // contornos
-  g.lineStyle(3,0x063610,1);
-  g.strokeRoundedRect(0,0,RIMW,RIMH+8,6);
-  g.strokeRect(bx,RIMH,BODYW,BODYH);
-  g.generateTexture("pipe_mario",totalW,totalH); g.destroy();
 }
 
 // Gera uma textura de plataforma para cada tema
@@ -214,6 +196,94 @@ function makeDoorTexture(scene){
   ctx.shadowColor="rgba(0,0,0,0.8)"; ctx.shadowBlur=4;
   ctx.fillText("PORTAL!", cx, h-10);
   ctx.shadowBlur=0;
+
+  tex.refresh();
+}
+
+// ===== Arco-cortina de festa (entrada/saída das salas secretas) =====
+// Um pequeno arco decorado com bandeirinhas, com uma cortina em duas metades
+// que se afasta ao centro — o jogador agacha-se para "passar por baixo" e
+// entrar na sala secreta. Visual de festa (não um cano), para combinar com
+// o resto do jogo (porta_party, VanBerto's em fato de festa).
+export function makeFestiveArchTexture(scene){
+  if(scene.textures.exists("festive_arch")) return;
+  const w=120, h=150, tex=scene.textures.createCanvas("festive_arch",w,h), ctx=tex.getContext();
+  const cx=w/2;
+
+  // ── Postes laterais (candy-cane, alternando cores) ──
+  [[10,"#ff5a7a"],[w-26,"#4fc3ff"]].forEach(([px,col])=>{
+    ctx.fillStyle=col;
+    rrPath(ctx,px,26,16,h-30,7); ctx.fill();
+    // riscas diagonais brancas
+    ctx.save();
+    ctx.beginPath(); rrPath(ctx,px,26,16,h-30,7); ctx.clip();
+    ctx.strokeStyle="rgba(255,255,255,0.55)"; ctx.lineWidth=6;
+    for(let sy=-10; sy<h+10; sy+=16){
+      ctx.beginPath(); ctx.moveTo(px-4,26+sy); ctx.lineTo(px+26,26+sy-16); ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // ── Valância superior arqueada (o "topo" do arco) ──
+  ctx.fillStyle="#ffcf3a";
+  ctx.beginPath();
+  ctx.moveTo(6,34);
+  ctx.quadraticCurveTo(cx,-6, w-6,34);
+  ctx.lineTo(w-6,14);
+  ctx.quadraticCurveTo(cx,-24, 6,14);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle="#c98a00"; ctx.lineWidth=2; ctx.stroke();
+
+  // Bandeirinhas (bunting) penduradas na valância
+  const buntColors=["#ff5a7a","#4fc3ff","#ffe066","#7ee787","#c084fc"];
+  for(let i=0;i<7;i++){
+    const t=i/6, bx=10+t*(w-20), by=6+Math.sin(t*Math.PI)*10;
+    ctx.fillStyle=buntColors[i%buntColors.length];
+    ctx.beginPath();
+    ctx.moveTo(bx-7,by); ctx.lineTo(bx+7,by); ctx.lineTo(bx,by+14);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // ── Abertura escura (o "portal") ──
+  ctx.fillStyle="#1a0f2e";
+  rrPath(ctx,24,40,w-48,h-46,8); ctx.fill();
+
+  // ── Cortina — duas metades afastadas, deixando a abertura visível ──
+  const curtainGrad=(x0)=>{
+    const g=ctx.createLinearGradient(x0,0,x0+30,0);
+    g.addColorStop(0,"#e0356b"); g.addColorStop(1,"#ff6f9c");
+    return g;
+  };
+  // Metade esquerda
+  ctx.save();
+  ctx.beginPath(); rrPath(ctx,24,40,w-48,h-46,8); ctx.clip();
+  ctx.fillStyle=curtainGrad(20);
+  ctx.beginPath();
+  ctx.moveTo(20,38);
+  ctx.quadraticCurveTo(38,70, 30,h);
+  ctx.lineTo(20,h); ctx.closePath(); ctx.fill();
+  // pregas da cortina
+  ctx.strokeStyle="rgba(0,0,0,0.18)"; ctx.lineWidth=2;
+  for(let fx=22; fx<40; fx+=5){ ctx.beginPath(); ctx.moveTo(fx,42); ctx.lineTo(fx-4,h); ctx.stroke(); }
+  ctx.restore();
+  // Metade direita (espelhada)
+  ctx.save();
+  ctx.beginPath(); rrPath(ctx,24,40,w-48,h-46,8); ctx.clip();
+  ctx.fillStyle=curtainGrad(w-50);
+  ctx.beginPath();
+  ctx.moveTo(w-20,38);
+  ctx.quadraticCurveTo(w-38,70, w-30,h);
+  ctx.lineTo(w-20,h); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle="rgba(0,0,0,0.18)"; ctx.lineWidth=2;
+  for(let fx=w-22; fx>w-40; fx-=5){ ctx.beginPath(); ctx.moveTo(fx,42); ctx.lineTo(fx+4,h); ctx.stroke(); }
+  ctx.restore();
+
+  // Brilho suave no centro da abertura (sugere "algo mágico lá dentro")
+  const glow=ctx.createRadialGradient(cx,h*0.62,4,cx,h*0.62,30);
+  glow.addColorStop(0,"rgba(255,224,102,0.55)");
+  glow.addColorStop(1,"rgba(255,224,102,0)");
+  ctx.fillStyle=glow;
+  ctx.beginPath(); ctx.arc(cx,h*0.62,30,0,Math.PI*2); ctx.fill();
 
   tex.refresh();
 }

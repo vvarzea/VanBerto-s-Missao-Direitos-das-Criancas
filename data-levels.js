@@ -45,22 +45,9 @@ export const LEVELS = [
       // criança uma boa distância de corrida livre antes do 1º obstáculo.
       {x:950,y:461,w:200,h:22},
       {x:1340,y:450,w:300,h:22},{x:1680,y:380,w:270,h:22},
-      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28},
-      // Plataforma secreta (pedido: "canos/túneis à Mario para atalhos ou
-      // áreas secretas") — só se chega aqui pelo cano abaixo; não está ao
-      // alcance de nenhum salto normal a partir do chão principal.
-      {x:650,y:200,w:160,h:22}
+      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28}
     ],
-    // NOVO — 1º par de canos do jogo, de demonstração. Entra-se parando em
-    // cima e carregando em baixo/S (a mesma tecla de agachar). O cano de
-    // volta manda para x:750 (não para cima do próprio cano de entrada,
-    // em 650) para não disparar logo outra vez ao aterrar.
-    pipes:[
-      {x:650,y:474,toX:650,toY:143},   // no chão principal → sobe até à plataforma secreta
-      {x:700,y:167,w:56,h:44,toX:750,toY:460} // na plataforma secreta → volta ao chão principal
-    ],
-    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"},
-      {x:650,y:160,kind:"estrela"}],
+    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"}],
     // Vilões empurrados para a direita, na mesma proporção do resto do nível
     // (era x:1500/1960) — o 1º só aparece bem depois do túnel e do 2º item,
     // dando à criança um troço inicial bem mais longo e calmo.
@@ -82,6 +69,10 @@ export const LEVELS = [
     name: "Nível 3 — A Convenção de 1989",
     artIdx:2, theme:2, quizTheme:"convencao", worldW:2900,
     spawn:{x:480,y:460}, doorX:2500,
+    // Arco-cortina de festa — entrada da sala secreta (ver SECRET_ROOMS,
+    // data-secretrooms.js). x:280 confirmado sem sobreposição com o coração
+    // (x:560), o letreiro (signX:630) nem o vilão (x:1000).
+    secretArch:{x:280,y:486},
     // signX: por defeito o letreiro/informação ficaria em spawn.x+240 (=720), que
     // cai mesmo debaixo da plataforma elevada {x:840,y:460,w:240} (720-960).
     // Movido para a esquerda, para zona livre entre o coração (x:560) e essa
@@ -225,6 +216,9 @@ export const LEVELS = [
     name: "Nível 9 — O Direito à Educação",
     artIdx:4, theme:4, quizTheme:"educacao", worldW:3500,
     spawn:{x:480,y:460}, doorX:3100,
+    // Arco-cortina de festa — entrada da sala secreta. x:280 confirmado sem
+    // sobreposição com o coração (x:560) nem o letreiro (spawn.x+240=720).
+    secretArch:{x:280,y:486},
     platforms:[
       {x:520,y:520,w:1000,h:28},{x:920,y:442,w:185,h:22},{x:1200,y:368,w:185,h:22},
       {x:1480,y:298,w:185,h:22},{x:1760,y:368,w:185,h:22},{x:2040,y:442,w:185,h:22},
@@ -316,6 +310,9 @@ export const LEVELS = [
     name: "Nível 13 — Contra o Trabalho Infantil",
     artIdx:13, theme:13, quizTheme:"trabalho", worldW:3700,
     spawn:{x:480,y:460}, doorX:3300,
+    // Arco-cortina de festa — entrada da sala secreta. x:280 confirmado sem
+    // sobreposição com o segredo (x:680) nem o letreiro (spawn.x+240=720).
+    secretArch:{x:280,y:486},
     // Layout: "labirinto horizontal" — plataformas em ziguezague apertado exige precisão
     platforms:[
       {x:520,y:520,w:960,h:28},
@@ -534,6 +531,9 @@ export const LEVELS = [
     name: "Nível 20 — Os Direitos Digitais",
     artIdx:19, theme:19, quizTheme:"digital", worldW:4100,
     spawn:{x:480,y:460}, doorX:3700,
+    // Arco-cortina de festa — entrada da sala secreta. x:280 confirmado sem
+    // sobreposição com o coração (x:560) nem os vilões (x:950/1100).
+    secretArch:{x:280,y:486},
     // Layout: "circuito digital" — plataformas em padrão de circuito impresso: retas longas com viragens bruscas
     platforms:[
       {x:520,y:520,w:960,h:28},
