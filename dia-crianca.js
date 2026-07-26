@@ -822,6 +822,11 @@ window.addEventListener("DOMContentLoaded", () => {
   let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let secretSigns = []; // curiosidades dentro das salas dos canos — ver clearSecretSigns/spawnSecretSign
+  // Decoração das salas secretas isoladas (moldura/vinheta + brilho + sparkles
+  // + rótulo) — ver buildSecretRoomDecor(). Guardado à parte de "platforms"/
+  // "itemsGroup" porque não são sólidos nem apanháveis, só visual; limpos e
+  // recriados a cada loadLevel().
+  let secretRoomDecor = [];
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
   // Janela (timestamp de scene.time.now) durante a qual applyVanBertoTexture() não deve
   // substituir a textura — usada pelo piscar de olhos idle e pelo pisca-olho ao toque,
@@ -858,6 +863,25 @@ window.addEventListener("DOMContentLoaded", () => {
   const COYOTE_MS=110, JUMP_BUFFER_MS=130;
   let currentLevelTip = "⭐ Apanha estrelas e chega ao Portal ✨!";
   const GRAVITY=1100;
+
+  // ===== Salas secretas isoladas ("pocket rooms") =====
+  // Cada sala secreta vive numa faixa reservada por baixo da vista normal do
+  // nível (0-540) — ver o setBounds alargado em loadLevel(). Nunca é
+  // alcançável a pé, só por teletransporte via cano, o que dá a sensação de
+  // "saíste do nível" pedida (moldura própria em buildSecretRoomDecor(),
+  // fundo bem diferente do céu/paisagem do nível). Todas as salas usam a
+  // MESMA disposição vertical (plataforma + prémio + cano de volta), só o
+  // x muda consoante a "gaveta" (slot) atribuída a cada sala em cada nível
+  // — ver POCKET_SLOT_X. Isto evita repetir cálculos de posição em cada
+  // nível: o autor dos níveis só precisa de apontar o cano de entrada para
+  // (POCKET_SLOT_X[i] - 60, POCKET_TOY) e colocar a plataforma/prémio/cano
+  // de volta nos mesmos y fixos.
+  const POCKET_BAND_TOP = 600;      // topo da faixa reservada (moldura desenhada a partir daqui)
+  const POCKET_LEDGE_Y  = 800;      // chão da sala secreta
+  const POCKET_ITEM_Y   = 727;      // prémio a flutuar por cima do chão
+  const POCKET_PIPE_Y   = 765;      // cano de volta, encostado ao chão
+  const POCKET_TOY      = 741;      // ponto de aterragem ao entrar (um pouco acima do chão — assenta sozinho)
+  const POCKET_SLOT_X   = [700, 1650]; // "gavetas" horizontais — até 2 salas por nível, bem afastadas
 
   const config = {
     type: Phaser.AUTO,
@@ -2402,6 +2426,39 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.tweens.add({ targets:badge, scaleX:{from:0.8,to:1.15}, scaleY:{from:0.8,to:1.15}, duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     return { x, y, obj, badge, wasNear:false, activeLbl:null, text };
   }
+  // Moldura/vinheta da sala secreta isolada (pedido: "área fechada e
+  // isolada, sensação de que saíste do nível"). Painel escuro com borda
+  // dourada, brilho suave por trás do prémio, sparkles e um rótulo — tudo
+  // bem diferente da paisagem normal do nível (que nunca chega a esta
+  // faixa). Depth negativo para ficar sempre atrás das plataformas/itens.
+  function buildSecretRoomDecor(scene, cx){
+    const objs = [];
+    const top = POCKET_BAND_TOP, bot = 890, halfW = 210;
+    const panel = scene.add.graphics().setDepth(-1);
+    panel.fillStyle(0x160a30, 0.95);
+    panel.fillRoundedRect(cx-halfW, top, halfW*2, bot-top, 28);
+    panel.lineStyle(4, 0xffd35c, 0.85);
+    panel.strokeRoundedRect(cx-halfW, top, halfW*2, bot-top, 28);
+    objs.push(panel);
+    const glow = scene.add.graphics().setDepth(-1);
+    glow.fillStyle(0xffe9a8, 0.16);
+    glow.fillCircle(cx, POCKET_ITEM_Y+18, 100);
+    objs.push(glow);
+    for (let i=0;i<5;i++){
+      const sx = cx + Phaser.Math.Between(-halfW+24, halfW-24);
+      const sy = Phaser.Math.Between(top+22, bot-22);
+      const star = scene.add.text(sx, sy, "✨", { fontSize:(9+Math.random()*7)+"px" })
+        .setOrigin(0.5).setAlpha(0.45).setDepth(-1);
+      scene.tweens.add({ targets:star, alpha:{from:0.15,to:0.55}, duration:900+Math.random()*700, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      objs.push(star);
+    }
+    const label = scene.add.text(cx, top+28, "🎁 Sala Secreta", {
+      fontSize:"18px", fontStyle:"900", color:"#ffe9a8", stroke:"#2a0a4a", strokeThickness:5, padding:{ x:8, y:6 }
+    }).setOrigin(0.5).setDepth(-1);
+    scene.tweens.add({ targets:label, y:label.y-6, duration:1300, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+    objs.push(label);
+    return objs;
+  }
   function spawnLevelSign(scene, L, idx) {
     clearSign();
     const entry = NPC_SIGNS[L.artIdx != null ? L.artIdx : idx];
@@ -2471,8 +2528,12 @@ window.addEventListener("DOMContentLoaded", () => {
     const L=LEVELS[currentLevel];
     const T=THEMES[L.theme%THEMES.length];
 
-    scene.physics.world.setBounds(0,0,L.worldW,514);
-    scene.cameras.main.setBounds(0,0,L.worldW,540);
+    // Altura extra reservada por baixo da vista normal (0-540) para as salas
+    // secretas isoladas — ver POCKET_* mais abaixo e buildSecretRoomDecor().
+    // Nunca é visitada durante o jogo normal (não há nenhuma plataforma a
+    // ligar lá) — só se chega por teletransporte via cano.
+    scene.physics.world.setBounds(0,0,L.worldW,900);
+    scene.cameras.main.setBounds(0,0,L.worldW,920);
 
     enemyTimers.forEach(t=>{try{t.remove(false);}catch{}}); enemyTimers=[];
     bossTimers.forEach(t=>{try{t.remove(false);}catch{}}); bossTimers=[];
@@ -2510,6 +2571,17 @@ window.addEventListener("DOMContentLoaded", () => {
       const plat=platforms.create(p.x,p.y,platKey);
       plat.displayWidth=p.w; plat.displayHeight=p.h; plat.refreshBody();
       if(plat.body){plat.body.checkCollision.left=false;plat.body.checkCollision.right=false;}
+    });
+
+    // Salas secretas isoladas — moldura/vinheta por trás de cada plataforma
+    // que vive na faixa reservada (POCKET_BAND_TOP e abaixo). Detetado
+    // automaticamente pela posição em vez de precisar de dados extra no
+    // nível: qualquer plataforma "lá em baixo" é, por definição, o chão de
+    // uma sala secreta.
+    secretRoomDecor.forEach(o=>{ try{o.destroy();}catch{} });
+    secretRoomDecor = [];
+    L.platforms.forEach(p=>{
+      if (p.y >= POCKET_BAND_TOP) secretRoomDecor.push(...buildSecretRoomDecor(scene, p.x));
     });
 
     // Canos à Mario (opcional, ver L.pipes em data-levels.js) — sólidos
