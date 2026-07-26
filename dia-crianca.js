@@ -6449,6 +6449,24 @@ window.addEventListener("DOMContentLoaded", () => {
   btnCloseHow.onclick = () => { closeOverlay("howOverlay"); };
   window.__vb_openHow = () => { openOverlay("howOverlay"); };
 
+  // Botão "Sair" no menu principal — fecha mesmo o jogo (diferente do
+  // "Sair para o Menu" que existe durante o jogo, que só volta ao menu
+  // principal). window.close() só funciona em separadores/janelas abertos
+  // por script (ou apps instaladas como PWA em alguns browsers); nos
+  // restantes casos os browsers bloqueiam-no por segurança, por isso fica
+  // sempre uma mensagem simpática como alternativa para o caso de o
+  // separador não se fechar sozinho.
+  const btnExitGame = document.getElementById("btnExitGame");
+  if (btnExitGame) {
+    btnExitGame.onclick = () => {
+      if (!confirm("🚪 Sair do jogo?")) return;
+      window.close();
+      setTimeout(() => {
+        alert("👋 Já podes fechar este separador. Até à próxima aventura!");
+      }, 300);
+    };
+  }
+
   // ===== Ecrã todo =====
   const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent);
 
