@@ -820,6 +820,13 @@ window.addEventListener("DOMContentLoaded", () => {
   //   - caso contrário → cano normal: leva a uma plataforma/área secreta com
   //     uma recompensa (item), sem placas nem texto.
   let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
+  // Enquanto true, ignora "para baixo" para efeitos de agachar (mas não
+  // para o resto do jogo) — ligado sempre que um cano/sala secreta começa
+  // a animação, desligado só quando a tecla é MESMO largada. Isto evita
+  // que o mesmo "carregar em baixo" que serviu para entrar/sair do cano
+  // também agache o VanBerto's mesmo depois de já ter aterrado (ver
+  // enterPipe/enterSecretRoomFlow/exitSecretRoomFlow).
+  let _suppressCrouchUntilRelease = false;
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let secretSigns = []; // curiosidades dentro das salas dos canos — ver clearSecretSigns/spawnSecretSign
   // Sala secreta isolada ("tipo os bosses") — ver comentário completo junto
@@ -1448,14 +1455,16 @@ window.addEventListener("DOMContentLoaded", () => {
     // livros do boss ou o "Fake News" na horizontal, e permite passar por
     // baixo de plataformas baixas), mas trava o salto e anda mais devagar —
     // não dá para atravessar um nível todo agachado sem custo nenhum.
-    // Bloqueado durante _pipeWarping: entrar/sair de um cano usa a MESMA
-    // tecla (↓), por isso mantê-la premida durante a animação não pode
-    // também agachar o VanBerto's a meio — isso deixava a hitbox pequena
-    // "presa" mesmo depois de aterrar do outro lado, empurrando-o para
-    // dentro da plataforma até se largar e voltar a carregar em baixo.
+    // Suprimido enquanto _suppressCrouchUntilRelease: entrar/sair de um
+    // cano usa a MESMA tecla (↓), por isso mantê-la premida durante e logo
+    // a seguir à animação não pode também agachar o VanBerto's — mesmo já
+    // aterrado, a hitbox pequena aplicada ainda "no ar" (durante o
+    // pequeno salto de reaparecimento) empurrava-o para dentro da
+    // plataforma. Só volta ao normal quando a tecla é mesmo largada.
     const downHeld = cursors.down.isDown || (keyS && keyS.isDown) || touch.crouch;
+    if (!downHeld) _suppressCrouchUntilRelease = false;
     const wasCrouching = isCrouching;
-    if (!_pipeWarping) {
+    if (!_pipeWarping && !_suppressCrouchUntilRelease) {
       isCrouching = !!downHeld && !awaitingQuiz && !awaitingStory;
       if (isCrouching !== wasCrouching) setCrouchHitbox(player, isCrouching);
     }
@@ -2515,6 +2524,7 @@ window.addEventListener("DOMContentLoaded", () => {
     secretRoomReturn = null;
     secretRoomHidden = [];
     secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[] };
+    _suppressCrouchUntilRelease = false;
 
     scene.physics.world.setBounds(0,0,L.worldW,514);
     scene.cameras.main.setBounds(0,0,L.worldW,540);
@@ -2990,13 +3000,19 @@ window.addEventListener("DOMContentLoaded", () => {
   // tryEnterPipe: vê se o jogador está mesmo em cima de algum cano deste
   // nível (só compara X — já sabemos que está no chão e a carregar em
   // baixo, ver o chamador no update()) e, se estiver, arranca a animação.
+  // Tolerância do "estás mesmo em cima do cano" — meia largura do cano MAIS
+  // meia largura do corpo do VanBerto's (44px de corpo → 20px de margem),
+  // para bastar estar em qualquer parte de cima do cano (não só bem ao
+  // centro) e carregar em baixo para entrar logo. player.body.blocked.down
+  // já garante que está mesmo apoiado nalguma coisa; isto só confirma que
+  // essa "coisa" é este cano.
   function tryEnterPipe(scene){
     if (inSecretRoom) {
       const rp = secretRoomTemp.pipe;
-      if (rp && Math.abs(player.x - rp.x) <= (rp.w/2 - 6)) exitSecretRoomFlow(scene);
+      if (rp && Math.abs(player.x - rp.x) <= (rp.w/2 + 20)) exitSecretRoomFlow(scene);
       return;
     }
-    const p = pipes.find(pp => Math.abs(player.x - pp.x) <= (pp.w/2 - 6));
+    const p = pipes.find(pp => Math.abs(player.x - pp.x) <= (pp.w/2 + 20));
     if (!p) return;
     if (p.room) enterSecretRoomFlow(scene, p);
     else enterPipe(scene, p);
@@ -3016,6 +3032,7 @@ window.addEventListener("DOMContentLoaded", () => {
   function enterPipe(scene, p){
     if (_pipeWarping || !player?.body) return;
     _pipeWarping = true;
+    _suppressCrouchUntilRelease = true;
     exitCrouch();
     ensureAudio(); beep({ freq: 480, dur: 0.09, type: "square", vol: 0.05, slideTo: 220 });
     player.body.moves = false;
@@ -3129,6 +3146,7 @@ window.addEventListener("DOMContentLoaded", () => {
   function enterSecretRoomFlow(scene, p) {
     if (_pipeWarping || !player?.body) return;
     _pipeWarping = true;
+    _suppressCrouchUntilRelease = true;
     exitCrouch();
     ensureAudio(); beep({ freq: 480, dur: 0.09, type: "square", vol: 0.05, slideTo: 220 });
     player.body.moves = false;
@@ -3165,6 +3183,7 @@ window.addEventListener("DOMContentLoaded", () => {
   function exitSecretRoomFlow(scene) {
     if (_pipeWarping || !player?.body) return;
     _pipeWarping = true;
+    _suppressCrouchUntilRelease = true;
     exitCrouch();
     ensureAudio(); beep({ freq: 480, dur: 0.09, type: "square", vol: 0.05, slideTo: 220 });
     player.body.moves = false;
