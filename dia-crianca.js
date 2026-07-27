@@ -822,11 +822,16 @@ window.addEventListener("DOMContentLoaded", () => {
   let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let secretSigns = []; // curiosidades dentro das salas dos canos — ver clearSecretSigns/spawnSecretSign
-  // Decoração das salas secretas isoladas (moldura/vinheta + brilho + sparkles
-  // + rótulo) — ver buildSecretRoomDecor(). Guardado à parte de "platforms"/
-  // "itemsGroup" porque não são sólidos nem apanháveis, só visual; limpos e
-  // recriados a cada loadLevel().
-  let secretRoomDecor = [];
+  // Sala secreta isolada ("tipo os bosses") — ver comentário completo junto
+  // a ROOM_WORLD_W. inSecretRoom=true enquanto o jogador está lá dentro;
+  // secretRoomReturn guarda onde aterrar de volta no nível principal;
+  // secretRoomHidden guarda os objetos do nível principal escondidos
+  // temporariamente (para os repor exactamente como estavam); secretRoomTemp
+  // guarda os objetos efémeros da própria sala (destruídos ao sair).
+  let inSecretRoom = false;
+  let secretRoomReturn = null;
+  let secretRoomHidden = [];
+  let secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[] };
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
   // Janela (timestamp de scene.time.now) durante a qual applyVanBertoTexture() não deve
   // substituir a textura — usada pelo piscar de olhos idle e pelo pisca-olho ao toque,
@@ -864,24 +869,23 @@ window.addEventListener("DOMContentLoaded", () => {
   let currentLevelTip = "⭐ Apanha estrelas e chega ao Portal ✨!";
   const GRAVITY=1100;
 
-  // ===== Salas secretas isoladas ("pocket rooms") =====
-  // Cada sala secreta vive numa faixa reservada por baixo da vista normal do
-  // nível (0-540) — ver o setBounds alargado em loadLevel(). Nunca é
-  // alcançável a pé, só por teletransporte via cano, o que dá a sensação de
-  // "saíste do nível" pedida (moldura própria em buildSecretRoomDecor(),
-  // fundo bem diferente do céu/paisagem do nível). Todas as salas usam a
-  // MESMA disposição vertical (plataforma + prémio + cano de volta), só o
-  // x muda consoante a "gaveta" (slot) atribuída a cada sala em cada nível
-  // — ver POCKET_SLOT_X. Isto evita repetir cálculos de posição em cada
-  // nível: o autor dos níveis só precisa de apontar o cano de entrada para
-  // (POCKET_SLOT_X[i] - 60, POCKET_TOY) e colocar a plataforma/prémio/cano
-  // de volta nos mesmos y fixos.
-  const POCKET_BAND_TOP = 600;      // topo da faixa reservada (moldura desenhada a partir daqui)
-  const POCKET_LEDGE_Y  = 800;      // chão da sala secreta
-  const POCKET_ITEM_Y   = 727;      // prémio a flutuar por cima do chão
-  const POCKET_PIPE_Y   = 765;      // cano de volta, encostado ao chão
-  const POCKET_TOY      = 741;      // ponto de aterragem ao entrar (um pouco acima do chão — assenta sozinho)
-  const POCKET_SLOT_X   = [700, 1650]; // "gavetas" horizontais — até 2 salas por nível, bem afastadas
+  // ===== Salas secretas isoladas ("tipo os bosses") =====
+  // Em vez de uma plataforma algures no mesmo mundo do nível, entrar num
+  // cano de sala secreta agora faz a MESMA troca que startBossFight() faz
+  // para os combates de boss: o nível principal é escondido por completo
+  // (visibilidade desligada + corpos físicos desligados — NADA é destruído,
+  // ver hideMainLevelForRoom()/showMainLevelAfterRoom()) e o mundo físico
+  // /câmara encolhem para uma sala pequena e independente, com fundo
+  // totalmente redesenhado (applyBackground com o seu próprio tema — ver
+  // ROOM_THEME_IDX). Por não destruir nada do nível, o regresso é
+  // instantâneo e exacto: nenhum item já apanhado reaparece, nenhum vilão
+  // volta à posição inicial, nenhuma plataforma móvel salta de posição.
+  const ROOM_WORLD_W   = 1000;  // > 960 (largura do ecrã) para nunca sobrar canto vazio
+  const ROOM_THEME_IDX = 12;    // "violeta mágico" 🌙 — assinatura visual fixa de TODAS as salas secretas, sempre igual, para se reconhecer logo "sala secreta" independentemente do nível
+  const ROOM_LEDGE   = {x:500,y:460,w:280,h:28};
+  const ROOM_ITEM_XY = {x:500,y:360};
+  const ROOM_PIPE_XY = {x:600,y:424,w:56,h:44};
+  const ROOM_LANDING_Y = 400; // ponto de aterragem ao entrar (x:420 — ver enterSecretRoomFlow)
 
   const config = {
     type: Phaser.AUTO,
@@ -1366,7 +1370,7 @@ window.addEventListener("DOMContentLoaded", () => {
       || !startOverlay.classList.contains('hidden')
       || !historyOverlay.classList.contains('hidden')
       || !quizOverlay.classList.contains('hidden');
-    if (!_updOverlay) {
+    if (!_updOverlay && !inSecretRoom) {
       updateCritters();
       updateTrampolines(sceneRef);
       updateSecrets(sceneRef);
@@ -1375,7 +1379,7 @@ window.addEventListener("DOMContentLoaded", () => {
       updateSecretSigns();
       if (inBossFight) updateBossFight(sceneRef);
     }
-    updateMovingPlatforms(sceneRef);
+    if (!inSecretRoom) updateMovingPlatforms(sceneRef);
     const _overlayOpen = awaitingQuiz || awaitingStory || _overlayPaused
       || !startOverlay.classList.contains("hidden")
       || !historyOverlay.classList.contains("hidden")
@@ -2426,39 +2430,6 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.tweens.add({ targets:badge, scaleX:{from:0.8,to:1.15}, scaleY:{from:0.8,to:1.15}, duration:520, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     return { x, y, obj, badge, wasNear:false, activeLbl:null, text };
   }
-  // Moldura/vinheta da sala secreta isolada (pedido: "área fechada e
-  // isolada, sensação de que saíste do nível"). Painel escuro com borda
-  // dourada, brilho suave por trás do prémio, sparkles e um rótulo — tudo
-  // bem diferente da paisagem normal do nível (que nunca chega a esta
-  // faixa). Depth negativo para ficar sempre atrás das plataformas/itens.
-  function buildSecretRoomDecor(scene, cx){
-    const objs = [];
-    const top = POCKET_BAND_TOP, bot = 890, halfW = 210;
-    const panel = scene.add.graphics().setDepth(-1);
-    panel.fillStyle(0x160a30, 0.95);
-    panel.fillRoundedRect(cx-halfW, top, halfW*2, bot-top, 28);
-    panel.lineStyle(4, 0xffd35c, 0.85);
-    panel.strokeRoundedRect(cx-halfW, top, halfW*2, bot-top, 28);
-    objs.push(panel);
-    const glow = scene.add.graphics().setDepth(-1);
-    glow.fillStyle(0xffe9a8, 0.16);
-    glow.fillCircle(cx, POCKET_ITEM_Y+18, 100);
-    objs.push(glow);
-    for (let i=0;i<5;i++){
-      const sx = cx + Phaser.Math.Between(-halfW+24, halfW-24);
-      const sy = Phaser.Math.Between(top+22, bot-22);
-      const star = scene.add.text(sx, sy, "✨", { fontSize:(9+Math.random()*7)+"px" })
-        .setOrigin(0.5).setAlpha(0.45).setDepth(-1);
-      scene.tweens.add({ targets:star, alpha:{from:0.15,to:0.55}, duration:900+Math.random()*700, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-      objs.push(star);
-    }
-    const label = scene.add.text(cx, top+28, "🎁 Sala Secreta", {
-      fontSize:"18px", fontStyle:"900", color:"#ffe9a8", stroke:"#2a0a4a", strokeThickness:5, padding:{ x:8, y:6 }
-    }).setOrigin(0.5).setDepth(-1);
-    scene.tweens.add({ targets:label, y:label.y-6, duration:1300, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-    objs.push(label);
-    return objs;
-  }
   function spawnLevelSign(scene, L, idx) {
     clearSign();
     const entry = NPC_SIGNS[L.artIdx != null ? L.artIdx : idx];
@@ -2528,12 +2499,18 @@ window.addEventListener("DOMContentLoaded", () => {
     const L=LEVELS[currentLevel];
     const T=THEMES[L.theme%THEMES.length];
 
-    // Altura extra reservada por baixo da vista normal (0-540) para as salas
-    // secretas isoladas — ver POCKET_* mais abaixo e buildSecretRoomDecor().
-    // Nunca é visitada durante o jogo normal (não há nenhuma plataforma a
-    // ligar lá) — só se chega por teletransporte via cano.
-    scene.physics.world.setBounds(0,0,L.worldW,900);
-    scene.cameras.main.setBounds(0,0,L.worldW,920);
+    // Segurança: se por algum motivo um nível for recarregado a meio de uma
+    // visita a uma sala secreta (ex.: reset externo), os objetos efémeros
+    // da sala e as referências escondidas ficariam órfãos — o próprio
+    // loadLevel já limpa/recria "platforms"/"itemsGroup"/"malwareGroup" a
+    // seguir, por isso basta esvaziar aqui as referências e as flags.
+    inSecretRoom = false;
+    secretRoomReturn = null;
+    secretRoomHidden = [];
+    secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[] };
+
+    scene.physics.world.setBounds(0,0,L.worldW,514);
+    scene.cameras.main.setBounds(0,0,L.worldW,540);
 
     enemyTimers.forEach(t=>{try{t.remove(false);}catch{}}); enemyTimers=[];
     bossTimers.forEach(t=>{try{t.remove(false);}catch{}}); bossTimers=[];
@@ -2560,7 +2537,10 @@ window.addEventListener("DOMContentLoaded", () => {
     // Garantir que halo e sombra estão visíveis no início do nível
     if(powerHaloGfx) powerHaloGfx.setVisible(true);
     if(shadowGfx)    shadowGfx.setVisible(true);
-    itemsCollected=0; itemsTotal=L.items.filter(it=>it.kind!=="heart").length; extraShieldCounted=false;
+    itemsCollected=0;
+    itemsTotal = L.items.filter(it=>it.kind!=="heart").length
+      + (L.pipes||[]).filter(p=>p.room && p.kind!=="heart").length;
+    extraShieldCounted=false;
     collectedItemIndices=new Set();
     _hudDirty=true; updateHUD(L); applyBackground(scene,L.theme%THEMES.length,L.worldW,L.hazards||[]);
 
@@ -2571,17 +2551,6 @@ window.addEventListener("DOMContentLoaded", () => {
       const plat=platforms.create(p.x,p.y,platKey);
       plat.displayWidth=p.w; plat.displayHeight=p.h; plat.refreshBody();
       if(plat.body){plat.body.checkCollision.left=false;plat.body.checkCollision.right=false;}
-    });
-
-    // Salas secretas isoladas — moldura/vinheta por trás de cada plataforma
-    // que vive na faixa reservada (POCKET_BAND_TOP e abaixo). Detetado
-    // automaticamente pela posição em vez de precisar de dados extra no
-    // nível: qualquer plataforma "lá em baixo" é, por definição, o chão de
-    // uma sala secreta.
-    secretRoomDecor.forEach(o=>{ try{o.destroy();}catch{} });
-    secretRoomDecor = [];
-    L.platforms.forEach(p=>{
-      if (p.y >= POCKET_BAND_TOP) secretRoomDecor.push(...buildSecretRoomDecor(scene, p.x));
     });
 
     // Canos à Mario (opcional, ver L.pipes em data-levels.js) — sólidos
@@ -2608,6 +2577,8 @@ window.addEventListener("DOMContentLoaded", () => {
         // baixo em cima dele. Tint subtil (esverdeado mais baço/acinzentado)
         // — pista discreta para quem reparar, sem ser óbvia à distância.
         spr.setTint(0x9fb89f);
+      } else if (p.room) {
+        pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX:p.returnX, returnY:p.returnY});
       } else {
         pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
       }
@@ -3013,8 +2984,15 @@ window.addEventListener("DOMContentLoaded", () => {
   // nível (só compara X — já sabemos que está no chão e a carregar em
   // baixo, ver o chamador no update()) e, se estiver, arranca a animação.
   function tryEnterPipe(scene){
+    if (inSecretRoom) {
+      const rp = secretRoomTemp.pipe;
+      if (rp && Math.abs(player.x - rp.x) <= (rp.w/2 - 6)) exitSecretRoomFlow(scene);
+      return;
+    }
     const p = pipes.find(pp => Math.abs(player.x - pp.x) <= (pp.w/2 - 6));
-    if (p) enterPipe(scene, p);
+    if (!p) return;
+    if (p.room) enterSecretRoomFlow(scene, p);
+    else enterPipe(scene, p);
   }
   // enterPipe: animação de teletransporte RÁPIDA (pedido: "0,4s"), o
   // VanBerto's encolhe para dentro do cano, "salta" para o destino (toX/toY)
@@ -3057,6 +3035,158 @@ window.addEventListener("DOMContentLoaded", () => {
               player.body.setVelocityY(-140);
               player.body.setVelocityX((player.flipX ? -1 : 1) * 90);
             }
+            _pipeWarping = false;
+          }
+        });
+      }
+    });
+  }
+
+  // ===== Esconder/repor o nível principal (sem destruir nada) =====
+  function hideMainLevelForRoom() {
+    secretRoomHidden = [];
+    const collect = (o) => { if (o && o.active !== false) secretRoomHidden.push(o); };
+    platforms.getChildren().forEach(collect);
+    itemsGroup.getChildren().forEach(collect);
+    malwareGroup.getChildren().forEach(collect);
+    if (door) collect(door);
+    movingPlatforms.forEach(mp => { collect(mp.sprite); collect(mp.gfx); });
+    trampolines.forEach(t => collect(t.gfx));
+    critters.forEach(c => collect(c.sprite));
+    balloons.forEach(b => { collect(b.sprite); collect(b.gfx); });
+    if (currentSign) { collect(currentSign.obj); collect(currentSign.badge); }
+    secretRoomHidden.forEach(o => {
+      o.visible = false;
+      if (o.body) o.body.enable = false;
+    });
+  }
+  function showMainLevelAfterRoom() {
+    secretRoomHidden.forEach(o => {
+      if (o.active === false) return; // segurança — nada devia ter sido destruído enquanto escondido
+      o.visible = true;
+      if (o.body) o.body.enable = true;
+    });
+    secretRoomHidden = [];
+  }
+
+  // ===== Conteúdo efémero da sala secreta (chão + prémio + cano de volta) =====
+  function buildSecretRoomContents(scene, kind) {
+    destroySecretRoomContents();
+    const platKey = "platform_t"+ROOM_THEME_IDX;
+    if(!scene.textures.exists(platKey)) makePlatformTextureThemed(scene, platKey, ROOM_THEME_IDX);
+    const ledge = platforms.create(ROOM_LEDGE.x, ROOM_LEDGE.y, platKey);
+    ledge.displayWidth = ROOM_LEDGE.w; ledge.displayHeight = ROOM_LEDGE.h; ledge.refreshBody();
+    if (ledge.body) { ledge.body.checkCollision.left=false; ledge.body.checkCollision.right=false; }
+    secretRoomTemp.ledge = ledge;
+
+    if(!scene.textures.exists("pipe_mario")) makePipeTexture(scene);
+    const pipeSpr = platforms.create(ROOM_PIPE_XY.x, ROOM_PIPE_XY.y, "pipe_mario");
+    pipeSpr.displayWidth = ROOM_PIPE_XY.w; pipeSpr.displayHeight = ROOM_PIPE_XY.h; pipeSpr.refreshBody();
+    secretRoomTemp.pipe = { x:ROOM_PIPE_XY.x, y:ROOM_PIPE_XY.y, w:ROOM_PIPE_XY.w, sprite:pipeSpr };
+
+    const keyMap={ estrela:"item_estrela", balao:"item_chupachupa", brinquedo:"item_brinquedo",
+      medalha:"item_medalha", heart:"item_heart", duplosalto:"item_duplosalto", balaofesta:"item_balao_2" };
+    const item = itemsGroup.create(ROOM_ITEM_XY.x, ROOM_ITEM_XY.y, keyMap[kind]||"item_estrela");
+    item.setDepth(2);
+    item.setData("kind", kind);
+    scene.tweens.add({ targets:item, y:item.y-8, duration:940, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+    secretRoomTemp.item = item;
+
+    // Sparkles + rótulo — reforço visual por cima do fundo já próprio (ROOM_THEME_IDX).
+    const decor = [];
+    for (let i=0;i<6;i++){
+      const sx = 140+Math.random()*720, sy = 90+Math.random()*260;
+      const star = scene.add.text(sx, sy, "✨", { fontSize:(10+Math.random()*8)+"px" }).setOrigin(0.5).setAlpha(0.5).setDepth(1);
+      scene.tweens.add({ targets:star, alpha:{from:0.2,to:0.65}, duration:900+Math.random()*800, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      decor.push(star);
+    }
+    const label = scene.add.text(ROOM_ITEM_XY.x, ROOM_ITEM_XY.y-70, "🎁 Sala Secreta", {
+      fontSize:"20px", fontStyle:"900", color:"#ffe9a8", stroke:"#2a0a4a", strokeThickness:5, padding:{x:8,y:6}
+    }).setOrigin(0.5).setDepth(1);
+    scene.tweens.add({ targets:label, y:label.y-6, duration:1300, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+    decor.push(label);
+    secretRoomTemp.decor = decor;
+  }
+  function destroySecretRoomContents() {
+    if (secretRoomTemp.ledge) { try{secretRoomTemp.ledge.destroy();}catch{} }
+    if (secretRoomTemp.pipe && secretRoomTemp.pipe.sprite) { try{secretRoomTemp.pipe.sprite.destroy();}catch{} }
+    if (secretRoomTemp.item && secretRoomTemp.item.active) { try{secretRoomTemp.item.destroy();}catch{} }
+    (secretRoomTemp.decor||[]).forEach(o=>{ try{o.destroy();}catch{} });
+    secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[] };
+  }
+
+  // ===== Entrar / sair da sala secreta — mesma animação de 0,4s do cano
+  // normal (encolher/crescer), só que a meio troca-se o nível principal
+  // inteiro pela sala isolada (ou vice-versa), tal como startBossFight()
+  // já faz para os combates de boss.
+  function enterSecretRoomFlow(scene, p) {
+    if (_pipeWarping || !player?.body) return;
+    _pipeWarping = true;
+    exitCrouch();
+    ensureAudio(); beep({ freq: 480, dur: 0.09, type: "square", vol: 0.05, slideTo: 220 });
+    player.body.moves = false;
+    setInvuln(scene, TUNNEL_WARP_MS*2 + 500);
+    const startScaleX = player.scaleX, startScaleY = player.scaleY;
+    scene.tweens.add({
+      targets: player, y: player.y + 20, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
+      duration: TUNNEL_WARP_MS, ease: "Quad.easeIn",
+      onComplete: () => {
+        inSecretRoom = true;
+        secretRoomReturn = { x: p.returnX, y: p.returnY };
+        hideMainLevelForRoom();
+        scene.physics.world.setBounds(0,0,ROOM_WORLD_W,514);
+        scene.cameras.main.setBounds(0,0,ROOM_WORLD_W,540);
+        applyBackground(scene, ROOM_THEME_IDX, ROOM_WORLD_W, []);
+        buildSecretRoomContents(scene, p.kind);
+
+        player.x = 420; player.y = ROOM_LANDING_Y - 18;
+        scene.cameras.main.startFollow(player, true, 1.0, 1.0);
+        scene.time.delayedCall(40, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
+        ensureAudio(); beep({ freq: 220, dur: 0.09, type: "square", vol: 0.05, slideTo: 480 });
+        scene.tweens.add({
+          targets: player, y: ROOM_LANDING_Y, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
+          duration: TUNNEL_WARP_MS, ease: "Back.easeOut",
+          onComplete: () => {
+            player.body.moves = true;
+            if (player.body) { player.body.setVelocityY(-140); player.body.setVelocityX((player.flipX?-1:1)*90); }
+            _pipeWarping = false;
+          }
+        });
+      }
+    });
+  }
+  function exitSecretRoomFlow(scene) {
+    if (_pipeWarping || !player?.body) return;
+    _pipeWarping = true;
+    exitCrouch();
+    ensureAudio(); beep({ freq: 480, dur: 0.09, type: "square", vol: 0.05, slideTo: 220 });
+    player.body.moves = false;
+    setInvuln(scene, TUNNEL_WARP_MS*2 + 500);
+    const startScaleX = player.scaleX, startScaleY = player.scaleY;
+    const ret = secretRoomReturn || { x: player.x, y: player.y };
+    scene.tweens.add({
+      targets: player, y: player.y + 20, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
+      duration: TUNNEL_WARP_MS, ease: "Quad.easeIn",
+      onComplete: () => {
+        destroySecretRoomContents();
+        const L = LEVELS[currentLevel];
+        scene.physics.world.setBounds(0,0,L.worldW,514);
+        scene.cameras.main.setBounds(0,0,L.worldW,540);
+        applyBackground(scene, L.theme%THEMES.length, L.worldW, L.hazards||[]);
+        showMainLevelAfterRoom();
+        inSecretRoom = false;
+        secretRoomReturn = null;
+
+        player.x = ret.x; player.y = ret.y - 18;
+        scene.cameras.main.startFollow(player, true, 1.0, 1.0);
+        scene.time.delayedCall(40, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
+        ensureAudio(); beep({ freq: 220, dur: 0.09, type: "square", vol: 0.05, slideTo: 480 });
+        scene.tweens.add({
+          targets: player, y: ret.y, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
+          duration: TUNNEL_WARP_MS, ease: "Back.easeOut",
+          onComplete: () => {
+            player.body.moves = true;
+            if (player.body) { player.body.setVelocityY(-140); player.body.setVelocityX((player.flipX?-1:1)*90); }
             _pipeWarping = false;
           }
         });
