@@ -1448,10 +1448,17 @@ window.addEventListener("DOMContentLoaded", () => {
     // livros do boss ou o "Fake News" na horizontal, e permite passar por
     // baixo de plataformas baixas), mas trava o salto e anda mais devagar —
     // não dá para atravessar um nível todo agachado sem custo nenhum.
+    // Bloqueado durante _pipeWarping: entrar/sair de um cano usa a MESMA
+    // tecla (↓), por isso mantê-la premida durante a animação não pode
+    // também agachar o VanBerto's a meio — isso deixava a hitbox pequena
+    // "presa" mesmo depois de aterrar do outro lado, empurrando-o para
+    // dentro da plataforma até se largar e voltar a carregar em baixo.
     const downHeld = cursors.down.isDown || (keyS && keyS.isDown) || touch.crouch;
     const wasCrouching = isCrouching;
-    isCrouching = !!downHeld && !awaitingQuiz && !awaitingStory;
-    if (isCrouching !== wasCrouching) setCrouchHitbox(player, isCrouching);
+    if (!_pipeWarping) {
+      isCrouching = !!downHeld && !awaitingQuiz && !awaitingStory;
+      if (isCrouching !== wasCrouching) setCrouchHitbox(player, isCrouching);
+    }
 
     // Entrar num cano (pedido: "atalhos ou áreas secretas") — mesma tecla
     // de agachar (↓/S/toque), mas só dispara no INSTANTE em que se carrega
