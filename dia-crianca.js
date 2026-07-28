@@ -2672,8 +2672,15 @@ window.addEventListener("DOMContentLoaded", () => {
         const returnY = hasCustomReturn ? p.returnY : p.y;
         pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX, returnY, key:roomKey});
         if (hasCustomReturn) {
-          const exImg = scene.add.image(returnX, returnY, "pipe_mario");
-          exImg.setDisplaySize(w, h); exImg.setDepth(1); exImg.setTint(0x9fb89f);
+          // Físico (entra no grupo "platforms", tal como um cano decorativo
+          // normal) — antes era só uma imagem sem corpo, por isso o
+          // VanBerto's nunca conseguia mesmo ficar em cima dele: caía sempre
+          // na plataforma por baixo. Não entra no array "pipes", logo
+          // tryEnterPipe() nunca o reconhece como entrável (tal como um cano
+          // decorative:true).
+          const exImg = platforms.create(returnX, returnY, "pipe_mario");
+          exImg.displayWidth = w; exImg.displayHeight = h; exImg.refreshBody();
+          exImg.setTint(0x9fb89f);
           pipeExitDecor.push(exImg);
         }
       } else {
@@ -3333,7 +3340,22 @@ window.addEventListener("DOMContentLoaded", () => {
           onComplete: () => {
             player.body.moves = true;
             player.body.updateFromGameObject();
-            snapToPipeLanding();
+            // Tal como em enterPipe(): pousar explicitamente em cima do CANO
+            // de regresso (nas coordenadas ret.x/ret.y), não da plataforma
+            // qualquer mais próxima. Sem isto, o snapToPipeLanding() genérico
+            // agarrava-se sempre à plataforma por baixo do cano (mais perto
+            // do que o topo do próprio cano), deixando o VanBerto's ao lado/
+            // à frente do cano em vez de em cima dele.
+            const destPipe = platforms.getChildren().find(pl =>
+              pl.texture && pl.texture.key === "pipe_mario"
+              && Math.abs(pl.x - ret.x) < 4 && Math.abs(pl.y - ret.y) < 4
+            );
+            if (destPipe && destPipe.body) {
+              player.y -= (player.body.bottom - (destPipe.body.top - 1));
+              player.body.updateFromGameObject();
+            } else {
+              snapToPipeLanding();
+            }
             // Sem impulso vertical (ver enterPipe) — evita o "sobe e cai de
             // volta" que parecia uma queda ao voltar ao nível principal.
             if (player.body) { player.body.setVelocityX((player.flipX?-1:1)*90); }
