@@ -81,7 +81,7 @@ export const LEVELS = [
     // logo outra vez ao aterrar.
     pipes:[
       {x:570,y:474,toX:570,toY:143},
-      {x:620,y:167,w:56,h:44,toX:670,toY:460}
+      {x:620,y:167,toX:670,toY:460}
     ],
     items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"},{x:570,y:160,kind:"estrela"}],
     // Vilões empurrados para a direita, na mesma proporção do resto do nível
@@ -150,7 +150,7 @@ export const LEVELS = [
     // secreta isolada, por cima do vão do trampolim.
     pipes:[
       {x:650,y:474,toX:650,toY:143},
-      {x:600,y:167,w:56,h:44,toX:560,toY:460},
+      {x:600,y:167,toX:560,toY:460},
       {x:1320,y:417,room:true,kind:"estrela",returnX:1880,returnY:440}
     ],
     items:[{x:840,y:390,kind:"brinquedo"},{x:1080,y:310,kind:"estrela"},{x:1600,y:330,kind:"duplosalto"},{x:2100,y:310,kind:"balao"},{x:2580,y:310,kind:"medalha"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"balao"}],
@@ -173,7 +173,7 @@ export const LEVELS = [
     // para plataforma alta — recompensa: 🎈 balão da festa.
     pipes:[
       {x:1760,y:337,toX:1760,toY:97},
-      {x:1810,y:121,w:56,h:44,toX:1830,toY:323}
+      {x:1810,y:121,toX:1830,toY:323}
     ],
     items:[{x:880,y:230,kind:"estrela"},{x:1460,y:260,kind:"brinquedo"},{x:2060,y:400,kind:"balao"},{x:2360,y:330,kind:"medalha"},{x:1760,y:119,kind:"balaofesta"}],
     malwares:[{x:1020,y:480,vx:165},{x:1620,y:480,vx:-170},{x:2220,y:480,vx:165},{x:2820,y:480,vx:-160}],
@@ -274,7 +274,7 @@ export const LEVELS = [
     // 2º a meio do nível leva à sala secreta isolada.
     pipes:[
       {x:500,y:474,toX:500,toY:143},
-      {x:450,y:167,w:56,h:44,toX:410,toY:460},
+      {x:450,y:167,toX:410,toY:460},
       {x:1820,y:327,room:true,kind:"balaofesta"}
     ],
     items:[{x:800,y:220,kind:"estrela"},{x:980,y:280,kind:"balao"},{x:1600,y:220,kind:"medalha"},{x:2270,y:290,kind:"brinquedo"},{x:2720,y:260,kind:"duplosalto"},{x:500,y:165,kind:"medalha"}],
@@ -299,7 +299,7 @@ export const LEVELS = [
     // leva à sala secreta isolada.
     pipes:[
       {x:1760,y:325,toX:1760,toY:85},
-      {x:1810,y:109,w:56,h:44,toX:1800,toY:311},
+      {x:1810,y:109,toX:1800,toY:311},
       {x:2320,y:325,room:true,kind:"estrela"}
     ],
     items:[{x:920,y:342,kind:"estrela"},{x:1480,y:248,kind:"medalha"},{x:2040,y:392,kind:"balao"},{x:2600,y:392,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:1760,y:107,kind:"heart"}],
@@ -357,7 +357,7 @@ export const LEVELS = [
     ],
     pipes:[
       {x:2260,y:407,toX:2260,toY:107},
-      {x:2310,y:131,w:56,h:44,toX:2300,toY:393}
+      {x:2310,y:131,toX:2300,toY:393}
     ],
     items:[{x:820,y:220,kind:"estrela"},{x:1300,y:280,kind:"balao"},{x:1540,y:210,kind:"medalha"},{x:2020,y:340,kind:"brinquedo"},{x:2500,y:330,kind:"duplosalto"},{x:2260,y:129,kind:"heart"}],
     malwares:[{x:970,y:480,vx:175,pattern:"patrol"},{x:1450,y:480,vx:-178,pattern:"patrol"},{x:1920,y:480,vx:177,pattern:"jumper"},{x:2360,y:480,vx:-175,pattern:"jumper"},{x:2720,y:480,vx:172}],
@@ -445,7 +445,7 @@ export const LEVELS = [
     // (perto do fim) leva à sala secreta isolada.
     pipes:[
       {x:1400,y:397,toX:1400,toY:97},
-      {x:1450,y:121,w:56,h:44,toX:1450,toY:383},
+      {x:1450,y:121,toX:1450,toY:383},
       {x:2960,y:397,room:true,kind:"balaofesta"}
     ],
     movingPlatforms:[
@@ -483,7 +483,7 @@ export const LEVELS = [
     ],
     pipes:[
       {x:1260,y:307,toX:1260,toY:67},
-      {x:1310,y:91,w:56,h:44,toX:1295,toY:293}
+      {x:1310,y:91,toX:1295,toY:293}
     ],
     items:[{x:980,y:382,kind:"estrela"},{x:1540,y:224,kind:"balao"},{x:2100,y:382,kind:"brinquedo"},{x:2660,y:220,kind:"medalha"},{x:3220,y:382,kind:"duplosalto"},{x:1260,y:89,kind:"estrela"}],
     malwares:[{x:1130,y:480,vx:200,pattern:"patrol"},{x:1760,y:480,vx:-204,pattern:"jumper"},{x:2360,y:480,vx:200,pattern:"patrol"},{x:2960,y:480,vx:-196,pattern:"jumper"},{x:3380,y:480,vx:-198,pattern:"patrol"}],
@@ -578,7 +578,7 @@ export const LEVELS = [
     ],
     pipes:[
       {x:3400,y:474,toX:3400,toY:143},
-      {x:3450,y:167,w:56,h:44,toX:3500,toY:460}
+      {x:3450,y:167,toX:3500,toY:460}
     ],
     // Todas as plataformas intermédias são móveis
     movingPlatforms:[
@@ -640,7 +640,7 @@ export const LEVELS = [
     // leva à sala secreta isolada.
     pipes:[
       {x:1160,y:397,toX:1160,toY:97},
-      {x:1210,y:121,w:56,h:44,toX:1175,toY:383},
+      {x:1210,y:121,toX:1175,toY:383},
       {x:2920,y:297,room:true,kind:"balaofesta"}
     ],
     items:[{x:800,y:220,kind:"estrela"},{x:1520,y:230,kind:"balao"},{x:1920,y:220,kind:"duplosalto"},{x:2720,y:210,kind:"medalha"},{x:3120,y:380,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:1160,y:119,kind:"balao"}],
@@ -676,7 +676,7 @@ export const LEVELS = [
     // habitual "logo no início".
     pipes:[
       {x:1920,y:317,toX:1920,toY:77},
-      {x:1970,y:101,w:56,h:44,toX:2020,toY:383},
+      {x:1970,y:101,toX:2020,toY:383},
       {x:3300,y:387,room:true,kind:"medalha"},
       // Túnel decorativo — perto do fim, no chão fixo, antes da porta,
       // afastado da plataforma em x:3300 (que fica logo por cima).
