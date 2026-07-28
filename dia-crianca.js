@@ -820,6 +820,22 @@ window.addEventListener("DOMContentLoaded", () => {
   //   - caso contrário → cano normal: leva a uma plataforma/área secreta com
   //     uma recompensa (item), sem placas nem texto.
   let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
+  // CORRIGIDO — _pipeWarping (e player.body.moves) só voltavam a false dentro do
+  // onComplete da 2ª tween da animação de cano/sala secreta (~400ms depois de
+  // começar). Se essa cadeia de tweens fosse interrompida a meio — killAll()
+  // faz exactamente isso, sem disparar onComplete — as duas ficavam presas
+  // para sempre: update() força setVelocityX(0) todos os frames enquanto
+  // _pipeWarping for true (linha ~1485), e body.moves=false impede a física
+  // de mexer o jogador de todo. Resultado: o VanBerto's congelava
+  // permanentemente. Chamar isto logo a seguir a qualquer killAll() do
+  // jogador (botões "Reiniciar Nível"/"Reiniciar Jogo"/"Sair para o Menu")
+  // repõe sempre um estado limpo, mesmo que a interrupção tenha apanhado a
+  // animação a meio.
+  function resetPipeWarpState() {
+    _pipeWarping = false;
+    _suppressCrouchUntilRelease = false;
+    if (player?.body) player.body.moves = true;
+  }
   // Enquanto true, ignora "para baixo" para efeitos de agachar (mas não
   // para o resto do jogo) — ligado sempre que um cano/sala secreta começa
   // a animação, desligado só quando a tecla é MESMO largada. Isto evita
@@ -1055,6 +1071,7 @@ window.addEventListener("DOMContentLoaded", () => {
         // Matar todos os tweens pendentes (porta e robot) para evitar que callbacks antigos
         // disparem showQuiz no nível novo se o botão for pressionado durante a animação da porta
         try { sceneRef.tweens.killAll(); } catch {}
+        resetPipeWarpState();
         _doorAnimRunning = false;
         touch.left=touch.right=touch.jump=touch.crouch=false;
         loadLevel(sceneRef,currentLevel);
@@ -1071,6 +1088,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if (!sceneRef) return;
       try { sceneRef.physics.pause(); } catch {}
       try { sceneRef.tweens.killAll(); } catch {}
+      resetPipeWarpState();
       _doorAnimRunning = false;
       touch.left = touch.right = touch.jump = touch.crouch = false;
       pausedByTeacher = false; if (btnPause) btnPause.textContent = "⏸ Pausa"; showPauseScreen(false);
@@ -1092,6 +1110,7 @@ window.addEventListener("DOMContentLoaded", () => {
         historyOverlay.classList.add("hidden");
         // Matar todos os tweens pendentes antes de reiniciar
         try { sceneRef.tweens.killAll(); } catch {}
+        resetPipeWarpState();
         _doorAnimRunning = false;
         touch.left=touch.right=touch.jump=touch.crouch=false;
         score=0; lives=3; livesLostThisLevel=0;
@@ -2524,7 +2543,7 @@ window.addEventListener("DOMContentLoaded", () => {
     secretRoomReturn = null;
     secretRoomHidden = [];
     secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[] };
-    _suppressCrouchUntilRelease = false;
+    resetPipeWarpState();
 
     scene.physics.world.setBounds(0,0,L.worldW,514);
     scene.cameras.main.setBounds(0,0,L.worldW,540);
