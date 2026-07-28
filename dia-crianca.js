@@ -1078,7 +1078,7 @@ window.addEventListener("DOMContentLoaded", () => {
         if (!sceneRef) return;
         const lvlName = LEVELS[currentLevel]?.name || `Nível ${currentLevel+1}`;
         if (!confirm(`⚠️ Reiniciar o ${lvlName}?\nO progresso neste nível perde-se.`)) return;
-        pausedByTeacher=false; btnPause.textContent="⏸ Pausa"; showPauseScreen(false);
+        pausedByTeacher=false; _overlayPaused=false; btnPause.textContent="⏸ Pausa"; showPauseScreen(false);
         quizOverlay.classList.add("hidden"); btnCloseQuiz.classList.add("hidden");
         historyOverlay.classList.add("hidden");
         // Matar todos os tweens pendentes (porta e robot) para evitar que callbacks antigos
@@ -1104,12 +1104,14 @@ window.addEventListener("DOMContentLoaded", () => {
       resetPipeWarpState();
       _doorAnimRunning = false;
       touch.left = touch.right = touch.jump = touch.crouch = false;
-      pausedByTeacher = false; if (btnPause) btnPause.textContent = "⏸ Pausa"; showPauseScreen(false);
+      pausedByTeacher = false; _overlayPaused = false;
+      if (btnPause) btnPause.textContent = "⏸ Pausa"; showPauseScreen(false);
+      teacherMenuPanel?.classList.remove("open");
       quizOverlay.classList.add("hidden"); btnCloseQuiz.classList.add("hidden");
       historyOverlay.classList.add("hidden");
       gameOverOverlay.classList.add("hidden");
       winOverlay.classList.add("hidden"); document.getElementById("confetti")?.classList.add("hidden");
-      document.getElementById("mapOverlay")?.classList.add("hidden");
+      closeAllSecondaryOverlays();
       lives = 3; score = 0; resetQuizStats(); livesLostThisLevel = 0;
       startOverlay.classList.remove("hidden");
       saveGame();
@@ -1118,7 +1120,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (btnRestartGame) {
       btnRestartGame.onclick = () => {
         if (!sceneRef) return;
-        pausedByTeacher=false; btnPause.textContent="⏸ Pausa"; showPauseScreen(false);
+        pausedByTeacher=false; _overlayPaused=false; btnPause.textContent="⏸ Pausa"; showPauseScreen(false);
         quizOverlay.classList.add("hidden"); btnCloseQuiz.classList.add("hidden");
         historyOverlay.classList.add("hidden");
         // Matar todos os tweens pendentes antes de reiniciar
@@ -1269,7 +1271,31 @@ window.addEventListener("DOMContentLoaded", () => {
       const mirror = (mId, origId) => {
         const m = document.getElementById(mId);
         const o = document.getElementById(origId);
-        if (m && o) m.onclick = () => { o.click(); teacherMenuPanel.classList.remove("open"); };
+        if (m && o) m.onclick = () => {
+          o.click();
+          teacherMenuPanel.classList.remove("open");
+          // Sem isto, _overlayPaused ficava preso a "true" para sempre depois
+          // de clicar em botões DENTRO do painel que NÃO abrem outro overlay
+          // (ex.: "Reiniciar Jogo"/"Reiniciar Nível") — só o clique FORA do
+          // painel ou o toggle do hamburger é que o repunham (ver os dois
+          // sítios acima). Mesmo bug/mesma causa já corrigida para
+          // startLevelFromMap (ver comentário lá): o robot ficava travado a 0
+          // de velocidade para sempre. Só repomos aqui se a própria ação não
+          // deixou nenhum outro overlay visível (ex.: "Mapa" abre o
+          // mapOverlay de propósito — nesse caso a pausa deve continuar).
+          const stillHasOverlay = SECONDARY_OVERLAYS.some(id => !document.getElementById(id)?.classList.contains("hidden"))
+            || !historyOverlay.classList.contains("hidden")
+            || !quizOverlay.classList.contains("hidden")
+            || !document.getElementById("gameOverOverlay")?.classList.contains("hidden")
+            || !document.getElementById("winOverlay")?.classList.contains("hidden");
+          if (!stillHasOverlay) {
+            _overlayPaused = false;
+            if (sceneRef && startOverlay.classList.contains("hidden")
+                && !pausedByTeacher && !awaitingQuiz && !awaitingStory) {
+              sceneRef.physics.resume();
+            }
+          }
+        };
       };      mirror("mBtnFullscreen", "btnFullscreenGame");
       mirror("mBtnTouch",      "btnTouchToggle");
       mirror("mBtnPause",      "btnPause");
@@ -3108,7 +3134,29 @@ window.addEventListener("DOMContentLoaded", () => {
           onComplete: () => {
             player.body.moves = true;
             player.body.updateFromGameObject();
-            snapToPipeLanding();
+            // Ao chegar, pousar explicitamente em cima do CANO de destino
+            // (não da plataforma qualquer mais próxima). Sem isto, quando
+            // havia uma plataforma normal por baixo/à volta do cano de
+            // chegada — que é o caso normal, já que o cano está sempre
+            // apoiado nalguma plataforma — o snapToPipeLanding() genérico
+            // (que escolhe sempre a superfície sólida mais próxima) agarrava-se
+            // a essa plataforma em vez de subir até ao rebordo do cano, porque
+            // ficava a uma distância menor. Resultado: o VanBerto's aparecia
+            // meio enterrado dentro do cano em vez de em cima dele. Aqui
+            // procuramos o cano físico exatamente nas coordenadas de chegada
+            // (toX/toY) e pousamos sempre no TOPO dele; só se não houver
+            // nenhum cano ali (não devia acontecer) é que caímos no snap
+            // genérico como rede de segurança.
+            const destPipe = platforms.getChildren().find(pl =>
+              pl.texture && pl.texture.key === "pipe_mario"
+              && Math.abs(pl.x - p.toX) < 4 && Math.abs(pl.y - p.toY) < 4
+            );
+            if (destPipe && destPipe.body) {
+              player.y -= (player.body.bottom - (destPipe.body.top - 1));
+              player.body.updateFromGameObject();
+            } else {
+              snapToPipeLanding();
+            }
             // Pequeno impulso horizontal ao reaparecer — "sai" ligeiramente
             // do túnel em vez de simplesmente reaparecer parado. CORRIGIDO:
             // já não leva impulso vertical (setVelocityY negativo) — isso
@@ -7327,6 +7375,15 @@ window.addEventListener("DOMContentLoaded", () => {
     try{sceneRef.scene.resume();}catch{}
     if (powerHaloGfx) { powerHaloGfx.clear(); powerHaloGfx.setVisible(true); }
     if (shadowGfx) shadowGfx.setVisible(true);
+    // Sem isto, se o jogo tivesse ficado em pausa (professora) ou com um
+    // overlay do menu/mapa aberto no momento em que a última pergunta foi
+    // respondida, estas flags ficavam presas a "true" — e como nenhum
+    // watchdog protege contra _overlayPaused sozinho (só awaitingQuiz/
+    // awaitingStory têm um), o robot ficava travado a 0 de velocidade para
+    // sempre no nível 1, dando a sensação de "recomeçar não funciona".
+    pausedByTeacher = false; _overlayPaused = false;
+    if (btnPause) btnPause.textContent = "⏸ Pausa";
+    showPauseScreen(false);
     lives=3; score=0; currentLevel=0; livesLostThisLevel=0;
     // "Jogar de novo" é sempre um recomeço total — ver resetAllProgress()
     resetAllProgress();
@@ -7371,6 +7428,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const btnRetry=document.getElementById("btnRetry"), btnExit=document.getElementById("btnExit");
   if(btnRetry) btnRetry.onclick=()=>{
     gameOverOverlay.classList.add("hidden");
+    pausedByTeacher=false; _overlayPaused=false;
     lives=3; livesLostThisLevel=0; updateHearts();
     // Perder durante um combate de boss só reinicia a arena do boss (com a
     // pontuação já ganha até ali preservada), em vez do nível inteiro — não
@@ -7408,6 +7466,12 @@ window.addEventListener("DOMContentLoaded", () => {
     try{sceneRef.scene.resume();}catch{}
     if(powerHaloGfx){powerHaloGfx.clear();powerHaloGfx.setVisible(true);}
     if(shadowGfx) shadowGfx.setVisible(true);
+    // Ver comentário igual em btnCertRestart — sem isto o robot podia ficar
+    // travado para sempre depois de recomeçar, se o jogo tivesse ficado
+    // pausado (professora) ou com o menu/mapa aberto no momento de terminar.
+    pausedByTeacher = false; _overlayPaused = false;
+    if (btnPause) btnPause.textContent = "⏸ Pausa";
+    showPauseScreen(false);
     lives=3;score=0;currentLevel=0;livesLostThisLevel=0;
     // "Jogar de novo" é sempre um recomeço total — ver resetAllProgress()
     resetAllProgress();
