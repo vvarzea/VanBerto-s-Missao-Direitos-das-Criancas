@@ -920,7 +920,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const ROOM_THEME_IDX = 12;    // "violeta mágico" 🌙 — assinatura visual fixa de TODAS as salas secretas, sempre igual, para se reconhecer logo "sala secreta" independentemente do nível
   const ROOM_LEDGE   = {x:500,y:460,w:280,h:28};
   const ROOM_ITEM_XY = {x:500,y:360};
-  const ROOM_PIPE_XY = {x:600,y:424,w:56,h:44};
+  const ROOM_PIPE_XY = {x:600,y:414,w:64,h:64}; // tamanho normal (64×64) — antes 56×44, ficava desproporcionado/"cortado" tal como os outros canos que já corrigimos; y ajustado para a base continuar encostada ao chão da sala (ROOM_LEDGE.y=460,h=28 → topo em 446 = 414+32)
   const ROOM_LANDING_Y = 400; // ponto de aterragem ao entrar (x:420 — ver enterSecretRoomFlow)
 
   const config = {
