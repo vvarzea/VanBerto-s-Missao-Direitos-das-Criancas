@@ -2672,7 +2672,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const returnY = hasCustomReturn ? p.returnY : p.y;
         pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX, returnY, key:roomKey});
         if (hasCustomReturn) {
-          const exImg = scene.add.image(returnX, returnY - h/2, "pipe_mario");
+          const exImg = scene.add.image(returnX, returnY, "pipe_mario");
           exImg.setDisplaySize(w, h); exImg.setDepth(1); exImg.setTint(0x9fb89f);
           pipeExitDecor.push(exImg);
         }
