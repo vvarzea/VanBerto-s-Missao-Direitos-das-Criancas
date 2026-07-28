@@ -820,6 +820,11 @@ window.addEventListener("DOMContentLoaded", () => {
   //   - caso contrário → cano normal: leva a uma plataforma/área secreta com
   //     uma recompensa (item), sem placas nem texto.
   let pipes=[], _pipeWarping=false, _pipeDownWasHeld=false;
+  // Canos "de regresso" só visuais (sem física, ver criação em loadLevel) —
+  // pedido: "quando se entra num cano tem de sair de 1 cano". Guardados aqui
+  // para serem destruídos ao (re)carregar o nível/arena de boss, já que não
+  // pertencem ao grupo físico "platforms" (que se limpa a si próprio).
+  let pipeExitDecor=[];
   // CORRIGIDO — _pipeWarping (e player.body.moves) só voltavam a false dentro do
   // onComplete da 2ª tween da animação de cano/sala secreta (~400ms depois de
   // começar). Se essa cadeia de tweens fosse interrompida a meio — killAll()
@@ -854,7 +859,7 @@ window.addEventListener("DOMContentLoaded", () => {
   let inSecretRoom = false;
   let secretRoomReturn = null;
   let secretRoomHidden = [];
-  let secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[] };
+  let secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[], key:null };
   let player, platforms, itemsGroup, malwareGroup, door, doorOverlap=null;
   // Janela (timestamp de scene.time.now) durante a qual applyVanBertoTexture() não deve
   // substituir a textura — usada pelo piscar de olhos idle e pelo pisca-olho ao toque,
@@ -879,6 +884,14 @@ window.addEventListener("DOMContentLoaded", () => {
   let itemsCollected=0, itemsTotal=0;
   let extraShieldCounted=false; // garante que o escudo extra (spawnShields) só entra no total UMA vez por nível
   let collectedItemIndices=new Set(); // índices dos itens já apanhados neste nível
+  // NOVO — recompensas das salas secretas (canos com room:true) já apanhadas
+  // neste nível/vida. Chave = "x_y" do cano de entrada (único por nível).
+  // Sem isto, voltar a entrar no mesmo cano dava a recompensa outra vez,
+  // indefinidamente (pedido: "se já apanhei a recompensa não deve mais lá
+  // estar, só se perder a vida"). Reposto por completo ao (re)carregar o
+  // nível; ao perder uma vida mantém só os corações já apanhados, tal como
+  // já acontece com collectedItemIndices.
+  let collectedRoomPipes=new Set();
   let _hudDirty=true; // flag: só redesenha HUD quando algo mudou
   let touch={left:false,right:false,jump:false,crouch:false};
   let awaitingQuiz=false, awaitingStory=false;
@@ -2245,6 +2258,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     if (lives <= 0) return;
     collectedItemIndices.clear();
+    collectedRoomPipes.clear();
     itemsCollected = 0;
     itemCountText.setText(`⭐ Itens: ${itemsCollected}/${itemsTotal}`);
     const keyMap = { estrela:"item_estrela", balao:"item_chupachupa", brinquedo:"item_brinquedo",
@@ -2542,7 +2556,7 @@ window.addEventListener("DOMContentLoaded", () => {
     inSecretRoom = false;
     secretRoomReturn = null;
     secretRoomHidden = [];
-    secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[] };
+    secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[], key:null };
     resetPipeWarpState();
 
     scene.physics.world.setBounds(0,0,L.worldW,514);
@@ -2552,6 +2566,7 @@ window.addEventListener("DOMContentLoaded", () => {
     bossTimers.forEach(t=>{try{t.remove(false);}catch{}}); bossTimers=[];
     platforms.clear(true,true);itemsGroup.clear(true,true);
     malwareGroup.clear(true,true);
+    pipeExitDecor.forEach(o=>{try{o.destroy();}catch{}}); pipeExitDecor=[];
     clearBossArenaDecor(); // segurança: sem isto, os "livros flutuantes" do Monstro
                             // ficavam órfãos no ecrã depois de se vencer o boss
     if(door){door.destroy();door=null;}
@@ -2578,6 +2593,7 @@ window.addEventListener("DOMContentLoaded", () => {
       + (L.pipes||[]).filter(p=>p.room && p.kind!=="heart").length;
     extraShieldCounted=false;
     collectedItemIndices=new Set();
+    collectedRoomPipes=new Set();
     _hudDirty=true; updateHUD(L); applyBackground(scene,L.theme%THEMES.length,L.worldW,L.hazards||[]);
 
     L.platforms.forEach(p=>{
@@ -2614,7 +2630,19 @@ window.addEventListener("DOMContentLoaded", () => {
         // — pista discreta para quem reparar, sem ser óbvia à distância.
         spr.setTint(0x9fb89f);
       } else if (p.room) {
-        pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX:p.returnX, returnY:p.returnY});
+        const roomKey = p.x+"_"+p.y; // identifica este cano de sala secreta de forma única no nível
+        pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX:p.returnX, returnY:p.returnY, key:roomKey});
+        // NOVO — cano "de saída" só visual (sem corpo físico, por isso zero
+        // risco de empurrar/colidir com o VanBerto's ao aterrar ali perto)
+        // no ponto de regresso da sala secreta. Pedido: "quando se entra num
+        // cano tem de sair de 1 cano" — sem isto, o jogador simplesmente
+        // aparecia em cima da plataforma sem nenhum cano à vista (caso do
+        // Nível 4, ao voltar da sala secreta para depois do vão). Mesmo tint
+        // subtil dos canos decorativos (não é um cano "de entrar").
+        const exW = 56, exH = 44;
+        const exImg = scene.add.image(p.returnX, p.returnY - exH/2, "pipe_mario");
+        exImg.setDisplaySize(exW, exH); exImg.setDepth(1); exImg.setTint(0x9fb89f);
+        pipeExitDecor.push(exImg);
       } else {
         pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
       }
@@ -3074,10 +3102,14 @@ window.addEventListener("DOMContentLoaded", () => {
             player.body.moves = true;
             player.body.updateFromGameObject();
             snapToPipeLanding();
-            // Pequeno impulso ao reaparecer — "salta" ligeiramente para fora
-            // do túnel em vez de simplesmente reaparecer parado.
+            // Pequeno impulso horizontal ao reaparecer — "sai" ligeiramente
+            // do túnel em vez de simplesmente reaparecer parado. CORRIGIDO:
+            // já não leva impulso vertical (setVelocityY negativo) — isso
+            // fazia o VanBerto's subir no ar e cair de volta logo a seguir,
+            // o que parecia visualmente "vou cair ao chão" mesmo ficando na
+            // mesma plataforma (snapToPipeLanding() já o deixou exatamente
+            // pousado, não é preciso nenhum "hop" vertical extra).
             if (player.body) {
-              player.body.setVelocityY(-140);
               player.body.setVelocityX((player.flipX ? -1 : 1) * 90);
             }
             _pipeWarping = false;
@@ -3115,8 +3147,14 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== Conteúdo efémero da sala secreta (chão + prémio + cano de volta) =====
-  function buildSecretRoomContents(scene, kind) {
+  // roomKey identifica este cano de sala secreta (ver "key" criado em
+  // loadLevel) — usado para saber se a recompensa já foi apanhada nesta
+  // vida/nível (pedido: "se já apanhei a recompensa não deve mais lá estar,
+  // só se perder a vida"). Se já foi apanhada, a sala fica sem o item.
+  function buildSecretRoomContents(scene, kind, roomKey) {
     destroySecretRoomContents();
+    const alreadyCollected = !!(roomKey && collectedRoomPipes.has(roomKey));
+    secretRoomTemp.key = roomKey || null;
     const platKey = "platform_t"+ROOM_THEME_IDX;
     if(!scene.textures.exists(platKey)) makePlatformTextureThemed(scene, platKey, ROOM_THEME_IDX);
     const ledge = platforms.create(ROOM_LEDGE.x, ROOM_LEDGE.y, platKey);
@@ -3129,13 +3167,15 @@ window.addEventListener("DOMContentLoaded", () => {
     pipeSpr.displayWidth = ROOM_PIPE_XY.w; pipeSpr.displayHeight = ROOM_PIPE_XY.h; pipeSpr.refreshBody();
     secretRoomTemp.pipe = { x:ROOM_PIPE_XY.x, y:ROOM_PIPE_XY.y, w:ROOM_PIPE_XY.w, sprite:pipeSpr };
 
-    const keyMap={ estrela:"item_estrela", balao:"item_chupachupa", brinquedo:"item_brinquedo",
-      medalha:"item_medalha", heart:"item_heart", duplosalto:"item_duplosalto", balaofesta:"item_balao_2" };
-    const item = itemsGroup.create(ROOM_ITEM_XY.x, ROOM_ITEM_XY.y, keyMap[kind]||"item_estrela");
-    item.setDepth(2);
-    item.setData("kind", kind);
-    scene.tweens.add({ targets:item, y:item.y-8, duration:940, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
-    secretRoomTemp.item = item;
+    if (!alreadyCollected) {
+      const keyMap={ estrela:"item_estrela", balao:"item_chupachupa", brinquedo:"item_brinquedo",
+        medalha:"item_medalha", heart:"item_heart", duplosalto:"item_duplosalto", balaofesta:"item_balao_2" };
+      const item = itemsGroup.create(ROOM_ITEM_XY.x, ROOM_ITEM_XY.y, keyMap[kind]||"item_estrela");
+      item.setDepth(2);
+      item.setData("kind", kind);
+      scene.tweens.add({ targets:item, y:item.y-8, duration:940, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
+      secretRoomTemp.item = item;
+    }
 
     // Sparkles + rótulo — reforço visual por cima do fundo já próprio (ROOM_THEME_IDX).
     const decor = [];
@@ -3145,7 +3185,7 @@ window.addEventListener("DOMContentLoaded", () => {
       scene.tweens.add({ targets:star, alpha:{from:0.2,to:0.65}, duration:900+Math.random()*800, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
       decor.push(star);
     }
-    const label = scene.add.text(ROOM_ITEM_XY.x, ROOM_ITEM_XY.y-70, "🎁 Sala Secreta", {
+    const label = scene.add.text(ROOM_ITEM_XY.x, ROOM_ITEM_XY.y-70, alreadyCollected ? "✅ Recompensa já recolhida" : "🎁 Sala Secreta", {
       fontSize:"20px", fontStyle:"900", color:"#ffe9a8", stroke:"#2a0a4a", strokeThickness:5, padding:{x:8,y:6}
     }).setOrigin(0.5).setDepth(1);
     scene.tweens.add({ targets:label, y:label.y-6, duration:1300, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
@@ -3157,7 +3197,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (secretRoomTemp.pipe && secretRoomTemp.pipe.sprite) { try{secretRoomTemp.pipe.sprite.destroy();}catch{} }
     if (secretRoomTemp.item && secretRoomTemp.item.active) { try{secretRoomTemp.item.destroy();}catch{} }
     (secretRoomTemp.decor||[]).forEach(o=>{ try{o.destroy();}catch{} });
-    secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[] };
+    secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[], key:null };
   }
 
   // ===== Entrar / sair da sala secreta — mesma animação de 0,4s do cano
@@ -3183,7 +3223,7 @@ window.addEventListener("DOMContentLoaded", () => {
         scene.physics.world.setBounds(0,0,ROOM_WORLD_W,514);
         scene.cameras.main.setBounds(0,0,ROOM_WORLD_W,540);
         applyBackground(scene, ROOM_THEME_IDX, ROOM_WORLD_W, []);
-        buildSecretRoomContents(scene, p.kind);
+        buildSecretRoomContents(scene, p.kind, p.key);
 
         player.x = 420; player.y = ROOM_LANDING_Y - 18;
         scene.cameras.main.startFollow(player, true, 1.0, 1.0);
@@ -3196,7 +3236,9 @@ window.addEventListener("DOMContentLoaded", () => {
             player.body.moves = true;
             player.body.updateFromGameObject();
             snapToPipeLanding();
-            if (player.body) { player.body.setVelocityY(-140); player.body.setVelocityX((player.flipX?-1:1)*90); }
+            // Sem impulso vertical (ver enterPipe) — evita o "sobe e cai de
+            // volta" que parecia uma queda ao chegar à sala secreta.
+            if (player.body) { player.body.setVelocityX((player.flipX?-1:1)*90); }
             _pipeWarping = false;
           }
         });
@@ -3237,7 +3279,9 @@ window.addEventListener("DOMContentLoaded", () => {
             player.body.moves = true;
             player.body.updateFromGameObject();
             snapToPipeLanding();
-            if (player.body) { player.body.setVelocityY(-140); player.body.setVelocityX((player.flipX?-1:1)*90); }
+            // Sem impulso vertical (ver enterPipe) — evita o "sobe e cai de
+            // volta" que parecia uma queda ao voltar ao nível principal.
+            if (player.body) { player.body.setVelocityX((player.flipX?-1:1)*90); }
             _pipeWarping = false;
           }
         });
@@ -3686,6 +3730,7 @@ window.addEventListener("DOMContentLoaded", () => {
     enemyTimers.forEach(t=>{try{t.remove(false);}catch{}}); enemyTimers=[];
     bossTimers.forEach(t=>{try{t.remove(false);}catch{}}); bossTimers=[];
     platforms.clear(true,true); itemsGroup.clear(true,true); malwareGroup.clear(true,true);
+    pipeExitDecor.forEach(o=>{try{o.destroy();}catch{}}); pipeExitDecor=[];
     clearMovingPlatforms();
     clearTrampolines(); // sem isto, um trampolim do nível anterior ficava "pendurado" na arena do boss
     // Decorações do nível anterior (balões, borboletas/abelhas, flores nas plataformas) —
@@ -6189,6 +6234,12 @@ window.addEventListener("DOMContentLoaded", () => {
     const idx=itemObj.getData("itemIdx");
     const secretBonus = itemObj.getData("secretPoints") || 0;
     if(idx !== undefined && idx >= 0) collectedItemIndices.add(idx);
+    // Recompensa de sala secreta apanhada — regista para não voltar a
+    // aparecer se o jogador reentrar no mesmo cano nesta vida/nível.
+    if(inSecretRoom && secretRoomTemp.item === itemObj && secretRoomTemp.key){
+      collectedRoomPipes.add(secretRoomTemp.key);
+      secretRoomTemp.item = null;
+    }
     itemObj.destroy();
     const totalPoints = 10 + secretBonus;
     score += totalPoints; scoreText.setText(`🌟 Pontos: ${score}`); _hudDirty=true;
@@ -6316,6 +6367,13 @@ window.addEventListener("DOMContentLoaded", () => {
     );
     collectedItemIndices.clear();
     heartIndicesCollected.forEach(idx => collectedItemIndices.add(idx));
+    // Idem para as recompensas das salas secretas — mantém só os corações já
+    // apanhados, o resto volta a ficar disponível.
+    const heartRoomKeysCollected = new Set(
+      [...collectedRoomPipes].filter(key => (LEVELS[currentLevel].pipes||[]).some(pp => pp.room && pp.kind==="heart" && (pp.x+"_"+pp.y)===key))
+    );
+    collectedRoomPipes.clear();
+    heartRoomKeysCollected.forEach(k => collectedRoomPipes.add(k));
     itemsCollected = 0;
     itemCountText.setText(`⭐ Itens: ${itemsCollected}/${itemsTotal}`);
     const keyMap={
