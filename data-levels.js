@@ -27,16 +27,22 @@ export const THEMES = [
 
 // ── Canos (pedido: posições variadas, nem todos entráveis — "tipo Mario"). ──
 // Cada entrada em L.pipes[] pode ser:
-//   • Cano de sala secreta: {x,y,room:true,kind,returnX,returnY} — leva a
+//   • Cano de sala secreta: {x,y,room:true,kind,returnX?,returnY?} — leva a
 //     uma SALA SECRETA ISOLADA "tipo os bosses": o nível principal inteiro
 //     é escondido (sem nada ser destruído) e trocado por uma salinha à
 //     parte, pequena e independente, com fundo totalmente redesenhado —
 //     não é uma plataforma algures no mesmo mundo do nível. kind é a
 //     recompensa (🍬 balao / 🎈 balaofesta / ⭐ estrela / ❤️ heart /
-//     🛡️ medalha); returnX/returnY é onde aterrar de volta no nível
-//     principal ao sair (o cano de volta dentro da sala é criado
-//     automaticamente pelo motor, não precisa de ser definido aqui). Ver
-//     ROOM_* e enterSecretRoomFlow()/exitSecretRoomFlow() em dia-crianca.js.
+//     🛡️ medalha). Por OMISSÃO o regresso é pelo MESMO cano em que se
+//     entrou (returnX/returnY não definidos) — não se desenha nenhum cano
+//     extra, o VanBerto's simplesmente volta a sair pelo cano físico que já
+//     lá está. Só define returnX/returnY quando o regresso tiver mesmo de
+//     ficar noutro sítio do nível (usado só no Nível 4, de propósito, como
+//     atalho alternativo ao vão do trampolim) — nesse caso é desenhado um
+//     2º cano, só decorativo, no ponto de regresso. O cano de volta dentro
+//     da própria sala secreta é sempre criado automaticamente pelo motor,
+//     não precisa de ser definido aqui. Ver ROOM_* e
+//     enterSecretRoomFlow()/exitSecretRoomFlow() em dia-crianca.js.
 //   • Cano decorativo: {x,y,decorative:true} — não entra, é só obstáculo/
 //     mistério (tint subtil aplicado automaticamente no motor).
 // Ver comentário completo em dia-crianca.js junto a "let pipes=[]".
@@ -94,7 +100,7 @@ export const LEVELS = [
     ],
     // 1 par, a meio do nível — recompensa: ❤️ vida extra.
     pipes:[
-      {x:1180,y:337,room:true,kind:"heart",returnX:1280,returnY:360}
+      {x:1180,y:337,room:true,kind:"heart"}
     ],
     items:[{x:900,y:400,kind:"balao"},{x:1460,y:260,kind:"medalha"},{x:1740,y:330,kind:"estrela"}],
     malwares:[{x:1320,y:480,vx:0,pattern:"mini"},{x:2140,y:480,vx:-155,pattern:"patrol"}]
@@ -193,7 +199,7 @@ export const LEVELS = [
     ],
     // 1 par, perto do fim do nível — recompensa: 🛡️ escudo.
     pipes:[
-      {x:2260,y:407,room:true,kind:"medalha",returnX:2360,returnY:430}
+      {x:2260,y:407,room:true,kind:"medalha"}
     ],
     items:[{x:860,y:380,kind:"medalha"},{x:1100,y:290,kind:"duplosalto"},{x:1560,y:260,kind:"estrela"},{x:2050,y:290,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
     malwares:[{x:1010,y:480,vx:170},{x:1480,y:480,vx:-170},{x:1940,y:480,vx:172},{x:2400,y:480,vx:-168},{x:2720,y:480,vx:165}],
@@ -269,7 +275,7 @@ export const LEVELS = [
     pipes:[
       {x:500,y:474,toX:500,toY:143},
       {x:450,y:167,w:56,h:44,toX:410,toY:460},
-      {x:1820,y:327,room:true,kind:"balaofesta",returnX:1920,returnY:340}
+      {x:1820,y:327,room:true,kind:"balaofesta"}
     ],
     items:[{x:800,y:220,kind:"estrela"},{x:980,y:280,kind:"balao"},{x:1600,y:220,kind:"medalha"},{x:2270,y:290,kind:"brinquedo"},{x:2720,y:260,kind:"duplosalto"},{x:500,y:165,kind:"medalha"}],
     malwares:[{x:940,y:480,vx:185,pattern:"jumper"},{x:1490,y:480,vx:-188,pattern:"jumper"},{x:1960,y:480,vx:186,pattern:"jumper"},{x:2400,y:480,vx:-184,pattern:"jumper"},{x:2830,y:480,vx:182,pattern:"patrol"}],
@@ -294,7 +300,7 @@ export const LEVELS = [
     pipes:[
       {x:1760,y:325,toX:1760,toY:85},
       {x:1810,y:109,w:56,h:44,toX:1800,toY:311},
-      {x:2320,y:325,room:true,kind:"estrela",returnX:2400,returnY:340}
+      {x:2320,y:325,room:true,kind:"estrela"}
     ],
     items:[{x:920,y:342,kind:"estrela"},{x:1480,y:248,kind:"medalha"},{x:2040,y:392,kind:"balao"},{x:2600,y:392,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:1760,y:107,kind:"heart"}],
     malwares:[{x:1060,y:480,vx:190,pattern:"jumper"},{x:1660,y:480,vx:-195,pattern:"jumper"},{x:2260,y:480,vx:190,pattern:"jumper"},{x:2860,y:480,vx:-185,pattern:"jumper"},{x:3200,y:480,vx:188,pattern:"jumper"}],
@@ -381,7 +387,7 @@ export const LEVELS = [
       {x:3370,y:520,w:960,h:28}
     ],
     pipes:[
-      {x:2100,y:307,room:true,kind:"medalha",returnX:2200,returnY:330}
+      {x:2100,y:307,room:true,kind:"medalha"}
     ],
     items:[{x:820,y:380,kind:"balao"},{x:1040,y:290,kind:"estrela"},{x:1640,y:300,kind:"duplosalto"},{x:2320,y:220,kind:"medalha"},{x:2780,y:390,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
     malwares:[{x:950,y:480,vx:194,pattern:"patrol"},{x:1530,y:480,vx:-198,pattern:"jumper"},{x:1980,y:480,vx:196,pattern:"jumper"},{x:2440,y:480,vx:-194,pattern:"patrol"},{x:2880,y:480,vx:192,pattern:"jumper"}],
@@ -440,7 +446,7 @@ export const LEVELS = [
     pipes:[
       {x:1400,y:397,toX:1400,toY:97},
       {x:1450,y:121,w:56,h:44,toX:1450,toY:383},
-      {x:2960,y:397,room:true,kind:"balaofesta",returnX:3060,returnY:420}
+      {x:2960,y:397,room:true,kind:"balaofesta"}
     ],
     movingPlatforms:[
       {x:1270,y:400,w:130,h:22,rangeX:120,rangeY:0,speed:80},
@@ -512,7 +518,7 @@ export const LEVELS = [
       {x:3530,y:520,w:960,h:28}
     ],
     pipes:[
-      {x:2860,y:247,room:true,kind:"heart",returnX:2910,returnY:233},
+      {x:2860,y:247,room:true,kind:"heart"},
       // Túnel decorativo — mantido perto do início, afastado da plataforma
       // em x:820 (variedade: nem todos os túneis de um nível ficam juntos).
       {x:680,y:474,decorative:true}
@@ -635,7 +641,7 @@ export const LEVELS = [
     pipes:[
       {x:1160,y:397,toX:1160,toY:97},
       {x:1210,y:121,w:56,h:44,toX:1175,toY:383},
-      {x:2920,y:297,room:true,kind:"balaofesta",returnX:3020,returnY:320}
+      {x:2920,y:297,room:true,kind:"balaofesta"}
     ],
     items:[{x:800,y:220,kind:"estrela"},{x:1520,y:230,kind:"balao"},{x:1920,y:220,kind:"duplosalto"},{x:2720,y:210,kind:"medalha"},{x:3120,y:380,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:1160,y:119,kind:"balao"}],
     malwares:[{x:880,y:480,vx:208,pattern:"patrol"},{x:1440,y:480,vx:-212,pattern:"jumper"},{x:2020,y:480,vx:208,pattern:"jumper"},{x:2620,y:480,vx:-204,pattern:"jumper"},{x:3220,y:480,vx:-206,pattern:"patrol"}],
@@ -671,7 +677,7 @@ export const LEVELS = [
     pipes:[
       {x:1920,y:317,toX:1920,toY:77},
       {x:1970,y:101,w:56,h:44,toX:2020,toY:383},
-      {x:3300,y:387,room:true,kind:"medalha",returnX:3400,returnY:410},
+      {x:3300,y:387,room:true,kind:"medalha"},
       // Túnel decorativo — perto do fim, no chão fixo, antes da porta,
       // afastado da plataforma em x:3300 (que fica logo por cima).
       {x:3480,y:474,decorative:true}

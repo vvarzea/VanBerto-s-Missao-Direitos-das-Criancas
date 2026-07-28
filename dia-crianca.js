@@ -2631,18 +2631,25 @@ window.addEventListener("DOMContentLoaded", () => {
         spr.setTint(0x9fb89f);
       } else if (p.room) {
         const roomKey = p.x+"_"+p.y; // identifica este cano de sala secreta de forma única no nível
-        pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX:p.returnX, returnY:p.returnY, key:roomKey});
-        // NOVO — cano "de saída" só visual (sem corpo físico, por isso zero
-        // risco de empurrar/colidir com o VanBerto's ao aterrar ali perto)
-        // no ponto de regresso da sala secreta. Pedido: "quando se entra num
-        // cano tem de sair de 1 cano" — sem isto, o jogador simplesmente
-        // aparecia em cima da plataforma sem nenhum cano à vista (caso do
-        // Nível 4, ao voltar da sala secreta para depois do vão). Mesmo tint
-        // subtil dos canos decorativos (não é um cano "de entrar").
-        const exW = 56, exH = 44;
-        const exImg = scene.add.image(p.returnX, p.returnY - exH/2, "pipe_mario");
-        exImg.setDisplaySize(exW, exH); exImg.setDepth(1); exImg.setTint(0x9fb89f);
-        pipeExitDecor.push(exImg);
+        // Por omissão o regresso é pelo MESMO cano (returnX/returnY = x/y) —
+        // não há "cano de saída" nenhum a desenhar, o jogador simplesmente
+        // volta a aparecer a sair do cano físico que já lá está (o mesmo em
+        // que entrou). Só quando o nível define returnX/returnY diferentes
+        // (ver data-levels.js) é que o regresso fica noutro sítio — usado só
+        // no Nível 4, de propósito, como atalho alternativo ao vão do
+        // trampolim. Nesse caso (e só nesse) desenhamos um 2º cano decorativo
+        // no ponto de regresso, do MESMO tamanho/proporção do cano normal
+        // (64×64 — antes era 56×44, espremido, o que o fazia parecer cortado).
+        const hasCustomReturn = p.returnX!=null && p.returnY!=null
+          && (p.returnX!==p.x || p.returnY!==p.y);
+        const returnX = hasCustomReturn ? p.returnX : p.x;
+        const returnY = hasCustomReturn ? p.returnY : p.y;
+        pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX, returnY, key:roomKey});
+        if (hasCustomReturn) {
+          const exImg = scene.add.image(returnX, returnY - h/2, "pipe_mario");
+          exImg.setDisplaySize(w, h); exImg.setDepth(1); exImg.setTint(0x9fb89f);
+          pipeExitDecor.push(exImg);
+        }
       } else {
         pipes.push({x:p.x, y:p.y, w, toX:p.toX, toY:p.toY});
       }
