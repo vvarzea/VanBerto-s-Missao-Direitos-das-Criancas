@@ -6018,7 +6018,13 @@ window.addEventListener("DOMContentLoaded", () => {
     }); // fim showArtefactGallery
   }
 
-  function showQuiz(quiz,done,isRetry){
+  function showQuiz(quiz,done,attemptNum){
+    // CORRIGIDO — isRetry era um booleano fixo: a partir da 2ª pergunta ficava
+    // sempre "true" para sempre, por isso o rótulo dizia sempre "Segunda
+    // tentativa!" mesmo na 3ª, 4ª, 5ª tentativa. Agora attemptNum conta mesmo
+    // (1=primeira, nunca mostrado), e o rótulo/mensagem usam esse número real.
+    attemptNum = attemptNum || 1;
+    const isRetry = attemptNum > 1;
     quizOverlay.classList.remove("hidden");
     // bindTap(): liga a MESMA ação a "click" E a "touchend" (com preventDefault
     // para o touchend não disparar depois um "click" fantasma a duplicar).
@@ -6045,7 +6051,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const _qTheme = bossState?.def?.quizTheme || LEVELS[currentLevel]?.quizTheme;
     const _article = QUIZ_ARTICLE[_qTheme];
     const _badgeHTML = _article ? `<span class="quiz-article-badge">📜 ${_article}</span><br>` : "";
-    quizQuestion.innerHTML = _badgeHTML + (isRetry ? "🔄 Segunda tentativa! " : "") + quiz.q;
+    quizQuestion.innerHTML = _badgeHTML + (isRetry ? `🔄 ${attemptNum}ª tentativa! ` : "") + quiz.q;
     quizAnswers.innerHTML=""; quizFeedback.textContent=""; quizFeedback.style.color="#ff6b35";
     quizExplanation.textContent=""; quizExplanation.classList.add("hidden");
     // Limpar sempre o btnCloseQuiz ao abrir nova pergunta — evita cliques acidentais
@@ -6094,7 +6100,7 @@ window.addEventListener("DOMContentLoaded", () => {
           onCorrectAnswerForAchievements(!isRetry);
           checkAchievements(mapProgress.levelsCompleted.length);
           btnCloseQuiz.classList.add("hidden"); btnCloseQuiz.onclick=null; btnCloseQuiz.ontouchend=null;
-          quizFeedback.textContent=isRetry?"✅ Conseguiste na segunda tentativa! 💪":"✅ Muito bem!";
+          quizFeedback.textContent=isRetry?`✅ Conseguiste à ${attemptNum}ª tentativa! 💪`:"✅ Muito bem!";
           quizFeedback.style.color="#208050";
           SFX.coin();
           vbSayRandom(VB_QUIZ_CORRECT,"good",3200);
@@ -6146,7 +6152,7 @@ window.addEventListener("DOMContentLoaded", () => {
           btnCloseQuiz.classList.remove("hidden"); btnCloseQuiz.textContent="🔄 Tentar outra pergunta";
           bindTap(btnCloseQuiz, () => {
             btnCloseQuiz.classList.add("hidden");
-            showQuiz(pickQuizForLevel(currentLevel,_qTheme),done,true);
+            showQuiz(pickQuizForLevel(currentLevel,_qTheme),done,attemptNum+1);
           });
         }
       });
