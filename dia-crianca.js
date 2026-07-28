@@ -3053,6 +3053,8 @@ window.addEventListener("DOMContentLoaded", () => {
           duration: TUNNEL_WARP_MS, ease: "Back.easeOut",
           onComplete: () => {
             player.body.moves = true;
+            player.body.updateFromGameObject();
+            snapToPipeLanding();
             // Pequeno impulso ao reaparecer — "salta" ligeiramente para fora
             // do túnel em vez de simplesmente reaparecer parado.
             if (player.body) {
@@ -3173,6 +3175,8 @@ window.addEventListener("DOMContentLoaded", () => {
           duration: TUNNEL_WARP_MS, ease: "Back.easeOut",
           onComplete: () => {
             player.body.moves = true;
+            player.body.updateFromGameObject();
+            snapToPipeLanding();
             if (player.body) { player.body.setVelocityY(-140); player.body.setVelocityX((player.flipX?-1:1)*90); }
             _pipeWarping = false;
           }
@@ -3212,6 +3216,8 @@ window.addEventListener("DOMContentLoaded", () => {
           duration: TUNNEL_WARP_MS, ease: "Back.easeOut",
           onComplete: () => {
             player.body.moves = true;
+            player.body.updateFromGameObject();
+            snapToPipeLanding();
             if (player.body) { player.body.setVelocityY(-140); player.body.setVelocityX((player.flipX?-1:1)*90); }
             _pipeWarping = false;
           }
@@ -3247,6 +3253,33 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     });
     if(best){const dy=pb.bottom-(best.body.top-1);player.setVelocity(0,0);player.y-=dy;player.body.updateFromGameObject();}
+  }
+
+  // Pouso ao sair de um cano/sala secreta — mais tolerante que
+  // snapPlayerToGround() (que só aceita ~2px de folga, pensado para o
+  // arranque do nível). Coordenadas de regresso (returnY/toY) tunadas
+  // manualmente podem, nalguns casos, deixar o VanBerto's a aterrar já um
+  // pouco "dentro" da plataforma — e nesse caso a física empurra-o para
+  // baixo (o caminho de separação mais curto) em vez de para cima, fazendo-o
+  // cair direto ao chão em vez de ficar na plataforma. Isto procura a
+  // plataforma mais próxima que o jogador sobrepõe horizontalmente, seja
+  // qual for a distância vertical inicial (dentro de um alcance generoso),
+  // e assenta-o exatamente em cima dela.
+  function snapToPipeLanding(maxDist=90){
+    if(!player?.body||!platforms) return;
+    const pb=player.body; let best=null,bestDist=Infinity;
+    platforms.getChildren().forEach(p=>{
+      if(!p.body||!p.active) return;
+      if(pb.right>p.body.left && pb.left<p.body.right){
+        const dist=Math.abs(pb.bottom-p.body.top);
+        if(dist<maxDist && dist<bestDist){bestDist=dist;best=p;}
+      }
+    });
+    if(best){
+      const dy=pb.bottom-(best.body.top-1);
+      player.y-=dy;
+      player.body.updateFromGameObject();
+    }
   }
 
   // ===== Porta + Quiz =====
