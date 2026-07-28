@@ -27,8 +27,8 @@ export const REGION_INTRO = {
 };
 
 export const BOSS_OBJECTIVE = {
-  monstro_ignorancia: "Foge das bolas ❓ e salta-lhe em cima 3 vezes para o vencer!",
-  virus_gigante: "Foge da bola ❓ rosa e salta-lhe em cima 3 vezes para o vencer!",
+  monstro_ignorancia: "Desvia-te das bolas ❓ que ele atira e salta-lhe em cima 3 vezes para o vencer!",
+  virus_gigante: "Desvia-te da bola ❓ rosa que ele atira e salta-lhe em cima 3 vezes para o vencer!",
   guardiao_sombras: "Ele teleporta-se e atira orbes sombrios 🔮! Salta-lhe em cima 3 vezes assim que ele reaparecer.",
   poluidor_mecanico: "Ele patrulha depressa — apanha o ritmo e salta-lhe em cima 3 vezes para o vencer!"
 };
