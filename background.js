@@ -19,6 +19,12 @@ import { THEMES } from "./data-levels.js";
 
 let bgGraphics, farGraphics, hillsGraphics, groundGraphics, decorGraphics;
 let platDecorGfx, sunGraphics, moonGraphics, starGraphics, doorGlowGfx;
+// Sombra da lua — Image com textura de gradiente radial real (canvas),
+// não Graphics. Phaser Graphics só desenha formas de contorno rígido; usar
+// vários círculos semi-transparentes empilhados para simular um degradê
+// criava anéis visíveis (como um alvo) em vez de uma transição suave. Ver
+// ensureMoonShadowTexture()/drawMoon().
+let moonShadowImg;
 export let bgConfetti = [];
 let platDecorData = [];
 let footStepTimer = 0;
@@ -320,34 +326,70 @@ export function drawStars(themeIdx, worldW){
   });
 }
 
+// Textura do gradiente da sombra — criada uma única vez (cache pelo
+// texture manager) e reutilizada em todos os níveis noturnos. Núcleo
+// escuro e opaco, a esbater para um tom quente ténue perto da borda
+// (sugere luz solar a rasar o rebordo) e depois totalmente transparente.
+function ensureMoonShadowTexture(scene){
+  if (scene.textures.exists("moon_shadow_grad")) return;
+  const size = 220, cx = size/2, cy = size/2, r = size/2 - 2;
+  const tex = scene.textures.createCanvas("moon_shadow_grad", size, size);
+  const ctx = tex.getContext();
+  const grad = ctx.createRadialGradient(cx, cy, r*0.05, cx, cy, r);
+  grad.addColorStop(0.00, "rgba(18,10,34,0.97)");
+  grad.addColorStop(0.55, "rgba(24,14,44,0.93)");
+  grad.addColorStop(0.78, "rgba(50,32,60,0.55)");
+  grad.addColorStop(0.92, "rgba(90,60,50,0.22)");
+  grad.addColorStop(1.00, "rgba(120,90,60,0)");
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+  tex.refresh();
+}
+
 // ── Lua (temas noturnos 4+) ────────────────────────────────────
-function drawMoon(themeIdx){
+function drawMoon(scene, themeIdx){
   if(!moonGraphics) return;
   moonGraphics.clear();
-  if(!NIGHT_THEMES.has(themeIdx)) return;
-  const mx=820, my=70, mr=30;
-  // Halo duplo suave
-  moonGraphics.fillStyle(0xfffbe0,0.07); moonGraphics.fillCircle(mx,my,mr+26);
-  moonGraphics.fillStyle(0xfffbe0,0.14); moonGraphics.fillCircle(mx,my,mr+14);
-  moonGraphics.fillStyle(0xfffbe0,0.22); moonGraphics.fillCircle(mx,my,mr+6);
-  // Disco cheio da lua
-  moonGraphics.fillStyle(0xfff8d0,1); moonGraphics.fillCircle(mx,my,mr);
-  // Sombra crescente — círculo deslocado mais escuro por cima
-  moonGraphics.fillStyle(0x1a0840,1); moonGraphics.fillCircle(mx+mr*0.55, my-mr*0.10, mr*0.88);
-  // Rebordo brilhante do crescente
-  moonGraphics.fillStyle(0xfff0b0,0.30); moonGraphics.fillCircle(mx,my,mr);
-  moonGraphics.fillStyle(0x1a0840,1); moonGraphics.fillCircle(mx+mr*0.60, my-mr*0.08, mr*0.88);
-  // Crateras na parte visível (esquerda/baixo)
-  [[mx-10,my+6,4.5],[mx-18,my-4,3],[mx-6,my+16,2.5]].forEach(([cx,cy,cr])=>{
-    moonGraphics.fillStyle(0xe8d898,0.50); moonGraphics.fillCircle(cx,cy,cr);
-    moonGraphics.fillStyle(0xc0a848,0.28); moonGraphics.fillCircle(cx+1,cy+1,cr-1);
+  if(!NIGHT_THEMES.has(themeIdx)){ if(moonShadowImg) moonShadowImg.setVisible(false); return; }
+  const mx=820, my=74, mr=36; // maior que antes (era 30) — mais presença no céu
+  // Halo suave em várias camadas — mais uma camada extra e mais larga do
+  // que antes, para dar sensação de luar a espalhar-se pelo céu à volta.
+  moonGraphics.fillStyle(0xfffbe0,0.05); moonGraphics.fillCircle(mx,my,mr+40);
+  moonGraphics.fillStyle(0xfffbe0,0.09); moonGraphics.fillCircle(mx,my,mr+26);
+  moonGraphics.fillStyle(0xfffbe0,0.15); moonGraphics.fillCircle(mx,my,mr+14);
+  moonGraphics.fillStyle(0xfffbe0,0.24); moonGraphics.fillCircle(mx,my,mr+6);
+  // Disco cheio — duas camadas quase iguais para um degradê muito suave do
+  // centro (mais quente) para o rebordo (mais pálido), em vez de uma cor lisa.
+  moonGraphics.fillStyle(0xfff3c4,1); moonGraphics.fillCircle(mx,my,mr);
+  moonGraphics.fillStyle(0xfffaE0,1); moonGraphics.fillCircle(mx-mr*0.12,my-mr*0.12,mr*0.72);
+  // Sombra crescente — pedido: "o preto devia ser mais subtil, fica uma
+  // bola escura", e a 1ª tentativa com círculos empilhados "disfarçava
+  // ainda menos" (criava anéis visíveis). Agora é uma Image com gradiente
+  // radial real — núcleo escuro a esbater suavemente até transparente,
+  // sem nenhuma aresta rígida. Ver ensureMoonShadowTexture().
+  ensureMoonShadowTexture(scene);
+  if (!moonShadowImg) {
+    moonShadowImg = scene.add.image(0,0,"moon_shadow_grad").setDepth(-54).setScrollFactor(0.05);
+  }
+  const shR = mr*0.94*2; // diâmetro
+  moonShadowImg.setPosition(mx+mr*0.58, my-mr*0.08);
+  moonShadowImg.setDisplaySize(shR, shR);
+  moonShadowImg.setVisible(true);
+  // Crateras na parte visível (esquerda/baixo) — mais uma do que antes,
+  // cada uma com sombra + pequeno brilho para dar profundidade em vez de
+  // ficarem lisas.
+  [[mx-13,my+7,5.5],[mx-22,my-5,3.6],[mx-8,my+19,3.0],[mx-24,my+14,2.2]].forEach(([cx,cy,cr])=>{
+    moonGraphics.fillStyle(0xd8c078,0.45); moonGraphics.fillCircle(cx+1,cy+1,cr);
+    moonGraphics.fillStyle(0xb89848,0.30); moonGraphics.fillCircle(cx+1.5,cy+1.5,cr-1.2);
+    moonGraphics.fillStyle(0xfffdf0,0.35); moonGraphics.fillCircle(cx-1,cy-1,cr*0.35);
   });
-  // Brilho topo-esquerdo
-  moonGraphics.fillStyle(0xffffff,0.45); moonGraphics.fillEllipse(mx-12,my-12,10,7);
-  // Pequenas estrelas decorativas à volta da lua
-  [[mx+46,my-18,2.2],[mx+38,my+26,1.6],[mx-36,my-22,1.4],[mx+58,my+8,1.8]].forEach(([sx,sy,sr])=>{
-    moonGraphics.fillStyle(0xffffff,0.70); moonGraphics.fillCircle(sx,sy,sr);
-    moonGraphics.fillStyle(0xffffff,0.35); moonGraphics.fillCircle(sx,sy,sr+2);
+  // Brilho topo-esquerdo (especular, "molhado") — um pouco maior.
+  moonGraphics.fillStyle(0xffffff,0.5); moonGraphics.fillEllipse(mx-13,my-14,13,8);
+  moonGraphics.fillStyle(0xffffff,0.28); moonGraphics.fillEllipse(mx-9,my-9,7,4.5);
+  // Pequenas estrelas decorativas à volta da lua — uma extra, tamanhos variados.
+  [[mx+52,my-22,2.4],[mx+42,my+30,1.7],[mx-40,my-24,1.5],[mx+64,my+10,2.0],[mx-30,my+30,1.3]].forEach(([sx,sy,sr])=>{
+    moonGraphics.fillStyle(0xffffff,0.75); moonGraphics.fillCircle(sx,sy,sr);
+    moonGraphics.fillStyle(0xffffff,0.35); moonGraphics.fillCircle(sx,sy,sr+2.2);
   });
 }
 
@@ -638,7 +680,7 @@ export function applyBackground(scene,themeIdx,worldW,hazardDefs=[]){
   drawFarLayer(themeIdx, worldW);
 
   // ── LUA (temas noturnos) ──────────────────────────────────────
-  drawMoon(themeIdx);
+  drawMoon(scene, themeIdx);
 
   // ── SOL — desenhado em sunGraphics (animado no update) ────────
   // Esconder o sol em temas noturnos

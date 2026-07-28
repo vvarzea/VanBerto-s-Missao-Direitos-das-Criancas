@@ -60,16 +60,24 @@ export const LEVELS = [
       // criança uma boa distância de corrida livre antes do 1º obstáculo.
       {x:950,y:461,w:200,h:22},
       {x:1340,y:450,w:300,h:22},{x:1680,y:380,w:270,h:22},
-      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28}
+      {x:2000,y:310,w:240,h:22},{x:2350,y:520,w:900,h:28},
+      // Plataforma alta — pedido: "uma mistura, alguns para a sala secreta,
+      // outros para plataformas mais altas". Bem acima da plataforma de
+      // entrada (~270px de folga vs. os ~192px do salto normal), mas com
+      // margem suficiente do topo do ecrã (y:0) para o VanBerto's nunca
+      // ficar cortado.
+      {x:570,y:200,w:160,h:22}
     ],
-    // 1º par de canos do jogo, de demonstração. Entra-se parando em cima e
-    // carregando em baixo/S (a mesma tecla de agachar) — teletransporta para
-    // a sala secreta isolada. O regresso pousa em x:670 (não em cima do
-    // próprio cano de entrada) para não disparar logo outra vez ao aterrar.
+    // 1º par de canos do jogo, de demonstração — mostra o mecanismo
+    // clássico de atalho para plataforma alta (não uma sala isolada).
+    // Entra-se parando em cima e carregando em baixo/S. O regresso pousa
+    // em x:670 (não em cima do próprio cano de entrada) para não disparar
+    // logo outra vez ao aterrar.
     pipes:[
-      {x:570,y:474,room:true,kind:"estrela",returnX:670,returnY:460}
+      {x:570,y:474,toX:570,toY:143},
+      {x:620,y:167,w:56,h:44,toX:670,toY:460}
     ],
-    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"}],
+    items:[{x:1340,y:400,kind:"estrela"},{x:1680,y:330,kind:"medalha"},{x:2000,y:260,kind:"brinquedo"},{x:570,y:160,kind:"estrela"}],
     // Vilões empurrados para a direita, na mesma proporção do resto do nível
     // (era x:1500/1960) — o 1º só aparece bem depois do túnel e do 2º item,
     // dando à criança um troço inicial bem mais longo e calmo.
@@ -127,17 +135,19 @@ export const LEVELS = [
       {x:2100,y:360,w:200,h:22},
       {x:2340,y:440,w:200,h:22},
       {x:2580,y:360,w:200,h:22},
-      {x:2980,y:520,w:1000,h:28}
+      {x:2980,y:520,w:1000,h:28},
+      // Plataforma alta do 1º cano — ver Nível 1.
+      {x:650,y:200,w:160,h:22}
     ],
-    // 2 pares (variedade — pedido: "outros podem ter 1 ou 2 pares"): o 1º
-    // continua perto do início, o 2º fica a meio, por cima do vão — um
-    // atalho divertido que salta o vão sem precisar do trampolim (não
-    // obrigatório, só um bónus para quem explorar).
+    // 2 pares — mistura pedida: o 1º é o atalho clássico para uma
+    // plataforma alta (fica no mesmo mundo do nível), o 2º leva à sala
+    // secreta isolada, por cima do vão do trampolim.
     pipes:[
-      {x:650,y:474,room:true,kind:"balao",returnX:560,returnY:460},
+      {x:650,y:474,toX:650,toY:143},
+      {x:600,y:167,w:56,h:44,toX:560,toY:460},
       {x:1320,y:417,room:true,kind:"estrela",returnX:1880,returnY:440}
     ],
-    items:[{x:840,y:390,kind:"brinquedo"},{x:1080,y:310,kind:"estrela"},{x:1600,y:330,kind:"duplosalto"},{x:2100,y:310,kind:"balao"},{x:2580,y:310,kind:"medalha"},{x:560,y:470,kind:"heart"}],
+    items:[{x:840,y:390,kind:"brinquedo"},{x:1080,y:310,kind:"estrela"},{x:1600,y:330,kind:"duplosalto"},{x:2100,y:310,kind:"balao"},{x:2580,y:310,kind:"medalha"},{x:560,y:470,kind:"heart"},{x:650,y:165,kind:"balao"}],
     malwares:[{x:980,y:480,vx:180,pattern:"patrol"},{x:1580,y:480,vx:-183,pattern:"jumper"},{x:2040,y:480,vx:182,pattern:"jumper"},{x:2450,y:480,vx:-179,pattern:"jumper"},{x:2780,y:480,vx:177}],
     trampolines:[{x:1600,y:462}],
     secrets:[{x:1190,y:355,kind:"estrela",points:25}]
@@ -149,13 +159,17 @@ export const LEVELS = [
     platforms:[
       {x:520,y:520,w:1000,h:28},{x:880,y:450,w:220,h:22},{x:1160,y:380,w:220,h:22},
       {x:1460,y:310,w:220,h:22},{x:1760,y:380,w:220,h:22},{x:2060,y:450,w:220,h:22},
-      {x:2360,y:380,w:220,h:22},{x:2660,y:520,w:1000,h:28}
+      {x:2360,y:380,w:220,h:22},{x:2660,y:520,w:1000,h:28},
+      // Plataforma alta — ver Nível 1.
+      {x:1760,y:154,w:150,h:22}
     ],
-    // 1 par, em cima de uma plataforma a meio do nível — recompensa: 🎈 balão da festa.
+    // 1 par, em cima de uma plataforma a meio do nível — atalho clássico
+    // para plataforma alta — recompensa: 🎈 balão da festa.
     pipes:[
-      {x:1760,y:337,room:true,kind:"balaofesta",returnX:1860,returnY:360}
+      {x:1760,y:337,toX:1760,toY:97},
+      {x:1810,y:121,w:56,h:44,toX:1860,toY:360}
     ],
-    items:[{x:880,y:230,kind:"estrela"},{x:1460,y:260,kind:"brinquedo"},{x:2060,y:400,kind:"balao"},{x:2360,y:330,kind:"medalha"}],
+    items:[{x:880,y:230,kind:"estrela"},{x:1460,y:260,kind:"brinquedo"},{x:2060,y:400,kind:"balao"},{x:2360,y:330,kind:"medalha"},{x:1760,y:119,kind:"balaofesta"}],
     malwares:[{x:1020,y:480,vx:165},{x:1620,y:480,vx:-170},{x:2220,y:480,vx:165},{x:2820,y:480,vx:-160}],
     trampolines:[{x:1310,y:462},{x:2210,y:462}],
     secrets:[{x:740,y:470,kind:"estrela",points:20}]
@@ -246,14 +260,18 @@ export const LEVELS = [
       {x:2270,y:340,w:170,h:22},
       {x:2500,y:420,w:160,h:22},
       {x:2720,y:310,w:170,h:22},
-      {x:3080,y:520,w:960,h:28}
+      {x:3080,y:520,w:960,h:28},
+      // Plataforma alta do 1º cano — ver Nível 1.
+      {x:500,y:200,w:160,h:22}
     ],
-    // 2 pares: o 1º perto do início, o 2º a meio do nível.
+    // 2 pares — mistura: o 1º é o atalho clássico para plataforma alta, o
+    // 2º a meio do nível leva à sala secreta isolada.
     pipes:[
-      {x:500,y:474,room:true,kind:"medalha",returnX:410,returnY:460},
+      {x:500,y:474,toX:500,toY:143},
+      {x:450,y:167,w:56,h:44,toX:410,toY:460},
       {x:1820,y:327,room:true,kind:"balaofesta",returnX:1920,returnY:340}
     ],
-    items:[{x:800,y:220,kind:"estrela"},{x:980,y:280,kind:"balao"},{x:1600,y:220,kind:"medalha"},{x:2270,y:290,kind:"brinquedo"},{x:2720,y:260,kind:"duplosalto"}],
+    items:[{x:800,y:220,kind:"estrela"},{x:980,y:280,kind:"balao"},{x:1600,y:220,kind:"medalha"},{x:2270,y:290,kind:"brinquedo"},{x:2720,y:260,kind:"duplosalto"},{x:500,y:165,kind:"medalha"}],
     malwares:[{x:940,y:480,vx:185,pattern:"jumper"},{x:1490,y:480,vx:-188,pattern:"jumper"},{x:1960,y:480,vx:186,pattern:"jumper"},{x:2400,y:480,vx:-184,pattern:"jumper"},{x:2830,y:480,vx:182,pattern:"patrol"}],
     movingPlatforms:[{x:1380,y:340,w:150,h:22,rangeX:0,rangeY:70,speed:55}],
     trampolines:[{x:2160,y:462}],
@@ -267,13 +285,18 @@ export const LEVELS = [
       {x:520,y:520,w:1000,h:28},{x:920,y:442,w:185,h:22},{x:1200,y:368,w:185,h:22},
       {x:1480,y:298,w:185,h:22},{x:1760,y:368,w:185,h:22},{x:2040,y:442,w:185,h:22},
       {x:2320,y:368,w:185,h:22},{x:2600,y:442,w:185,h:22},
-      {x:3150,y:520,w:1100,h:28}
+      {x:3150,y:520,w:1100,h:28},
+      // Plataforma alta do 1º cano — ver Nível 1.
+      {x:1760,y:142,w:150,h:22}
     ],
+    // Mistura: o 1º cano é o atalho clássico para plataforma alta, o 2º
+    // leva à sala secreta isolada.
     pipes:[
-      {x:1760,y:325,room:true,kind:"heart",returnX:1860,returnY:350},
+      {x:1760,y:325,toX:1760,toY:85},
+      {x:1810,y:109,w:56,h:44,toX:1860,toY:350},
       {x:2320,y:325,room:true,kind:"estrela",returnX:2400,returnY:340}
     ],
-    items:[{x:920,y:342,kind:"estrela"},{x:1480,y:248,kind:"medalha"},{x:2040,y:392,kind:"balao"},{x:2600,y:392,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    items:[{x:920,y:342,kind:"estrela"},{x:1480,y:248,kind:"medalha"},{x:2040,y:392,kind:"balao"},{x:2600,y:392,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:1760,y:107,kind:"heart"}],
     malwares:[{x:1060,y:480,vx:190,pattern:"jumper"},{x:1660,y:480,vx:-195,pattern:"jumper"},{x:2260,y:480,vx:190,pattern:"jumper"},{x:2860,y:480,vx:-185,pattern:"jumper"},{x:3200,y:480,vx:188,pattern:"jumper"}],
     movingPlatforms:[
       {x:1640,y:360,w:140,h:22,rangeX:200,rangeY:0,speed:90},
@@ -322,12 +345,15 @@ export const LEVELS = [
       {x:2020,y:390,w:180,h:22},
       {x:2260,y:450,w:180,h:22},
       {x:2500,y:380,w:160,h:22},
-      {x:2870,y:520,w:960,h:28}
+      {x:2870,y:520,w:960,h:28},
+      // Plataforma alta — ver Nível 1.
+      {x:2260,y:164,w:150,h:22}
     ],
     pipes:[
-      {x:2260,y:407,room:true,kind:"heart",returnX:2360,returnY:430}
+      {x:2260,y:407,toX:2260,toY:107},
+      {x:2310,y:131,w:56,h:44,toX:2360,toY:430}
     ],
-    items:[{x:820,y:220,kind:"estrela"},{x:1300,y:280,kind:"balao"},{x:1540,y:210,kind:"medalha"},{x:2020,y:340,kind:"brinquedo"},{x:2500,y:330,kind:"duplosalto"}],
+    items:[{x:820,y:220,kind:"estrela"},{x:1300,y:280,kind:"balao"},{x:1540,y:210,kind:"medalha"},{x:2020,y:340,kind:"brinquedo"},{x:2500,y:330,kind:"duplosalto"},{x:2260,y:129,kind:"heart"}],
     malwares:[{x:970,y:480,vx:175,pattern:"patrol"},{x:1450,y:480,vx:-178,pattern:"patrol"},{x:1920,y:480,vx:177,pattern:"jumper"},{x:2360,y:480,vx:-175,pattern:"jumper"},{x:2720,y:480,vx:172}],
     secrets:[{x:680,y:462,kind:"heart"}]
   },
@@ -405,11 +431,15 @@ export const LEVELS = [
       {x:2440,y:440,w:200,h:22},
       {x:2700,y:350,w:180,h:22},
       {x:2960,y:440,w:200,h:22},
-      {x:3430,y:520,w:960,h:28}
+      {x:3430,y:520,w:960,h:28},
+      // Plataforma alta do 1º cano — ver Nível 1.
+      {x:1400,y:154,w:150,h:22}
     ],
-    // 2 pares: um a meio do nível, outro perto do fim.
+    // Mistura: o 1º cano é o atalho clássico para plataforma alta, o 2º
+    // (perto do fim) leva à sala secreta isolada.
     pipes:[
-      {x:1400,y:397,room:true,kind:"balao",returnX:1500,returnY:420},
+      {x:1400,y:397,toX:1400,toY:97},
+      {x:1450,y:121,w:56,h:44,toX:1500,toY:420},
       {x:2960,y:397,room:true,kind:"balaofesta",returnX:3060,returnY:420}
     ],
     movingPlatforms:[
@@ -421,7 +451,8 @@ export const LEVELS = [
     items:[
       {x:880,y:390,kind:"balao"},{x:1140,y:310,kind:"estrela"},
       {x:1660,y:300,kind:"duplosalto"},{x:2180,y:310,kind:"medalha"},
-      {x:2700,y:300,kind:"brinquedo"},{x:560,y:470,kind:"heart"}
+      {x:2700,y:300,kind:"brinquedo"},{x:560,y:470,kind:"heart"},
+      {x:1400,y:119,kind:"balao"}
     ],
     malwares:[
       {x:980,y:480,vx:190,pattern:"patrol"},
@@ -440,12 +471,15 @@ export const LEVELS = [
       {x:520,y:520,w:1000,h:28},{x:980,y:432,w:160,h:22},{x:1260,y:350,w:160,h:22},
       {x:1540,y:274,w:160,h:22},{x:1820,y:350,w:160,h:22},{x:2100,y:432,w:160,h:22},
       {x:2380,y:350,w:160,h:22},{x:2660,y:270,w:160,h:22},{x:2940,y:350,w:160,h:22},
-      {x:3220,y:432,w:160,h:22},{x:3480,y:520,w:1100,h:28}
+      {x:3220,y:432,w:160,h:22},{x:3480,y:520,w:1100,h:28},
+      // Plataforma alta — ver Nível 1.
+      {x:1260,y:124,w:150,h:22}
     ],
     pipes:[
-      {x:1260,y:307,room:true,kind:"estrela",returnX:1360,returnY:330}
+      {x:1260,y:307,toX:1260,toY:67},
+      {x:1310,y:91,w:56,h:44,toX:1360,toY:330}
     ],
-    items:[{x:980,y:382,kind:"estrela"},{x:1540,y:224,kind:"balao"},{x:2100,y:382,kind:"brinquedo"},{x:2660,y:220,kind:"medalha"},{x:3220,y:382,kind:"duplosalto"}],
+    items:[{x:980,y:382,kind:"estrela"},{x:1540,y:224,kind:"balao"},{x:2100,y:382,kind:"brinquedo"},{x:2660,y:220,kind:"medalha"},{x:3220,y:382,kind:"duplosalto"},{x:1260,y:89,kind:"estrela"}],
     malwares:[{x:1130,y:480,vx:200,pattern:"patrol"},{x:1760,y:480,vx:-204,pattern:"jumper"},{x:2360,y:480,vx:200,pattern:"patrol"},{x:2960,y:480,vx:-196,pattern:"jumper"},{x:3380,y:480,vx:-198,pattern:"patrol"}],
     movingPlatforms:[
       {x:1410,y:340,w:130,h:22,rangeX:190,rangeY:0,speed:110},
@@ -532,10 +566,13 @@ export const LEVELS = [
     // Tematicamente: inclusão requer adaptação contínua — nada está fixo.
     platforms:[
       {x:520,y:520,w:960,h:28},     // arranque fixo
-      {x:3590,y:520,w:960,h:28}    // chegada fixa
+      {x:3590,y:520,w:960,h:28},    // chegada fixa
+      // Plataforma alta — ver Nível 1.
+      {x:3400,y:200,w:150,h:22}
     ],
     pipes:[
-      {x:3400,y:474,room:true,kind:"medalha",returnX:3500,returnY:460}
+      {x:3400,y:474,toX:3400,toY:143},
+      {x:3450,y:167,w:56,h:44,toX:3500,toY:460}
     ],
     // Todas as plataformas intermédias são móveis
     movingPlatforms:[
@@ -558,7 +595,8 @@ export const LEVELS = [
     items:[
       {x:860,y:370,kind:"balao"},{x:1320,y:230,kind:"estrela"},
       {x:1520,y:180,kind:"duplosalto"},{x:2360,y:150,kind:"medalha"},
-      {x:3040,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"}
+      {x:3040,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"},
+      {x:3400,y:175,kind:"medalha"}
     ],
     malwares:[
       {x:980,y:480,vx:206,pattern:"patrol"},{x:1620,y:480,vx:-210,pattern:"jumper"},
@@ -588,13 +626,18 @@ export const LEVELS = [
       {x:2920,y:340,w:130,h:22},
       {x:3120,y:430,w:130,h:22},
       {x:3340,y:340,w:130,h:22},
-      {x:3630,y:520,w:960,h:28}
+      {x:3630,y:520,w:960,h:28},
+      // Plataforma alta do 1º cano — ver Nível 1.
+      {x:1160,y:154,w:150,h:22}
     ],
+    // Mistura: o 1º cano é o atalho clássico para plataforma alta, o 2º
+    // leva à sala secreta isolada.
     pipes:[
-      {x:1160,y:397,room:true,kind:"balao",returnX:1260,returnY:420},
+      {x:1160,y:397,toX:1160,toY:97},
+      {x:1210,y:121,w:56,h:44,toX:1260,toY:420},
       {x:2920,y:297,room:true,kind:"balaofesta",returnX:3020,returnY:320}
     ],
-    items:[{x:800,y:220,kind:"estrela"},{x:1520,y:230,kind:"balao"},{x:1920,y:220,kind:"duplosalto"},{x:2720,y:210,kind:"medalha"},{x:3120,y:380,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    items:[{x:800,y:220,kind:"estrela"},{x:1520,y:230,kind:"balao"},{x:1920,y:220,kind:"duplosalto"},{x:2720,y:210,kind:"medalha"},{x:3120,y:380,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:1160,y:119,kind:"balao"}],
     malwares:[{x:880,y:480,vx:208,pattern:"patrol"},{x:1440,y:480,vx:-212,pattern:"jumper"},{x:2020,y:480,vx:208,pattern:"jumper"},{x:2620,y:480,vx:-204,pattern:"jumper"},{x:3220,y:480,vx:-206,pattern:"patrol"}],
     movingPlatforms:[
       {x:1340,y:330,w:110,h:22,rangeX:80,rangeY:0,speed:90},
@@ -617,19 +660,23 @@ export const LEVELS = [
       {x:2100,y:440,w:300,h:22},   // bloco longo
       {x:2700,y:260,w:300,h:22},   // bloco longo no topo
       {x:3300,y:430,w:300,h:22},   // reta final
-      {x:3680,y:520,w:1100,h:28}
+      {x:3680,y:520,w:1100,h:28},
+      // Plataforma alta do 1º cano — ver Nível 1.
+      {x:1920,y:134,w:150,h:22}
     ],
-    // Nível final: 2 salas secretas + 1 túnel decorativo — como despedida da
+    // Nível final: mistura dos 3 tipos — atalho clássico para plataforma
+    // alta, sala secreta isolada e túnel decorativo — como despedida da
     // mecânica ao longo do jogo, espalhados por posições bem diferentes do
     // habitual "logo no início".
     pipes:[
-      {x:1920,y:317,room:true,kind:"balao",returnX:2020,returnY:340},
+      {x:1920,y:317,toX:1920,toY:77},
+      {x:1970,y:101,w:56,h:44,toX:2020,toY:340},
       {x:3300,y:387,room:true,kind:"medalha",returnX:3400,returnY:410},
       // Túnel decorativo — perto do fim, no chão fixo, antes da porta,
       // afastado da plataforma em x:3300 (que fica logo por cima).
       {x:3480,y:474,decorative:true}
     ],
-    items:[{x:1000,y:390,kind:"balao"},{x:1320,y:310,kind:"estrela"},{x:1650,y:230,kind:"duplosalto"},{x:2200,y:390,kind:"medalha"},{x:2800,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"}],
+    items:[{x:1000,y:390,kind:"balao"},{x:1320,y:310,kind:"estrela"},{x:1650,y:230,kind:"duplosalto"},{x:2200,y:390,kind:"medalha"},{x:2800,y:210,kind:"brinquedo"},{x:560,y:470,kind:"heart"},{x:1920,y:99,kind:"balao"}],
     malwares:[
       {x:950,y:420,vx:130,pattern:"patrol"},{x:1100,y:420,vx:-130,pattern:"patrol"},
       {x:1580,y:260,vx:125,pattern:"patrol"},{x:1730,y:260,vx:-125,pattern:"patrol"},
