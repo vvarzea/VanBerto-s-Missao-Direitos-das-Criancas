@@ -28,8 +28,7 @@ import { makeTextures, makePlatformTextureThemed, makePipeTexture } from "./text
 import { initBackground, applyBackground, drawSun, drawStars, drawCloud,
          updateTrail, updateFootsteps, updateDoorGlow, updatePlatformDecor,
          spawnPlatformDecor, resetDoorGlow, clearPlatformDecor, hideDoorGlow,
-         spawnLevelPosters, clearLevelPosters,
-         clouds, bgConfetti, levelPosters, NIGHT_THEMES } from "./background.js";
+         clouds, bgConfetti, NIGHT_THEMES } from "./background.js";
 
 window.addEventListener("DOMContentLoaded", () => {
 
@@ -2708,8 +2707,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Decorações animadas nas plataformas
     spawnPlatformDecor(scene, platforms);
-    // Cartazes pedagógicos com a dica-chave do quiz do nível
-    spawnLevelPosters(scene, L);
 
     const keyMap={
       estrela:"item_estrela",
@@ -3197,7 +3194,6 @@ window.addEventListener("DOMContentLoaded", () => {
     critters.forEach(c => collect(c.sprite));
     balloons.forEach(b => { collect(b.sprite); collect(b.gfx); });
     if (currentSign) { collect(currentSign.obj); collect(currentSign.badge); }
-    levelPosters.forEach(collect); // cartazes pedagógicos — senão ficavam a flutuar por cima da sala secreta
     secretRoomHidden.forEach(o => {
       o.visible = false;
       if (o.body) o.body.enable = false;
@@ -3827,7 +3823,6 @@ window.addEventListener("DOMContentLoaded", () => {
     balloons.forEach(b=>{ if(b.sprite) b.sprite.destroy(); if(b.gfx) b.gfx.destroy(); }); balloons=[];
     critters.forEach(c=>{ if(c.sprite&&c.sprite.active) c.sprite.destroy(); }); critters=[];
     clearPlatformDecor();
-    clearLevelPosters(); // idem — sem isto, os cartazes pedagógicos do nível anterior ficavam a flutuar na arena do boss
     clearSign();
     if(bossOverlay){ try{bossOverlay.destroy();}catch{} bossOverlay=null; }
     if(bossLockIcon){ try{bossLockIcon.destroy();}catch{} bossLockIcon=null; }

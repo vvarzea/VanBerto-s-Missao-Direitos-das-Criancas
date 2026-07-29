@@ -16,7 +16,6 @@
 // `platDecorGfx`/`platDecorData` ao (re)carregar um nível.
 
 import { THEMES } from "./data-levels.js";
-import { QUIZ_TIPS } from "./data-quiz.js";
 
 let bgGraphics, farGraphics, hillsGraphics, groundGraphics, decorGraphics;
 let platDecorGfx, sunGraphics, moonGraphics, starGraphics, doorGlowGfx;
@@ -471,8 +470,8 @@ function spawnBgConfetti(scene, themeIdx, worldW){
 // Cada nível pode ter um QUIZ_TIPS[quizTheme] associado.
 // Criamos 2-3 cartazes a diferentes alturas ao longo do nível,
 // com a dica-chave, para a criança chegar à porta "quente".
-export let levelPosters = [];
-export function spawnLevelPosters(scene, L){
+let levelPosters = [];
+function spawnLevelPosters(scene, L){
   levelPosters.forEach(p=>{ if(p&&p.active) p.destroy(); });
   levelPosters = [];
   const theme = L.quizTheme || "historia";
@@ -540,7 +539,7 @@ export function spawnLevelPosters(scene, L){
   });
 }
 
-export function clearLevelPosters(){
+function clearLevelPosters(){
   levelPosters.forEach(p=>{ if(p&&p.active) p.destroy(); });
   levelPosters = [];
 }
