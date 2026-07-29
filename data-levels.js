@@ -273,7 +273,7 @@ export const LEVELS = [
     // 2 pares — mistura: o 1º é o atalho clássico para plataforma alta, o
     // 2º a meio do nível leva à sala secreta isolada.
     pipes:[
-      {x:500,y:474,toX:450,toY:157},
+      {x:570,y:474,toX:450,toY:157},
       {x:450,y:157,toX:410,toY:460},
       {x:1820,y:327,room:true,kind:"balaofesta"}
     ],
