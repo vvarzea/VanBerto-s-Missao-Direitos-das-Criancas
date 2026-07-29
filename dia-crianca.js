@@ -995,7 +995,7 @@ window.addEventListener("DOMContentLoaded", () => {
     createArtOrbs(this);
 
     // Assinatura da professora — dentro da faixa castanha do chão, muito subtil
-    this.add.text(960-8, 536, "Professora Vanda Várzea", {
+    this.add.text(960-8, 536, "✦ © Prof.ª Vanda Várzea ✦", {
       fontSize:"8px", fontStyle:"italic", color:"#f5d9a8",
       stroke:"#3a1a00", strokeThickness:1
     }).setScrollFactor(0).setDepth(100).setOrigin(1,1).setAlpha(0.55);
@@ -2638,11 +2638,31 @@ window.addEventListener("DOMContentLoaded", () => {
     // 1 ou 2 pares) variam de nível para nível — ver comentário no topo de
     // data-levels.js junto a LEVELS. Sem placas/texto — só o cano e, do
     // outro lado, uma recompensa (item).
+    //
+    // Altura por omissão AUMENTADA (era 64, igual à largura — ficava mais
+    // baixo do que o VanBerto's, que tem 72px de alto parado). Reportado:
+    // "não fica em cima do cano" — ao chegar-se ao pé do cano ao nível do
+    // chão (é assim que se ativa o atalho: chegar perto + carregar em
+    // baixo, não é preciso saltar-lhe para cima), a cabeça do VanBerto's
+    // só ultrapassava o topo do cano por ~8px, ficando o resto do corpo
+    // visualmente "engolido" por ele. Com 100px o cano fica claramente
+    // mais alto do que o VanBerto's, tal como um cano a sério — ele fica
+    // à frente/ao lado, não dentro. A BASE mantém-se sempre encostada ao
+    // chão/plataforma por baixo (pipeCenterY só estica o TOPO para cima),
+    // por isso não é preciso mexer em nenhum y de nenhum nível.
+    const PIPE_DEFAULT_H = 100;
+    // p.y em data-levels.js foi sempre pensado como CENTRO de um cano de
+    // 64px (base = y+32) — ver comentários junto a "pipes:" em cada
+    // nível. Ao usar uma altura por omissão maior, preservamos essa MESMA
+    // base (só o topo sobe) para não ser preciso recalcular y em lado
+    // nenhum. Se p.h vier definido explicitamente, assume-se que y já foi
+    // calculado de propósito para essa altura exacta — não se mexe.
+    const pipeCenterY = (p) => p.h ? p.y : ((p.y + 32) - PIPE_DEFAULT_H / 2);
     pipes = [];
     (L.pipes||[]).forEach(p=>{
       if(!scene.textures.exists("pipe_mario")) makePipeTexture(scene);
-      const w = p.w||64, h = p.h||64;
-      const spr = platforms.create(p.x, p.y, "pipe_mario");
+      const w = p.w||64, h = p.h||PIPE_DEFAULT_H;
+      const spr = platforms.create(p.x, pipeCenterY(p), "pipe_mario");
       spr.displayWidth = w; spr.displayHeight = h; spr.refreshBody();
       // Sólido nos 4 lados (pedido: "não pode passar pela frente, tem de se
       // saltar") — tanto o VanBerto's como os vilões (malwareGroup também
@@ -2678,7 +2698,7 @@ window.addEventListener("DOMContentLoaded", () => {
           // na plataforma por baixo. Não entra no array "pipes", logo
           // tryEnterPipe() nunca o reconhece como entrável (tal como um cano
           // decorative:true).
-          const exImg = platforms.create(returnX, returnY, "pipe_mario");
+          const exImg = platforms.create(returnX, pipeCenterY({x:returnX,y:returnY,h:p.h}), "pipe_mario");
           exImg.displayWidth = w; exImg.displayHeight = h; exImg.refreshBody();
           exImg.setTint(0x9fb89f);
           pipeExitDecor.push(exImg);

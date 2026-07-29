@@ -569,8 +569,7 @@ canvas { width: 100% !important; height: 100% !important; display: block; touch-
   50%     { box-shadow: 0 0 0 3px #ffd700, 0 0 0 6px #ff6b35, 0 0 0 9px #a0ff80, 8px 8px 0 rgba(26,10,46,0.4), 0 0 80px rgba(255,215,0,0.40); }
 }
 .win-card h2 { color: #ffd700 !important; font-size: 26px; margin: 0 0 6px; font-family:'Baloo 2',sans-serif; text-shadow: 0 0 30px rgba(255,215,0,0.7), 0 0 60px rgba(255,107,53,0.4); }
-.win-icon { font-size: 72px; margin-bottom: 8px; animation: winBounce 0.6s ease-in-out infinite alternate, winSpin 8s linear infinite; }
-@keyframes winBounce { from{transform:translateY(0) scale(1)} to{transform:translateY(-14px) scale(1.1)} }
+.win-icon { font-size: 72px; margin-bottom: 8px; animation: winSpin 8s linear infinite; }
 @keyframes winSpin   { 0%{filter:drop-shadow(0 0 8px #ffd700)} 50%{filter:drop-shadow(0 0 20px #ff6b35)} 100%{filter:drop-shadow(0 0 8px #ffd700)} }
 .win-name { font-size: 16px; color: #ffb890; margin: 0 0 16px; font-style: italic; }
 .win-name span { font-weight: 800; color: #ffd700; font-style: normal; text-shadow: 0 0 12px rgba(255,215,0,0.5); }

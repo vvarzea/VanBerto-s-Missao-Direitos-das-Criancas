@@ -362,19 +362,12 @@ function drawMoon(scene, themeIdx){
   // centro (mais quente) para o rebordo (mais pálido), em vez de uma cor lisa.
   moonGraphics.fillStyle(0xfff3c4,1); moonGraphics.fillCircle(mx,my,mr);
   moonGraphics.fillStyle(0xfffaE0,1); moonGraphics.fillCircle(mx-mr*0.12,my-mr*0.12,mr*0.72);
-  // Sombra crescente — pedido: "o preto devia ser mais subtil, fica uma
-  // bola escura", e a 1ª tentativa com círculos empilhados "disfarçava
-  // ainda menos" (criava anéis visíveis). Agora é uma Image com gradiente
-  // radial real — núcleo escuro a esbater suavemente até transparente,
-  // sem nenhuma aresta rígida. Ver ensureMoonShadowTexture().
-  ensureMoonShadowTexture(scene);
-  if (!moonShadowImg) {
-    moonShadowImg = scene.add.image(0,0,"moon_shadow_grad").setDepth(-54).setScrollFactor(0.05);
-  }
-  const shR = mr*0.94*2; // diâmetro
-  moonShadowImg.setPosition(mx+mr*0.58, my-mr*0.08);
-  moonShadowImg.setDisplaySize(shR, shR);
-  moonShadowImg.setVisible(true);
+  // Sombra crescente — REMOVIDA a pedido ("quando é noite prefiro Lua
+  // cheia"). O disco fica completo (halo + crateras + brilho, só sem a
+  // sombra escura por cima). Mantém-se ensureMoonShadowTexture()/
+  // moonShadowImg no ficheiro (não usados) caso se queira repor uma fase
+  // da lua no futuro — basta voltar a chamar o bloco original aqui.
+  if (moonShadowImg) moonShadowImg.setVisible(false);
   // Crateras na parte visível (esquerda/baixo) — mais uma do que antes,
   // cada uma com sombra + pequeno brilho para dar profundidade em vez de
   // ficarem lisas.
