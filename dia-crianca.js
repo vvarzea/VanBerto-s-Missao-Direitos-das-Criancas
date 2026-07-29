@@ -3127,50 +3127,44 @@ window.addEventListener("DOMContentLoaded", () => {
     // viagem (0,4s) mais uma pequena margem extra ao sair.
     setInvuln(scene, TUNNEL_WARP_MS*2 + 500);
     const startScaleX = player.scaleX, startScaleY = player.scaleY;
+    // Calcular JÁ AQUI (antes de qualquer animação) a posição Y final e
+    // correta de aterragem — em cima do cano de destino, se existir um
+    // fisicamente nas coordenadas toX/toY. Antes, isto só era calculado
+    // DEPOIS da animação terminar, o que fazia o VanBerto's "cair" até ao
+    // centro do cano (toY) e só depois saltar de repente para a posição
+    // certa no topo — visualmente parecia que ia cair e só depois é que
+    // "apanhava-se". Calculando já aqui, a animação de saída vai logo
+    // diretamente para o sítio certo, sem nenhum salto no fim.
+    const destPipe = platforms.getChildren().find(pl =>
+      pl.texture && pl.texture.key === "pipe_mario"
+      && Math.abs(pl.x - p.toX) < 4 && Math.abs(pl.y - p.toY) < 4
+    );
+    const landingY = (destPipe && destPipe.body)
+      ? (destPipe.body.top - 1 - player.body.halfHeight)
+      : p.toY;
     scene.tweens.add({
       targets: player, y: player.y + 20, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
       duration: TUNNEL_WARP_MS, ease: "Quad.easeIn",
       onComplete: () => {
-        player.x = p.toX; player.y = p.toY - 18;
+        player.x = p.toX; player.y = landingY - 18;
         scene.cameras.main.startFollow(player, true, 1.0, 1.0);
         scene.time.delayedCall(40, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
         ensureAudio(); beep({ freq: 220, dur: 0.09, type: "square", vol: 0.05, slideTo: 480 });
         scene.tweens.add({
-          targets: player, y: p.toY, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
+          targets: player, y: landingY, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
           duration: TUNNEL_WARP_MS, ease: "Back.easeOut",
           onComplete: () => {
             player.body.moves = true;
             player.body.updateFromGameObject();
-            // Ao chegar, pousar explicitamente em cima do CANO de destino
-            // (não da plataforma qualquer mais próxima). Sem isto, quando
-            // havia uma plataforma normal por baixo/à volta do cano de
-            // chegada — que é o caso normal, já que o cano está sempre
-            // apoiado nalguma plataforma — o snapToPipeLanding() genérico
-            // (que escolhe sempre a superfície sólida mais próxima) agarrava-se
-            // a essa plataforma em vez de subir até ao rebordo do cano, porque
-            // ficava a uma distância menor. Resultado: o VanBerto's aparecia
-            // meio enterrado dentro do cano em vez de em cima dele. Aqui
-            // procuramos o cano físico exatamente nas coordenadas de chegada
-            // (toX/toY) e pousamos sempre no TOPO dele; só se não houver
-            // nenhum cano ali (não devia acontecer) é que caímos no snap
-            // genérico como rede de segurança.
-            const destPipe = platforms.getChildren().find(pl =>
-              pl.texture && pl.texture.key === "pipe_mario"
-              && Math.abs(pl.x - p.toX) < 4 && Math.abs(pl.y - p.toY) < 4
-            );
-            if (destPipe && destPipe.body) {
-              player.y -= (player.body.bottom - (destPipe.body.top - 1));
-              player.body.updateFromGameObject();
-            } else {
-              snapToPipeLanding();
-            }
+            // Rede de segurança: só se não havia mesmo nenhum cano físico
+            // em (toX,toY) — não devia acontecer — é que caímos no snap
+            // genérico da plataforma mais próxima.
+            if (!destPipe || !destPipe.body) snapToPipeLanding();
             // Pequeno impulso horizontal ao reaparecer — "sai" ligeiramente
-            // do túnel em vez de simplesmente reaparecer parado. CORRIGIDO:
-            // já não leva impulso vertical (setVelocityY negativo) — isso
-            // fazia o VanBerto's subir no ar e cair de volta logo a seguir,
-            // o que parecia visualmente "vou cair ao chão" mesmo ficando na
-            // mesma plataforma (snapToPipeLanding() já o deixou exatamente
-            // pousado, não é preciso nenhum "hop" vertical extra).
+            // do túnel em vez de simplesmente reaparecer parado. Sem impulso
+            // vertical: isso fazia o VanBerto's subir no ar e cair de volta
+            // logo a seguir, o que parecia visualmente "vou cair ao chão"
+            // mesmo ficando na mesma plataforma.
             if (player.body) {
               player.body.setVelocityX((player.flipX ? -1 : 1) * 90);
             }
@@ -3317,6 +3311,16 @@ window.addEventListener("DOMContentLoaded", () => {
     setInvuln(scene, TUNNEL_WARP_MS*2 + 500);
     const startScaleX = player.scaleX, startScaleY = player.scaleY;
     const ret = secretRoomReturn || { x: player.x, y: player.y };
+    // Calcular já aqui a posição Y final correta (ver comentário equivalente
+    // em enterPipe()) — evita o "cai até ao centro do cano e só depois
+    // salta para a posição certa" no fim da animação.
+    const destPipe = platforms.getChildren().find(pl =>
+      pl.texture && pl.texture.key === "pipe_mario"
+      && Math.abs(pl.x - ret.x) < 4 && Math.abs(pl.y - ret.y) < 4
+    );
+    const landingY = (destPipe && destPipe.body)
+      ? (destPipe.body.top - 1 - player.body.halfHeight)
+      : ret.y;
     scene.tweens.add({
       targets: player, y: player.y + 20, scaleY: startScaleY*0.12, scaleX: startScaleX*1.15, alpha: 0.35,
       duration: TUNNEL_WARP_MS, ease: "Quad.easeIn",
@@ -3330,32 +3334,19 @@ window.addEventListener("DOMContentLoaded", () => {
         inSecretRoom = false;
         secretRoomReturn = null;
 
-        player.x = ret.x; player.y = ret.y - 18;
+        player.x = ret.x; player.y = landingY - 18;
         scene.cameras.main.startFollow(player, true, 1.0, 1.0);
         scene.time.delayedCall(40, () => scene.cameras.main.startFollow(player, true, 0.08, 0.08));
         ensureAudio(); beep({ freq: 220, dur: 0.09, type: "square", vol: 0.05, slideTo: 480 });
         scene.tweens.add({
-          targets: player, y: ret.y, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
+          targets: player, y: landingY, scaleY: startScaleY, scaleX: startScaleX, alpha: 1,
           duration: TUNNEL_WARP_MS, ease: "Back.easeOut",
           onComplete: () => {
             player.body.moves = true;
             player.body.updateFromGameObject();
-            // Tal como em enterPipe(): pousar explicitamente em cima do CANO
-            // de regresso (nas coordenadas ret.x/ret.y), não da plataforma
-            // qualquer mais próxima. Sem isto, o snapToPipeLanding() genérico
-            // agarrava-se sempre à plataforma por baixo do cano (mais perto
-            // do que o topo do próprio cano), deixando o VanBerto's ao lado/
-            // à frente do cano em vez de em cima dele.
-            const destPipe = platforms.getChildren().find(pl =>
-              pl.texture && pl.texture.key === "pipe_mario"
-              && Math.abs(pl.x - ret.x) < 4 && Math.abs(pl.y - ret.y) < 4
-            );
-            if (destPipe && destPipe.body) {
-              player.y -= (player.body.bottom - (destPipe.body.top - 1));
-              player.body.updateFromGameObject();
-            } else {
-              snapToPipeLanding();
-            }
+            // Rede de segurança: só se não havia mesmo nenhum cano físico
+            // nas coordenadas de regresso é que caímos no snap genérico.
+            if (!destPipe || !destPipe.body) snapToPipeLanding();
             // Sem impulso vertical (ver enterPipe) — evita o "sobe e cai de
             // volta" que parecia uma queda ao voltar ao nível principal.
             if (player.body) { player.body.setVelocityX((player.flipX?-1:1)*90); }
