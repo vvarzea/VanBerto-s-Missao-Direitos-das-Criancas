@@ -2499,7 +2499,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const dx = Math.abs(player.x - sign.x), dy = Math.abs(player.y - sign.y);
       const near = dx <= 130 && dy <= 170;
       if (near && !sign.wasNear) { sign.wasNear = true; showSignMessage(sign); }
-      else if (!near) { sign.wasNear = false; }
+      else if (!near && sign.wasNear) { sign.wasNear = false; hideSignMessage(sign); }
     });
   }
   // Cria o letreiro (emoji + badge "!") numa posição dada — partilhado entre
@@ -2550,8 +2550,9 @@ window.addEventListener("DOMContentLoaded", () => {
     if (near && !currentSign.wasNear) {
       currentSign.wasNear = true;
       showSignMessage(currentSign);
-    } else if (!near) {
+    } else if (!near && currentSign.wasNear) {
       currentSign.wasNear = false;
+      hideSignMessage(currentSign);
     }
   }
   // Letreiro de tutorial do cano — só no Nível 1, mesmo mecanismo dos
@@ -2577,8 +2578,9 @@ window.addEventListener("DOMContentLoaded", () => {
     if (near && !pipeHintSign.wasNear) {
       pipeHintSign.wasNear = true;
       showSignMessage(pipeHintSign);
-    } else if (!near) {
+    } else if (!near && pipeHintSign.wasNear) {
       pipeHintSign.wasNear = false;
+      hideSignMessage(pipeHintSign);
     }
   }
   // Reaçãozinha tola ao saltar em cima de um cano falso (decorative:true) —
@@ -2619,10 +2621,18 @@ window.addEventListener("DOMContentLoaded", () => {
     }).setOrigin(0.5).setDepth(200).setAlpha(0).setScale(0.7);
     sign.activeLbl = lbl;
     sceneRef.tweens.add({ targets:lbl, alpha:1, scaleX:1, scaleY:1, y:sign.y-70, duration:260, ease:"Back.easeOut" });
-    sceneRef.time.delayedCall(4200, () => {
-      if (!lbl.active) return;
-      sceneRef.tweens.add({ targets:lbl, alpha:0, duration:300, onComplete:()=>{ try{lbl.destroy();}catch{} if(sign.activeLbl===lbl) sign.activeLbl=null; } });
-    });
+    // Pedido: "a informação desaparece muito rápido nem dá para ler" — antes
+    // escondia-se sempre ao fim de 4,2s, mesmo que o jogador continuasse
+    // parado a lê-la. Agora fica aberta enquanto ele estiver perto (ver
+    // hideSignMessage, chamada só quando se afasta), por isso o tempo de
+    // leitura deixa de ter limite nenhum.
+  }
+  // Esconde a mensagem de um letreiro (chamada quando o jogador se afasta) —
+  // partilhada por updateSigns/updateSecretSigns/updatePipeHintSign.
+  function hideSignMessage(sign) {
+    const lbl = sign.activeLbl;
+    if (!lbl || !lbl.active) return;
+    sceneRef.tweens.add({ targets:lbl, alpha:0, duration:300, onComplete:()=>{ try{lbl.destroy();}catch{} if(sign.activeLbl===lbl) sign.activeLbl=null; } });
   }
 
   function difficultyFactor(idx) {
