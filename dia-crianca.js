@@ -1977,11 +1977,26 @@ window.addEventListener("DOMContentLoaded", () => {
     const sorted = [...plats].sort((a, b) => a.x - b.x);
 
     // Primeira plataforma que não tenha NENHUM item de L.items dentro dos seus limites
-    // (margem de 8px para dar espaço ao sprite do item)
+    // (margem de 8px para dar espaço ao sprite do item) e que também não tenha
+    // nenhum CANO em cima — um cano é um corpo sólido alto (~100px) montado
+    // sobre a plataforma; se o escudo caísse dentro dessa "coluna" ficava
+    // preso lá dentro, visível mas impossível de apanhar (o cano bloqueia o
+    // acesso). Por isso os canos contam como "ocupado" tal como os itens.
+    const pipes = L.pipes || [];
+    // Colunas ocupadas por um cano: o ponto de entrada (x) e, quando existir
+    // um regresso num sítio diferente (returnX/returnY, só usado no Nível 4),
+    // também esse ponto — lá é desenhado um 2º cano decorativo físico.
+    const pipeXs = [];
+    pipes.forEach(pp => {
+      pipeXs.push(pp.x);
+      if (pp.returnX != null && pp.returnX !== pp.x) pipeXs.push(pp.returnX);
+    });
     const p = sorted.find(pl => {
       const left  = pl.x - pl.w / 2 - 8;
       const right = pl.x + pl.w / 2 + 8;
-      return L.items.every(it => it.x < left || it.x > right);
+      const freeOfItems = L.items.every(it => it.x < left || it.x > right);
+      const freeOfPipes = pipeXs.every(px => px < left - 32 || px > right + 32);
+      return freeOfItems && freeOfPipes;
     });
     if (!p) return;
 
