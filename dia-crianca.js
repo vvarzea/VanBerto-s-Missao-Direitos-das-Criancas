@@ -1458,6 +1458,14 @@ window.addEventListener("DOMContentLoaded", () => {
       if (inBossFight) updateBossFight(sceneRef);
     }
     if (!inSecretRoom) updateMovingPlatforms(sceneRef);
+    // A curiosidade da sala secreta (spawnSecretSign, ver
+    // buildSecretRoomContents) usa este mesmo "secretSigns" — por isso tem
+    // de continuar a ser atualizado MESMO dentro da sala (o bloco acima,
+    // gated por "!inSecretRoom", existia de antes de a curiosidade lá
+    // dentro existir, e só serve o resto dos sistemas do nível principal).
+    // Bug corrigido: sem esta linha, o letreiro aparecia (lâmpada + "!")
+    // mas nunca mostrava o texto — "não diz nada".
+    if (inSecretRoom) updateSecretSigns();
     const _overlayOpen = awaitingQuiz || awaitingStory || _overlayPaused
       || !startOverlay.classList.contains("hidden")
       || !historyOverlay.classList.contains("hidden")
