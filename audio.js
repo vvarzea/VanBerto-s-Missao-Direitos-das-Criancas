@@ -43,6 +43,19 @@ export const SFX = {
     setTimeout(() => beep({ freq:1120,dur:0.18, type:"triangle", vol:0.055, slideTo:1400 }), 490);
   },
   power()   { beep({ freq:360, dur:0.10, type:"square",   vol:0.055, slideTo:960  }); },
+  poof() {
+    // Reação tola ao saltar-se em cima de um cano falso (decorative:true)
+    // — som descendente e "molenga", claramente cómico, nada parecido com
+    // os outros sons do jogo.
+    beep({ freq:300, dur:0.16, type:"sawtooth", vol:0.05, slideTo:80 });
+  },
+  secretRoom() {
+    // Descoberta de sala secreta (1ª vez) — arpejo mágico de 3 notas
+    // (dó-mi-sol), claramente diferente do "coin()" normal de apanhar um
+    // item, para reforçar que isto é um momento especial.
+    const notes=[523,659,784];
+    notes.forEach((f,i)=>setTimeout(()=>beep({freq:f,dur:0.14,type:"triangle",vol:0.06,slideTo:f*1.3}),i*90));
+  },
   bossArrive() {
     // Chegada de boss — mais grave e ameaçador que o SFX.door() genérico,
     // usado só neste momento para o distinguir de qualquer outra transição.

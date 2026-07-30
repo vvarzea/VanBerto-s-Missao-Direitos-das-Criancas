@@ -19,7 +19,7 @@ import { starsForLevel, totalStarsEarned, resetLevelStarTracking, finalizeLevelS
          resetAllStars } from "./stars.js";
 import { unlockedAchievements, checkAchievements, onSecretFoundForAchievements,
          onHistoryReadForAchievements, onCorrectAnswerForAchievements, renderAchievements,
-         resetAchievements, showAchievementToast } from "./achievements.js";
+         resetAchievements, showAchievementToast, onSecretRoomFoundForAchievements } from "./achievements.js";
 import { BOSS_BY_LEVEL } from "./data-bosses.js";
 import { REGION_INTRO, BOSS_OBJECTIVE, BOSS_INTRO_VB, BOSS_VICTORY_VB, NPC_SIGNS, BOSS_HP_TAUNTS } from "./data-story.js";
 import { playTitleCard, playCinematic } from "./cinematics.js";
@@ -825,6 +825,10 @@ window.addEventListener("DOMContentLoaded", () => {
   // para serem destruídos ao (re)carregar o nível/arena de boss, já que não
   // pertencem ao grupo físico "platforms" (que se limpa a si próprio).
   let pipeExitDecor=[];
+  // Canos falsos (decorative:true) — só para a reação tola ao saltar-lhes
+  // em cima (pedido). Cada entrada: { spr, poofed }. "poofed" evita repetir
+  // o efeito de cada vez que o jogador fica parado em cima do mesmo cano.
+  let decorativePipes = [];
   // CORRIGIDO — _pipeWarping (e player.body.moves) só voltavam a false dentro do
   // onComplete da 2ª tween da animação de cano/sala secreta (~400ms depois de
   // começar). Se essa cadeia de tweens fosse interrompida a meio — killAll()
@@ -850,6 +854,13 @@ window.addEventListener("DOMContentLoaded", () => {
   let _suppressCrouchUntilRelease = false;
   let currentSign = null; // { x,y,obj,badge,triggered,text } — letreiro/NPC do nível atual
   let secretSigns = []; // curiosidades dentro das salas dos canos — ver clearSecretSigns/spawnSecretSign
+  // Letreiro de tutorial do 1º cano do jogo (pedido: "falta explicar os
+  // túneis ao início") — igual em tudo aos outros letreiros (aproxima-te
+  // para ler), mas num slot próprio, independente de currentSign, para não
+  // substituir o letreiro normal do Nível 1 (ambos ficam visíveis perto do
+  // spawn, um a seguir ao outro). Só é criado uma vez, no Nível 1 — ver
+  // spawnPipeHintSign, chamado de loadLevel só quando idx===0.
+  let pipeHintSign = null;
   // Sala secreta isolada ("tipo os bosses") — ver comentário completo junto
   // a ROOM_WORLD_W. inSecretRoom=true enquanto o jogador está lá dentro;
   // secretRoomReturn guarda onde aterrar de volta no nível principal;
@@ -1442,6 +1453,8 @@ window.addEventListener("DOMContentLoaded", () => {
       updateHazards(sceneRef);
       updateSigns();
       updateSecretSigns();
+      updatePipeHintSign();
+      updateDecorativePipeReactions();
       if (inBossFight) updateBossFight(sceneRef);
     }
     if (!inSecretRoom) updateMovingPlatforms(sceneRef);
@@ -2541,6 +2554,58 @@ window.addEventListener("DOMContentLoaded", () => {
       currentSign.wasNear = false;
     }
   }
+  // Letreiro de tutorial do cano — só no Nível 1, mesmo mecanismo dos
+  // outros (aproxima-te para ler). Explica o atalho "chega perto + ↓" que,
+  // de outra forma, só se descobre por acidente (o cano parece só um
+  // obstáculo sólido, sem nenhuma pista visual do que fazer).
+  function spawnPipeHintSign(scene, x, y) {
+    clearPipeHintSign();
+    pipeHintSign = _createSignAt(scene, x, y, "🚇", "Chega-te a um cano e carrega ↓ para tentares um atalho!");
+  }
+  function clearPipeHintSign() {
+    if (pipeHintSign) {
+      try { pipeHintSign.obj?.destroy(); } catch {}
+      try { pipeHintSign.badge?.destroy(); } catch {}
+      try { pipeHintSign.activeLbl?.destroy(); } catch {}
+    }
+    pipeHintSign = null;
+  }
+  function updatePipeHintSign() {
+    if (!pipeHintSign || !player) return;
+    const dx = Math.abs(player.x - pipeHintSign.x), dy = Math.abs(player.y - pipeHintSign.y);
+    const near = dx <= 130 && dy <= 170;
+    if (near && !pipeHintSign.wasNear) {
+      pipeHintSign.wasNear = true;
+      showSignMessage(pipeHintSign);
+    } else if (!near) {
+      pipeHintSign.wasNear = false;
+    }
+  }
+  // Reaçãozinha tola ao saltar em cima de um cano falso (decorative:true) —
+  // pedido: recompensar quem tenta mesmo os canos "errados" em vez de
+  // ficarem completamente inertes. Só dispara 1x por cano por visita ao
+  // nível (flag "poofed"); "em cima" = a tocar por baixo do corpo mesmo
+  // por cima do cano (não simplesmente encostado de lado).
+  function updateDecorativePipeReactions() {
+    if (!player || !player.body || !decorativePipes.length) return;
+    const pb = player.body;
+    if (!pb.touching.down && !pb.blocked.down) return;
+    decorativePipes.forEach(dp => {
+      if (dp.poofed || !dp.spr || !dp.spr.body) return;
+      const b = dp.spr.body;
+      const overlapX = pb.right > b.left && pb.left < b.right;
+      const onTop = Math.abs(pb.bottom - b.top) <= 4;
+      if (!overlapX || !onTop) return;
+      dp.poofed = true;
+      ensureAudio(); SFX.poof();
+      // "Poof" — squish rápido do próprio cano + nuvenzinha de emoji, só
+      // para dar um feedback engraçado, sem nenhuma consequência de jogo.
+      sceneRef.tweens.add({ targets:dp.spr, scaleY:dp.spr.scaleY*0.8, duration:90, yoyo:true, ease:"Sine.easeOut" });
+      const poof = sceneRef.add.text(dp.spr.x, b.top-10, "💨", { fontSize:"22px" }).setOrigin(0.5).setDepth(3);
+      sceneRef.tweens.add({ targets:poof, y:poof.y-24, alpha:0, duration:500, ease:"Sine.easeOut",
+        onComplete:()=>{ try{poof.destroy();}catch{} } });
+    });
+  }
   function showSignMessage(sign) {
     // Se já houver uma mensagem deste letreiro a meio (ex.: o jogador saiu e
     // voltou a entrar muito depressa), substitui-a em vez de empilhar as duas.
@@ -2598,6 +2663,14 @@ window.addEventListener("DOMContentLoaded", () => {
     if(door){door.destroy();door=null;}
     spawnLevelSign(scene, L, idx);
     clearSecretSigns(); // as curiosidades são (re)criadas mais abaixo, uma por cada L.pipes[].fact
+    // Tutorial do cano — só no Nível 1 (idx===0), o "par de demonstração".
+    // Posicionado antes do 1º cano do nível (a x:570), mas depois do spawn,
+    // para o VanBerto's ler a dica com tempo de sobra antes de lá chegar.
+    clearPipeHintSign();
+    if (idx === 0) {
+      const firstPipe = (L.pipes||[]).find(p=>!p.decorative);
+      if (firstPipe) spawnPipeHintSign(scene, firstPipe.x - 50, 486);
+    }
 
     // Recriar HUD de orbes (profundidade sobrevive ao clear das plataformas)
     createArtOrbs(scene);
@@ -2659,6 +2732,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // calculado de propósito para essa altura exacta — não se mexe.
     const pipeCenterY = (p) => p.h ? p.y : ((p.y + 32) - PIPE_DEFAULT_H / 2);
     pipes = [];
+    decorativePipes = [];
     (L.pipes||[]).forEach(p=>{
       if(!scene.textures.exists("pipe_mario")) makePipeTexture(scene);
       const w = p.w||64, h = p.h||PIPE_DEFAULT_H;
@@ -2675,6 +2749,10 @@ window.addEventListener("DOMContentLoaded", () => {
         // baixo em cima dele. Tint subtil (esverdeado mais baço/acinzentado)
         // — pista discreta para quem reparar, sem ser óbvia à distância.
         spr.setTint(0x9fb89f);
+        // Registo para a reaçãozinha tola ao saltar-lhe em cima (pedido:
+        // recompensar quem tenta mesmo os canos "errados") — ver
+        // updateDecorativePipeReactions() no update().
+        decorativePipes.push({ spr, poofed:false });
       } else if (p.room) {
         const roomKey = p.x+"_"+p.y; // identifica este cano de sala secreta de forma única no nível
         // Por omissão o regresso é pelo MESMO cano (returnX/returnY = x/y) —
@@ -2690,7 +2768,7 @@ window.addEventListener("DOMContentLoaded", () => {
           && (p.returnX!==p.x || p.returnY!==p.y);
         const returnX = hasCustomReturn ? p.returnX : p.x;
         const returnY = hasCustomReturn ? p.returnY : p.y;
-        pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX, returnY, key:roomKey});
+        pipes.push({x:p.x, y:p.y, w, room:true, kind:p.kind, returnX, returnY, key:roomKey, fact:p.fact});
         if (hasCustomReturn) {
           // Físico (entra no grupo "platforms", tal como um cano decorativo
           // normal) — antes era só uma imagem sem corpo, por isso o
@@ -3227,7 +3305,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // loadLevel) — usado para saber se a recompensa já foi apanhada nesta
   // vida/nível (pedido: "se já apanhei a recompensa não deve mais lá estar,
   // só se perder a vida"). Se já foi apanhada, a sala fica sem o item.
-  function buildSecretRoomContents(scene, kind, roomKey) {
+  function buildSecretRoomContents(scene, kind, roomKey, fact) {
     destroySecretRoomContents();
     const alreadyCollected = !!(roomKey && collectedRoomPipes.has(roomKey));
     secretRoomTemp.key = roomKey || null;
@@ -3243,6 +3321,12 @@ window.addEventListener("DOMContentLoaded", () => {
     pipeSpr.displayWidth = ROOM_PIPE_XY.w; pipeSpr.displayHeight = ROOM_PIPE_XY.h; pipeSpr.refreshBody();
     secretRoomTemp.pipe = { x:ROOM_PIPE_XY.x, y:ROOM_PIPE_XY.y, w:ROOM_PIPE_XY.w, sprite:pipeSpr };
 
+    // Emoji do rótulo varia consoante a recompensa — pequeno toque de
+    // variedade entre salas sem mexer no tema roxo fixo (que se mantém de
+    // propósito, para se reconhecer logo "sala secreta" em qualquer nível).
+    const kindEmoji = { estrela:"⭐", balao:"🎈", brinquedo:"🧸", medalha:"🏅",
+      heart:"❤️", duplosalto:"🦘", balaofesta:"🎊" };
+
     if (!alreadyCollected) {
       const keyMap={ estrela:"item_estrela", balao:"item_chupachupa", brinquedo:"item_brinquedo",
         medalha:"item_medalha", heart:"item_heart", duplosalto:"item_duplosalto", balaofesta:"item_balao_2" };
@@ -3251,6 +3335,16 @@ window.addEventListener("DOMContentLoaded", () => {
       item.setData("kind", kind);
       scene.tweens.add({ targets:item, y:item.y-8, duration:940, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
       secretRoomTemp.item = item;
+
+      // "Ta-da" — só na 1ª vez que se descobre esta sala (pedido: reforçar
+      // a sensação de "descobri algo"). Flash roxo (a condizer com o tema
+      // ROOM_THEME_IDX) + jingle mágico distinto do "coin()" normal de
+      // apanhar um item — ver SFX.secretRoom() em audio.js.
+      const flash = scene.add.graphics().setDepth(200).setScrollFactor(0);
+      flash.fillStyle(0xb080ff, 0.5);
+      flash.fillRect(0, 0, 960, 540);
+      scene.tweens.add({ targets:flash, alpha:0, duration:500, onComplete:()=>flash.destroy() });
+      ensureAudio(); SFX.secretRoom();
     }
 
     // Sparkles + rótulo — reforço visual por cima do fundo já próprio (ROOM_THEME_IDX).
@@ -3261,18 +3355,27 @@ window.addEventListener("DOMContentLoaded", () => {
       scene.tweens.add({ targets:star, alpha:{from:0.2,to:0.65}, duration:900+Math.random()*800, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
       decor.push(star);
     }
-    const label = scene.add.text(ROOM_ITEM_XY.x, ROOM_ITEM_XY.y-70, alreadyCollected ? "✅ Recompensa já recolhida" : "🎁 Sala Secreta", {
+    const label = scene.add.text(ROOM_ITEM_XY.x, ROOM_ITEM_XY.y-70,
+      alreadyCollected ? "✅ Recompensa já recolhida" : `${kindEmoji[kind]||"🎁"} Sala Secreta`, {
       fontSize:"20px", fontStyle:"900", color:"#ffe9a8", stroke:"#2a0a4a", strokeThickness:5, padding:{x:8,y:6}
     }).setOrigin(0.5).setDepth(1);
     scene.tweens.add({ targets:label, y:label.y-6, duration:1300, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
     decor.push(label);
     secretRoomTemp.decor = decor;
+
+    // Curiosidade da sala (pedido: "cada cano leva a uma sala com uma
+    // curiosidade... e ganhar coisas") — mesmo letreiro reaproveitado dos
+    // NPCs/boss (aproxima-te para ler), posicionado à esquerda da
+    // recompensa para não se sobrepor. Fica visível mesmo depois de já ter
+    // sido recolhida a recompensa (a curiosidade é sempre boa de reler).
+    if (fact) spawnSecretSign(scene, 390, 420, "💡", fact);
   }
   function destroySecretRoomContents() {
     if (secretRoomTemp.ledge) { try{secretRoomTemp.ledge.destroy();}catch{} }
     if (secretRoomTemp.pipe && secretRoomTemp.pipe.sprite) { try{secretRoomTemp.pipe.sprite.destroy();}catch{} }
     if (secretRoomTemp.item && secretRoomTemp.item.active) { try{secretRoomTemp.item.destroy();}catch{} }
     (secretRoomTemp.decor||[]).forEach(o=>{ try{o.destroy();}catch{} });
+    clearSecretSigns(); // limpa a curiosidade da sala (se houver) — ver spawnSecretSign em buildSecretRoomContents
     secretRoomTemp = { ledge:null, pipe:null, item:null, decor:[], key:null };
   }
 
@@ -3299,7 +3402,7 @@ window.addEventListener("DOMContentLoaded", () => {
         scene.physics.world.setBounds(0,0,ROOM_WORLD_W,514);
         scene.cameras.main.setBounds(0,0,ROOM_WORLD_W,540);
         applyBackground(scene, ROOM_THEME_IDX, ROOM_WORLD_W, []);
-        buildSecretRoomContents(scene, p.kind, p.key);
+        buildSecretRoomContents(scene, p.kind, p.key, p.fact);
 
         player.x = 420; player.y = ROOM_LANDING_Y - 18;
         scene.cameras.main.startFollow(player, true, 1.0, 1.0);
@@ -6326,6 +6429,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // aparecer se o jogador reentrar no mesmo cano nesta vida/nível.
     if(inSecretRoom && secretRoomTemp.item === itemObj && secretRoomTemp.key){
       collectedRoomPipes.add(secretRoomTemp.key);
+      onSecretRoomFoundForAchievements(secretRoomTemp.key);
       secretRoomTemp.item = null;
     }
     itemObj.destroy();

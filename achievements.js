@@ -10,18 +10,21 @@ import { loadNamespace, saveNamespace } from "./storage.js";
 export let unlockedAchievements = {}; // { [id]: true }
 let historiesReadCount = 0;
 let correctAnswersTotal = 0;
+let secretRoomsFoundGlobal = []; // chaves (roomKey) únicas de salas secretas já encontradas, em todo o jogo
 
 export function loadAchievements() {
   const d = loadNamespace("achievements", {});
   unlockedAchievements = d.unlocked || {};
   historiesReadCount = d.historiesReadCount || 0;
   correctAnswersTotal = d.correctAnswersTotal || 0;
+  secretRoomsFoundGlobal = d.secretRoomsFoundGlobal || [];
 }
 export function saveAchievements() {
   saveNamespace("achievements", {
     unlocked: unlockedAchievements,
     historiesReadCount,
-    correctAnswersTotal
+    correctAnswersTotal,
+    secretRoomsFoundGlobal
   });
 }
 loadAchievements();
@@ -30,6 +33,7 @@ export function resetAchievements() {
   unlockedAchievements = {};
   historiesReadCount = 0;
   correctAnswersTotal = 0;
+  secretRoomsFoundGlobal = [];
   saveAchievements();
 }
 
@@ -88,6 +92,19 @@ export function onSecretFoundForAchievements(totalSecretsInLevel) {
   if (totalSecretsInLevel > 0 && found >= totalSecretsInLevel) {
     unlockAchievement("explorador");
   }
+}
+// Chamado ao apanhar a recompensa de uma sala secreta (cano com room:true)
+// — diferente de onSecretFoundForAchievements: aquele é sobre L.secrets
+// (itens escondidos fora do caminho principal, um sistema à parte), este é
+// sobre as salas dos canos. roomKey identifica a sala de forma única em
+// todo o jogo (ver roomKey = x+"_"+y em dia-crianca.js). Persistente, por
+// isso conta em todo o jogo, não só no nível atual.
+export function onSecretRoomFoundForAchievements(roomKey) {
+  if (!roomKey || secretRoomsFoundGlobal.includes(roomKey)) return;
+  secretRoomsFoundGlobal.push(roomKey);
+  saveAchievements();
+  const total = LEVELS.reduce((sum, L) => sum + (L.pipes||[]).filter(p=>p.room).length, 0);
+  if (total > 0 && secretRoomsFoundGlobal.length >= total) unlockAchievement("caca_tesouros");
 }
 // Chamado quando uma curiosidade "Sabias que…?" é fechada pelo jogador
 export function onHistoryReadForAchievements(levelsCompletedCount) {
