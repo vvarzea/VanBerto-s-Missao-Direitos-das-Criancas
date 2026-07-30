@@ -194,6 +194,66 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function resetQuizStats() { quizStats.total=0; quizStats.correct=0; quizStats.everWrong=false; quizStats.errors=[]; quizStats.errorsByTheme={}; }
 
+  // ===== Modo Revisão — reutilizável a partir de vários pontos =====
+  // (vitória final, ecrã de "Missão Falhada" e menu suspenso a meio do jogo).
+  // Preenche a lista #reviewList com as perguntas erradas da tentativa atual.
+  let _reviewReturnOverlay = null; // overlay a repor ao fechar (ou null -> usa closeOverlay normal)
+
+  function populateReviewList() {
+    const reviewList = document.getElementById("reviewList");
+    if (!reviewList) return;
+    reviewList.innerHTML = "";
+    if (!quizStats.errors || quizStats.errors.length === 0) {
+      reviewList.innerHTML = `<p style="text-align:center;color:#a0ffb0;font-size:14px;padding:20px 0;">🎉 Ainda não erraste nenhuma pergunta nesta tentativa. Continua assim!</p>`;
+      return;
+    }
+    quizStats.errors.forEach((e,i)=>{
+      const pool=QUIZ_BY_THEME[e.theme]||[];
+      const orig=pool.find(q=>q.q===e.q);
+      const exp=orig?.exp||"";
+      const art=QUIZ_ARTICLE[e.theme];
+      const div=document.createElement("div");
+      div.className="review-question";
+      div.innerHTML=`
+        ${art?`<div style="margin-bottom:5px;"><span class="quiz-article-badge">📜 ${art}</span></div>`:""}
+        <div class="review-question-text">${i+1}. ${e.level} — ${e.q}</div>
+        <div class="review-wrong">❌ A tua resposta: <strong>${e.wrong}</strong></div>
+        <div class="review-correct">✅ Resposta certa: <strong>${e.correct}</strong></div>
+        ${exp?`<div class="review-explanation">💡 ${exp}</div>`:""}
+      `;
+      reviewList.appendChild(div);
+    });
+  }
+
+  // Abre o Modo Revisão. Se returnOverlayId for indicado (ex.: "winOverlay",
+  // "gameOverOverlay"), esse overlay é escondido e reposto ao fechar — usado
+  // quando o jogo já está numa tela de fim de tentativa. Se for null, usa o
+  // sistema normal de overlays secundários (openOverlay/closeOverlay), para
+  // acesso a meio do jogo (ex.: menu suspenso), que já trata da pausa da física.
+  function openReviewScreen(returnOverlayId = null) {
+    populateReviewList();
+    _reviewReturnOverlay = returnOverlayId;
+    if (returnOverlayId) {
+      document.getElementById(returnOverlayId)?.classList.add("hidden");
+      document.getElementById("reviewOverlay")?.classList.remove("hidden");
+    } else {
+      openOverlay("reviewOverlay");
+    }
+  }
+  window.__vb_openReview = () => openReviewScreen(null);
+
+  function wireReviewButton(btnId, quizErrorsCount, labelSuffix, returnOverlayId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    if (quizErrorsCount > 0) {
+      btn.style.display = "block";
+      btn.textContent = `📋 Ver ${quizErrorsCount} erro${quizErrorsCount>1?"s":""}${labelSuffix||""}`;
+      btn.onclick = () => openReviewScreen(returnOverlayId);
+    } else {
+      btn.style.display = "none";
+    }
+  }
+
   function pickQuizForLevel(levelIdx, theme) {
     const pool = QUIZ_BY_THEME[theme] || QUIZ_BY_THEME["historia"];
     // Rastreio global por tema — evita repetir a mesma pergunta em níveis diferentes com o mesmo tema
@@ -1250,6 +1310,7 @@ window.addEventListener("DOMContentLoaded", () => {
           _badge("mBtnAchievements", achvDone + "/" + ACHIEVEMENTS_DEFS.length);
           _badge("mBtnAlbum", mapProgress.levelsCompleted.length + "/" + LEVELS.length);
           _badge("mBtnStats", "⭐ " + totalStarsEarned() + "/" + (LEVELS.length * 3));
+          _badge("mBtnErrors", quizStats.errors?.length ? String(quizStats.errors.length) : "");
           const mBtnPauseEl = document.getElementById("mBtnPause");
           if (mBtnPauseEl) mBtnPauseEl.textContent = (pausedByTeacher ? "▶ Continuar" : "⏸ Pausa");
         } else {
@@ -1337,6 +1398,7 @@ window.addEventListener("DOMContentLoaded", () => {
       _panelBtn("mBtnAchievements", () => window.__vb_openAchievements?.());
       _panelBtn("mBtnAlbum",        () => window.__vb_openAlbum?.());
       _panelBtn("mBtnStats",        () => window.__vb_openStats?.());
+      _panelBtn("mBtnErrors",       () => window.__vb_openReview?.());
       _panelBtn("mBtnOptions",      () => window.__vb_openOptions?.());
       _panelBtn("mBtnHow",          () => window.__vb_openHow?.());
     }
@@ -6102,6 +6164,7 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("artefactRevealOverlay")?.classList.remove("show");
     document.getElementById("setBonusOverlay")?.classList.remove("show");
     ensureAudio(); SFX.gameOver();
+    wireReviewButton("btnReviewModeGO", quizStats.errors?.length||0, " nesta tentativa", "gameOverOverlay");
     document.getElementById("gameOverOverlay").classList.remove("hidden");
   }
 
@@ -6190,44 +6253,17 @@ window.addEventListener("DOMContentLoaded", () => {
       }
 
       // ── Botão "Ver erros" — visível apenas se houver erros ──────────
-      const btnReview=document.getElementById("btnReviewMode");
-      if(btnReview){
-        if(quizStats.errors&&quizStats.errors.length>0){
-          btnReview.style.display="block";
-          btnReview.textContent=`📋 Ver ${quizStats.errors.length} erro${quizStats.errors.length>1?"s":""}`;
-          btnReview.onclick=()=>{
-            const reviewList=document.getElementById("reviewList");
-            if(reviewList){
-              reviewList.innerHTML="";
-              quizStats.errors.forEach((e,i)=>{
-                const pool=QUIZ_BY_THEME[e.theme]||[];
-                const orig=pool.find(q=>q.q===e.q);
-                const exp=orig?.exp||"";
-                const art=QUIZ_ARTICLE[e.theme];
-                const div=document.createElement("div");
-                div.className="review-question";
-                div.innerHTML=`
-                  ${art?`<div style="margin-bottom:5px;"><span class="quiz-article-badge">📜 ${art}</span></div>`:""}
-                  <div class="review-question-text">${i+1}. ${e.level} — ${e.q}</div>
-                  <div class="review-wrong">❌ A tua resposta: <strong>${e.wrong}</strong></div>
-                  <div class="review-correct">✅ Resposta certa: <strong>${e.correct}</strong></div>
-                  ${exp?`<div class="review-explanation">💡 ${exp}</div>`:""}
-                `;
-                reviewList.appendChild(div);
-              });
-            }
-            document.getElementById("reviewOverlay").classList.remove("hidden");
-            document.getElementById("winOverlay")?.classList.add("hidden");
-          };
-        } else {
-          btnReview.style.display="none";
-        }
-      }
+      wireReviewButton("btnReviewMode", quizStats.errors?.length||0, "", "winOverlay");
       const btnCloseReview=document.getElementById("btnCloseReview");
       if(btnCloseReview){
         btnCloseReview.onclick=()=>{
           document.getElementById("reviewOverlay").classList.add("hidden");
-          document.getElementById("winOverlay")?.classList.remove("hidden");
+          if(_reviewReturnOverlay){
+            document.getElementById(_reviewReturnOverlay)?.classList.remove("hidden");
+            _reviewReturnOverlay=null;
+          } else {
+            closeOverlay("reviewOverlay");
+          }
         };
       }
       // Grelha dos direitos conquistados
