@@ -4509,6 +4509,46 @@ window.addEventListener("DOMContentLoaded", () => {
     scene.time.delayedCall(2600, () => { if (news.active) news.destroy(); });
   }
 
+  // ---- Momento "último fôlego" (opt-in via def.finalStandBurst, ver
+  // data-bosses.js — só o Guardião das Sombras, por agora): disparado uma
+  // única vez a partir de damageBoss() quando o boss fica a só 1 salto de
+  // ser derrotado. Lança 2 sombras vindas dos extremos da arena, a voar na
+  // horizontal (sem gravidade, tal como o antigo "Fake News", mas com as
+  // dimensões da arena ATUAL — 960px, não os 1600px de antes da conversão
+  // para "boss clássico à Mario"). altura da cabeça: o chão da arena tem o
+  // topo em y=506 e o VanBerto's de pé mede ~72px (pés sempre no mesmo
+  // sítio) → cabeça de pé por volta de y=434; agachado (~60% da altura, ver
+  // isCrouching) → cabeça por volta de y=463. y=452 fica a meio dos dois:
+  // acerta em pé, passa por cima agachado. Não altera hp nem timers normais
+  // do boss (patrulha/teleporte/❓ continuam) — é só uma camada extra.
+  function startBossFinalStandBurst(scene) {
+    if (!bossState || bossState.phase !== "platform") return;
+    const def = bossState.def;
+    showBossBanner(scene, `🌑 ${def.name.toUpperCase()} — ÚLTIMO FÔLEGO! 🌑`, "#c9a6ff");
+    scene.cameras.main.shake(200, 0.010);
+    const worldW = def.arena?.worldW || 960;
+    const y = 452;
+    const spawnShadow = (fromLeft) => {
+      // Guarda repetida aqui dentro (não só à entrada da função) porque
+      // cada sombra nasce depois de um delayedCall — o combate pode já ter
+      // terminado (3º salto certeiro) nesse intervalo.
+      if (!bossState || bossState.phase !== "platform") return;
+      const x = fromLeft ? -20 : worldW + 20;
+      const shadow = itemsGroup.create(x, y, def.orbTexture || "boss_proj_shadow");
+      if (def.orbTint != null) shadow.setTint(def.orbTint);
+      shadow.setDepth(2).setData("bossFinalBurst", true).setAngle(fromLeft ? -12 : 12);
+      shadow.body.setAllowGravity(false);
+      shadow.setVelocityX(fromLeft ? 260 : -260);
+      shadow.setAngularVelocity(fromLeft ? -180 : 180);
+      scene.time.delayedCall(3000, () => { if (shadow.active) shadow.destroy(); });
+    };
+    // 2 sombras em sequência (não simultâneas) — dá tempo de perceber o
+    // padrão e agachar a tempo, mesmo sendo a 1ª vez que a criança vê este
+    // ataque em particular.
+    scene.time.delayedCall(500, () => spawnShadow(true));
+    scene.time.delayedCall(1300, () => spawnShadow(false));
+  }
+
   function spawnBossSprite(scene, def, x) {
     const texKey = "boss_"+def.id;
     const hasCustomTex = scene.textures.exists(texKey);
@@ -5437,6 +5477,15 @@ window.addEventListener("DOMContentLoaded", () => {
         if (pool && pool.length) showFloat(scene, x, y-30, pool[Math.floor(Math.random()*pool.length)], "#ff9090");
       }
       if (hitsTaken > 0 && bossState.hp > 0) bossEnterRage(scene, Math.min(2, hitsTaken));
+      // Momento "último fôlego" (opt-in via def.finalStandBurst — só o
+      // Guardião das Sombras, por agora): dispara exactamente uma vez, ao
+      // ficar com apenas 1 salto por dar (bossState.hp===1), independente
+      // da fúria genérica acima. finalBurstDone evita repetir se o jogador
+      // ainda tocar no boss mais vezes antes do 3º salto certeiro.
+      if (bossState.def.finalStandBurst && bossState.hp === 1 && !bossState.finalBurstDone) {
+        bossState.finalBurstDone = true;
+        startBossFinalStandBurst(scene);
+      }
     } else if (bossState.def.phases) {
       // Bosses com fases próprias não usam a escalada genérica — cada
       // acerto muda de fase com comportamento próprio.
@@ -5663,7 +5712,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!bossState || bossState.phase !== "platform") {
       if (itemObj.getData("bossProjGood") || itemObj.getData("bossProjBad") ||
           itemObj.getData("bossProjQmark") || itemObj.getData("bossCharge") ||
-          itemObj.getData("bossCollect")) {
+          itemObj.getData("bossCollect") || itemObj.getData("bossFinalBurst")) {
         itemObj.destroy();
         return true;
       }
@@ -5696,6 +5745,16 @@ window.addEventListener("DOMContentLoaded", () => {
       if (invuln) return true; // já protegido — ignora durante os i-frames
       ensureAudio(); beep({freq:220,dur:0.12,type:"square",vol:0.06,slideTo:120});
       bossHitPlayer(sceneRef, null, "❓ Apanhado por uma bola de dúvidas!");
+      return true;
+    }
+    if (itemObj.getData("bossFinalBurst")) {
+      // Sombra do momento "último fôlego" (ver startBossFinalStandBurst) —
+      // mesma sensação de dano/i-frames que os outros projéteis de boss,
+      // com aviso próprio em vez do genérico "bola de dúvidas".
+      itemObj.destroy();
+      if (invuln) return true;
+      ensureAudio(); beep({freq:200,dur:0.14,type:"sawtooth",vol:0.06,slideTo:90});
+      bossHitPlayer(sceneRef, null, "🌑 Apanhado pela sombra!");
       return true;
     }
     if (!itemObj.getData("bossCollect")) return false;

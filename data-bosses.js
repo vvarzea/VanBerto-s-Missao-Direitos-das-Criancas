@@ -233,6 +233,12 @@ export const BOSSES = [
     qmarkEvery: 2000,
     orbTexture: "boss_proj_shadow", // orbe sombrio próprio — antes reutilizava a bola "?" do Monstro só retintada, sem sentido temático para um guardião das sombras
     orbTint: 0x6a3fb5,
+    // Momento "último fôlego" (nova, opt-in — só este boss): ao ficar a só 1
+    // salto de ser derrotado (bossState.hp===1), lança 2 sombras vindas dos
+    // extremos da arena, à altura da cabeça — só se evitam agachado (ver
+    // startBossFinalStandBurst em dia-crianca.js). Um pequeno clímax visual
+    // para o combate final, sem tocar no hp nem na dificuldade geral.
+    finalStandBurst: true,
     // bossY: o Guardião é uma capa/robe sem pernas — medi o pixel mais baixo
     // da bainha (~43px abaixo do centro do canvas). 506 - 43*1.5 = 442.
     bossY: 442,
