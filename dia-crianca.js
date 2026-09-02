@@ -1216,7 +1216,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // prática). Para trocar o PIN, gera um novo hash (ex.: na consola do
     // browser: `await crypto.subtle.digest("SHA-256", new TextEncoder().encode("NOVOPIN"))`
     // e converte para hex) e substitui o valor abaixo.
-    const TEACHER_PIN_HASH = "d4cd013f21bbf4b52c431691b7056337c35d0ad6fc7acc7084abc1039633618e"; // hash de "3583"
+    const TEACHER_PIN_HASH = "d4cd013f21bbf4b52c431691b7056337c35d0ad6fc7acc7084abc1039633618e";
     async function sha256Hex(text) {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
